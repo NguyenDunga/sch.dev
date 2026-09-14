@@ -22,9 +22,11 @@ interface PlaySlotProps {
   /** Whether the coin has been tossed (face revealed). */
   revealed: boolean
   onUnpick: () => void
+  /** Buff phase: re-flip an unused Echo coin (provided only when allowed). */
+  onReflip?: () => void
 }
 
-export function PlaySlot({ index, slot, revealed, onUnpick }: PlaySlotProps) {
+export function PlaySlot({ index, slot, revealed, onUnpick, onReflip }: PlaySlotProps) {
   if (slot.kind === 'empty') {
     return (
       <div className="play-slot" aria-hidden>
@@ -36,9 +38,27 @@ export function PlaySlot({ index, slot, revealed, onUnpick }: PlaySlotProps) {
   const coin = slot.coin
 
   // Revealed (toss/buff/score): the 3D toss coin settles on the resolved face
-  // (12.5). Display only — no unpick once tossed.
+  // (12.5). In the buff phase an unused Echo coin is tappable to re-flip
+  // (12.6) — the TossCoin is keyed by face + echoUsed so it re-mounts (and
+  // re-animates, quick) when the re-flip resolves a new face.
   if (revealed) {
-    return <TossCoin face={slot.face} index={index} effects={coin.effects} />
+    const toss = (
+      <TossCoin
+        key={`${coin.id}-${slot.face}-${slot.echoUsed}`}
+        face={slot.face}
+        index={index}
+        effects={coin.effects}
+        quick={slot.echoUsed}
+      />
+    )
+    if (onReflip) {
+      return (
+        <button type="button" className="play-slot play-slot--reflip" onClick={onReflip} aria-label={`re-flip slot ${index + 1}`}>
+          {toss}
+        </button>
+      )
+    }
+    return toss
   }
 
   // Face-down (play): the 2D coin seated in the well, tappable to unpick.
