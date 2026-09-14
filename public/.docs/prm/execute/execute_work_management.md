@@ -65,7 +65,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
 | 3.1 `buildCollection()` | Done | 2026-09-14 | Fresh module (v1.0 legacy `deck.ts`/`deck.test.ts` dropped): no-arg `buildCollection()` using `BASE_DECK_SIZE` from balance.ts; legacy store call-site updated; tsc + lint clean, 68/68 tests green |
-| 3.2 `shuffleCollection(rng, deck)` | In progress | | Implementation shipped with 3.1 (module is one unit; legacy store depends on all five functions) — checkpoint verification pending |
+| 3.2 `shuffleCollection(rng, deck)` | Done | 2026-09-14 | 6 tests: merge + clear discard, multiset preserved, seed-deterministic, different seeds differ, one rng draw per swap (draw-order contract pinned), input unmutated |
 | 3.3 `drawFromDeck(deck)` (null on empty) | In progress | | As above. Note: SDD C11 says peek + `Option<Coin>` (null-free model, M1.pre); WBS contract line says pop + `Coin | null` — resolve at this checkpoint, SDD is source of truth |
 | 3.4 `discardToPile` / `returnHandToPile` | In progress | | Implementation shipped with 3.1 — checkpoint verification pending |
 | 3.5 Empty-pile → null test | Not started | | |
