@@ -1813,3 +1813,106 @@ describe('M11.6 — no autosave: no phase transition calls save', () => {
     expect(setItem).not.toHaveBeenCalled()
   })
 })
+
+describe('Coverage — remaining edges (100% gate)', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('startRun() with no seed generates one (non-empty, run phase)', () => {
+    const store = createRunStore()
+    store.getState().startRun()
+    const st = store.getState()
+    expect(st.seed.length).toBeGreaterThan(0)
+    expect(st.phase).toBe('run')
+    expect(st.handPhase).toBe('draw')
+  })
+
+  function coinShopStore(seed: string, effect: 'draw1' | 'draw3' | 'weight' | 'doubleSide') {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      cash: 20,
+      shop: { offers: [{ kind: 'coin', effect }], rerollUsed: false },
+    })
+    return store
+  }
+
+  it('buy a Draw-1 coin: the effect variant carries count 1', () => {
+    const store = coinShopStore('cov-d1', 'draw1')
+    store.getState().buy({ kind: 'coin', effect: 'draw1' })
+    expect(store.getState().deck.drawPile.at(-1)?.effects).toEqual([{ kind: 'draw', count: 1 }])
+  })
+
+  it('buy a Draw-3 coin: the effect variant carries count 3', () => {
+    const store = coinShopStore('cov-d3', 'draw3')
+    store.getState().buy({ kind: 'coin', effect: 'draw3' })
+    expect(store.getState().deck.drawPile.at(-1)?.effects).toEqual([{ kind: 'draw', count: 3 }])
+  })
+
+  it('favoured-face roll reaches both faces across seeds (H and T)', () => {
+    const face = (seed: string, effect: 'weight' | 'doubleSide') => {
+      const store = coinShopStore(seed, effect)
+      store.getState().buy({ kind: 'coin', effect })
+      const eff = store.getState().deck.drawPile.at(-1)?.effects[0]
+      return eff && (eff.kind === 'weight' || eff.kind === 'doubleSide') ? eff.favored : undefined
+    }
+    expect(face('probe-0', 'weight')).toBe('H')
+    expect(face('probe-2', 'doubleSide')).toBe('T')
+  })
+
+  it('drawHand skips non-empty hand slots (fills only the empty ones)', () => {
+    const store = createRunStore()
+    store.getState().startRun('cov-dh')
+    const st = store.getState()
+    const coin = st.deck.drawPile[0]
+    if (!coin) throw new Error('test setup: empty draw pile')
+    store.setState({
+      hand: [filledSlot(coin, 'H'), ...st.hand.slice(1)],
+    })
+    store.getState().drawHand()
+    const hand = store.getState().hand
+    const first = hand[0]
+    expect(first?.kind).toBe('filled')
+    if (first?.kind === 'filled') expect(first.coin.id).toBe(coin.id) // untouched
+    expect(hand.filter((s) => s.kind === 'filled').length).toBe(HAND_SIZE)
+    expect(store.getState().handPhase).toBe('play')
+  })
+
+  it('unpickCoin with a full hand is a no-op (no empty slot to return to)', () => {
+    const store = createRunStore()
+    store.getState().startRun('cov-up')
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    const st = store.getState()
+    const filler = st.deck.drawPile[0]
+    if (!filler) throw new Error('test setup: empty draw pile')
+    store.setState({
+      hand: st.hand.map((s) => (s.kind === 'empty' ? filledSlot(filler, 'H') : s)),
+    })
+    const before = store.getState()
+    store.getState().unpickCoin(0)
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('discard on an empty hand slot is a no-op', () => {
+    const store = createRunStore()
+    store.getState().startRun('cov-dc')
+    store.getState().drawHand()
+    const st = store.getState()
+    store.setState({ hand: [st.hand[0], { kind: 'empty' }, ...st.hand.slice(2)] })
+    const before = store.getState()
+    store.getState().discard(1)
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('resume with a saved non-resumable phase (runEnd) is a no-op', () => {
+    const store = createRunStore()
+    store.getState().startRun('cov-rs')
+    const st = store.getState()
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 2, state: { ...st, phase: 'runEnd' } }))
+    const before = store.getState()
+    store.getState().resume()
+    expect(store.getState()).toEqual(before)
+  })
+})
