@@ -77,7 +77,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
 | 4.1 `handPhase` 5-phase cycle | Done | 2026-09-14 | Fresh 5-phase store replaces v1.0 legacy runStore (all C4 actions shipped, phase-guarded); transient `toss`/`score` are observable separate sets; 2 tests: cycle invariant via recorded phase transitions + out-of-phase no-ops. C3 stubs (`resolveFace`/`matchTier`/`scoreHand`) ship with final signatures; `HAND_SIZE`/`PLAY_SIZE` added to balance.ts; run screen placeholder until M12 |
-| 4.2 `drawHand` (auto) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.2 `drawHand` (auto) | Done | 2026-09-14 | 4 tests: fills handSize distinct coins + → play (draw pile shrinks, discard empty); face-down = no rng consumption (rngState unchanged); short pile (3) → 3 filled + 5 empty slots; empty pile → empty hand, still → play |
 | 4.3 `pickCoin` / `unpickCoin` (1–5) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
 | 4.4 `discard` (+ draw-enchant redraw) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
 | 4.5 `confirmPlay` | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
