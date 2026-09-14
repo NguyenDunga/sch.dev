@@ -8,7 +8,7 @@ import {
 } from './deck'
 import { createRng } from './rng'
 import { BASE_DECK_SIZE } from './balance'
-import { filledSlot, none, some } from './types'
+import { filledSlot, none, some } from './helpers'
 import type { Hand } from './types'
 
 describe('buildCollection', () => {

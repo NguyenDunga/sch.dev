@@ -1,171 +1,81 @@
+// Core types for 50/50 — the SDD Data Design "Core Types" + "Run State"
+// blocks, verbatim (source of truth: public/.docs/sdd/software_design_data.md).
+// Types only: no runtime logic, no defaults (M1). Every later milestone
+// imports from here; every shared shape is defined exactly once.
+
 export type Face = 'H' | 'T'
 
-/**
- * A value that may be absent — the Rust `Option<T>`, used instead of `null` for
- * "maybe" results and neighbours. Absence is an explicit, checked state
- * (`{ some: false }`) rather than a `null` hiding inside a `T | null`.
- */
+// Rust's Option<T> — used instead of `null` for "maybe" values (neighbours, draws, last score).
 export type Option<T> = { some: true; value: T } | { some: false }
-export const some = <T>(value: T): Option<T> => ({ some: true, value })
-export const none: Option<never> = { some: false }
-export const isSome = <T>(o: Option<T>): o is { some: true; value: T } => o.some
 
-/** Draw-enchant tiers: redraw 1, 2, or 3 coins on discard. */
 export type DrawCount = 1 | 2 | 3
 
-/**
- * A coin effect as a tagged union: each variant carries exactly the data that
- * effect needs. A Weight/Double-Side coin always has a favoured face; a Chaos
- * coin can never carry one. Illegal states (a Weight coin with no face, a Chaos
- * coin with a stray param) are unrepresentable — the old shared `param?: Face`
- * is gone.
- */
+// Coin effects as a tagged union: each variant carries exactly its own data. A Weight/Double-Side
+// coin always has a favoured face; a Chaos coin can never carry one. (Replaces the old
+// `effects: CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
 export type CoinEffect =
   | { kind: 'weight'; favored: Face }
   | { kind: 'doubleSide'; favored: Face }
-  | { kind: 'chaos' }
-  | { kind: 'echo' }
-  | { kind: 'magnetic' }
-  | { kind: 'reverse' }
-  | { kind: 'tax' }
-  | { kind: 'jackpot' }
+  | { kind: 'chaos' } | { kind: 'echo' } | { kind: 'magnetic' } | { kind: 'reverse' }
+  | { kind: 'tax' } | { kind: 'jackpot' }
   | { kind: 'draw'; count: DrawCount }
-
-/** The discriminant tags of {@link CoinEffect}. */
 export type CoinEffectKind = CoinEffect['kind']
 
-/**
- * Shop catalog id for a purchasable coin effect. Draw is sold as three tiers
- * (draw1/2/3); at purchase a Draw-N id becomes a `{ kind: 'draw'; count: N }`
- * effect and Weight/Double-Side roll their favoured face.
- */
-export type CoinEffectId =
-  | 'weight'
-  | 'doubleSide'
-  | 'chaos'
-  | 'echo'
-  | 'magnetic'
-  | 'reverse'
-  | 'tax'
-  | 'jackpot'
-  | 'draw1'
-  | 'draw2'
-  | 'draw3'
+// Shop catalog id (Draw sold as 3 tiers). At purchase a Draw-N id → { kind: 'draw'; count: N },
+// and Weight/Double-Side roll their favoured face into the effect variant.
+export type CoinEffectId = 'weight' | 'doubleSide' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
 
-/** One coin in the collection. Each effect carries its own params — no shared optional. */
-export interface Coin {
-  id: number
-  effects: CoinEffect[]
-}
+export interface Coin { id: number; effects: CoinEffect[] }                   // effects carry their own params — no shared optional
 
-/** The data of a tossed coin occupying a hand slot. */
-export interface FilledHandSlot {
-  kind: 'filled'
-  coin: Coin
-  face: Face
-  /** Echo re-flip already used this hand. */
-  echoUsed: boolean
-}
-
-/**
- * One of the 5 hand slots: either empty (counts as nothing — no wilds, Q&A
- * round 4) or filled with a tossed coin. An explicit variant, never `null`.
- */
-export type HandSlot = { kind: 'empty' } | FilledHandSlot
-
-/** 5 slots, always length 5; an empty slot is `{ kind: 'empty' }`, never `null`. */
-export type Hand = HandSlot[]
-
-/** A fresh empty hand (5 empty slots), each a distinct object. */
-export const emptyHand = (): Hand =>
-  Array.from({ length: 5 }, (): HandSlot => ({ kind: 'empty' }))
-
-/** Build a filled slot. */
-export const filledSlot = (coin: Coin, face: Face, echoUsed = false): FilledHandSlot => ({
-  kind: 'filled',
-  coin,
-  face,
-  echoUsed,
-})
-
-/** Narrow a slot to its filled variant. */
-export const isFilled = (slot: HandSlot): slot is FilledHandSlot => slot.kind === 'filled'
-
-export type TierId =
-  | 'jackpot'
-  | 'fourRow'
-  | 'alternating'
-  | 'fourSame'
-  | 'tripleRun'
-  | 'threeSame'
+export interface FilledHandSlot { kind: 'filled'; coin: Coin; face: Face; echoUsed: boolean }  // one tossed coin
+export type HandSlot = { kind: 'empty' } | FilledHandSlot                     // an empty slot is an explicit variant, never null
+export type Hand = HandSlot[]                                                 // length = handSize (base 8); coins drawn this hand
+export type Play = HandSlot[]                                                 // length 5; the picked coins (1–5), tossed in the toss phase; empty slot counts as nothing (no wilds)
+export type TierId = 'jackpot' | 'fourRow' | 'alternating' | 'fourSame' | 'tripleRun' | 'threeSame'
 export type BlindKind = 'small' | 'big' | 'boss'
 export type Phase = 'menu' | 'run' | 'shop' | 'runEnd'
-export type HandState = 'ready' | 'tossed'
+export type HandPhase = 'draw' | 'play' | 'toss' | 'buff' | 'score'         // per-hand phase flow (Q&A 2026-09-14, round 3)
 export type BossRuleId = 'noAlternating' | 'shortFuse' | 'noJackpots' | 'heavyTarget'
 export type CharmId = 'plusChips' | 'plusMult' | 'extraHand' | 'payday' | 'jackpotFever'
 export type CharmCategory = 'flip' | 'scoring' | 'pattern' | 'economy'
+export type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: CoinEffectId } | { kind: 'handSize' }
 
-export interface Tier {
-  id: TierId
-  name: string
-  chips: number
-  mult: number
-}
+export interface Tier { id: TierId; name: string; chips: number; mult: number }
 
-/**
- * One blind. The boss rule lives inside the `'boss'` variant, so only a boss
- * blind has a rule — and a boss blind always has one. There is no optional
- * `boss?` field to leave dangling on a small/big blind.
- */
+// The boss rule lives inside the 'boss' variant — only a boss blind has a rule, and it always has one.
+// No optional `boss?` field dangling on small/big blinds.
 export type Blind = { round: number; target: number; reward: number } & (
-  | { kind: 'small' }
-  | { kind: 'big' }
-  | { kind: 'boss'; rule: BossRuleId }
+  | { kind: 'small' } | { kind: 'big' } | { kind: 'boss'; rule: BossRuleId }
 )
 
-export interface BossRule {
-  id: BossRuleId
-  name: string
-  description: string
-}
+export interface CharmDef { id: CharmId; name: string; category: CharmCategory; price: number }
+export interface CoinDef { effect: CoinEffectId; name: string; price: number }   // 11 catalog entries = 8 single-effect coins + Draw-1/2/3 (9 effect types; Draw has 3 tiers)
+export interface Deck { drawPile: Coin[]; discardPile: Coin[] }                  // persistent collection == drawPile + discardPile (+ any coins currently in hand/play mid-blind)
 
-export interface CharmDef {
-  id: CharmId
-  name: string
-  category: CharmCategory
-  price: number
-}
-
-export interface CoinDef {
-  effect: CoinEffectId
-  name: string
-  price: number
-}
-
-export type ShopOffer =
-  | { kind: 'charm'; charm: CharmId }
-  | { kind: 'coin'; effect: CoinEffectId }
-
-/**
- * Coin collection (SDD C11, Balatro-style 2026-09-13 Q&A round 2). The
- * collection (drawPile + discardPile) persists for the whole run; the draw
- * pile is finite within a blind (no reshuffle) and the discard pile is
- * cleared at each blind start.
- */
-export interface Deck {
-  drawPile: Coin[]
-  discardPile: Coin[]
-}
-
-/**
- * A hand's score, as a tagged union. Either no tier matched (an empty or short
- * hand — scores 0, but may still earn coin cash) or a scored tier with its
- * chips/mult/total. No `tier: null` sentinel, so a scored hand always has its
- * numbers and a no-tier hand never carries stray ones.
- */
+// A hand's score: either no tier matched (scores 0, but may still earn coin cash) or a scored tier.
+// No `tier: null` sentinel — a scored hand always has its numbers, a no-tier hand never carries stray ones.
 export type Score =
   | { kind: 'none'; cash: number }
-  | { kind: 'scored'; tier: TierId; chips: number; mult: number; total: number; cash: number }
+  | { kind: 'scored'; tier: TierId; chips: number; mult: number; total: number; cash: number }  // cash: coin cash effects (Tax/Jackpot)
 
-/** Points a score is worth (0 for a no-tier hand). */
-export const scoreTotal = (score: Score): number => (score.kind === 'scored' ? score.total : 0)
+// Run State (zustand store shape) — the SDD Data Design "Run State" block, verbatim.
+export interface RunState {
+  seed: string
+  phase: Phase
+  round: number              // 1..4
+  blindIndex: number         // 0..11 into the 12-blind table
+  hand: Hand                 // handSize slots (base 8); empty slots are { kind: 'empty' } (nothing), never null
+  play: Play                 // 5 slots; the picked coins, tossed in the toss phase
+  handPhase: HandPhase       // draw → play → toss → buff → score
+  handSize: number           // 8 base; +1 per shop hand-size upgrade
+  handsLeft: number          // 10 (8 on Short Fuse; +1 with Extra Hand)
+  blindScore: number         // score accumulated in the current blind
+  cash: number               // starts at $4
+  charms: CharmId[]          // owned charms, in charm-bar (scoring) order
+  deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
+  shop: { offers: ShopOffer[]; rerollUsed: boolean }
+  lastScore: Option<Score>   // for the UI ticker; none before the first hand is scored
+  runScore: number           // total score across the run (summary)
+  won: boolean               // set when blind 12 is cleared
+  rngState: number[]         // serialized RNG state (xoroshiro128+: 4 × int32)
+}

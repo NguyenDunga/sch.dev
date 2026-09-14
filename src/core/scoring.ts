@@ -7,7 +7,7 @@ import {
   WEIGHT_ODDS,
 } from './balance'
 import type { Rng } from './rng'
-import { isFilled, isSome, none, some } from './types'
+import { isFilled, isSome, none, some } from './helpers'
 import type { Coin, Face, Hand, Option, Score, TierId } from './types'
 
 const opposite = (f: Face): Face => (f === 'H' ? 'T' : 'H')

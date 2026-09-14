@@ -1,7 +1,14 @@
-import type { Blind, BossRule, CharmDef, CoinDef, Tier } from './types'
+import type { Blind, BossRuleId, CharmDef, CoinDef, Tier } from './types'
 
 // Data-only tables (draft values from plan_balance-baseline.md — tunable in
 // playtest, not a scope change). No logic here.
+
+/** One boss rule (shape of the BOSS_RULES table; the id also lives on the Blind 'boss' variant). */
+export interface BossRule {
+  id: BossRuleId
+  name: string
+  description: string
+}
 
 export const TIERS: Tier[] = [
   { id: 'jackpot', name: 'Jackpot', chips: 50, mult: 4 },

@@ -2,7 +2,7 @@ import { Coin } from '@/components/hand/coin'
 import { ScoreTicker } from '@/components/hand/score-ticker'
 import { Button } from '@/components/ui/button'
 import { BLINDS } from '@/core/balance'
-import { isFilled } from '@/core/types'
+import { isFilled } from '@/core/helpers'
 import { useRunStore } from '@/state/runStore'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const

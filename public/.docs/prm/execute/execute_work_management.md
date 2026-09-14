@@ -40,14 +40,14 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 1.1 Primitives/unions (Face, CoinEffectId, TierId, Phase, HandPhase, BossRuleId, CharmId, CharmCategory) | Not started | | |
-| 1.2 `Coin` (+ `faceParams`) | Not started | | |
-| 1.3 `Slot` / `Hand` / `Play` | Not started | | |
-| 1.4 `ShopOffer` union | Not started | | |
-| 1.5 Record interfaces (Tier, Blind, CharmDef, CoinDef, Deck, Score) | Not started | | |
-| 1.6 `RunState` | Not started | | |
-| 1.7 Single file, no logic/defaults | Not started | | |
-| 1.8 `tsc --noEmit` clean | Not started | | |
+| 1.1 Primitives/unions (Face, CoinEffectId, TierId, Phase, HandPhase, BossRuleId, CharmId, CharmCategory) | Done | 2026-09-14 | All unions per SDD block; counts exact (11 effect ids / 6 tiers / 4 boss rules / 5 hand phases) |
+| 1.2 `Coin` (+ `faceParams`) | Done | 2026-09-14 | SDD no-null shape: `Coin { id; effects: CoinEffect[] }` — tagged-union effects carry their own params (replaces stale `CoinEffectId[]` + `faceParams?` wording) |
+| 1.3 `Slot` / `Hand` / `Play` | Done | 2026-09-14 | SDD no-null shape: `HandSlot`/`FilledHandSlot` + `Hand`/`Play` (`{ kind: 'empty' }`, never null) |
+| 1.4 `ShopOffer` union | Done | 2026-09-14 | `charm \| coin \| handSize` |
+| 1.5 Record interfaces (Tier, Blind, CharmDef, CoinDef, Deck, Score) | Done | 2026-09-14 | All six per SDD block |
+| 1.6 `RunState` | Done | 2026-09-14 | All 18 fields per SDD Run State block |
+| 1.7 Single file, no logic/defaults | Done | 2026-09-14 | types-only; runtime helpers moved to `src/core/helpers.ts`; `BossRule` → balance.ts; legacy `HandState` → local to runStore.ts |
+| 1.8 `tsc --noEmit` clean | Done | 2026-09-14 | tsc + lint clean; 70/70 tests green |
 
 ### M2 — Seeded RNG (`src/core/rng.ts`) → [wbs](../plan/plan_wbs-m2-rng.md)
 

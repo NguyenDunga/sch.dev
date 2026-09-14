@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { isFilled } from '@/core/types'
+import { isFilled } from '@/core/helpers'
 import type { CoinEffect, CoinEffectKind, HandSlot } from '@/core/types'
 
 /** One coin flip duration (ms). */

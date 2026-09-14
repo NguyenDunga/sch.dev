@@ -10,8 +10,15 @@ import {
 } from '@/core/deck'
 import { resolveFace, scoreHand } from '@/core/scoring'
 import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND } from '@/core/balance'
-import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/types'
-import type { Deck, Face, Hand, HandState, Option, Phase, Score } from '@/core/types'
+import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/helpers'
+import type { Deck, Face, Hand, Option, Phase, Score } from '@/core/types'
+
+/**
+ * Legacy vertical-slice hand state (old WBS): 'ready' = the toss window is
+ * open, 'tossed' = the window is closed. Replaced by the 5-phase `handPhase`
+ * machine (M4, SDD C4) — kept local to the store until then, not a shared type.
+ */
+type HandState = 'ready' | 'tossed'
 
 const SEED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -31,7 +38,7 @@ function leftFace(hand: Hand, slot: number): Option<Face> {
   return isFilled(left) ? some(left.face) : none
 }
 
-export interface RunState {
+export interface RunStoreState {
   seed: string
   phase: Phase
   /** 5 slots; empty slots are `{ kind: 'empty' }` until tossed (drawn from the draw pile). */
@@ -86,7 +93,7 @@ export interface RunState {
 export const createRunStore = () => {
   let rng: Rng = createRng('')
 
-  return create<RunState>()(
+  return create<RunStoreState>()(
     immer((set, get) => {
       /**
        * Start a blind: reset hand/score/hands, reshuffle the whole collection
@@ -96,7 +103,7 @@ export const createRunStore = () => {
       const startBlind = (blindIndex: number) => {
         set({
           phase: 'run',
-          hand: emptyHand(),
+          hand: emptyHand(5),
           tosses: [...ZERO_TOSSES],
           handState: 'ready',
           deck: shuffleCollection(rng, get().deck),
@@ -110,7 +117,7 @@ export const createRunStore = () => {
       return {
         seed: '',
         phase: 'menu',
-        hand: emptyHand(),
+        hand: emptyHand(5),
         tosses: [...ZERO_TOSSES],
         handState: 'ready',
         deck: { drawPile: [], discardPile: [] },
@@ -215,7 +222,7 @@ export const createRunStore = () => {
           const handsLeft = s.handsLeft - 1
           set({
             lastScore: some(result),
-            hand: emptyHand(),
+            hand: emptyHand(5),
             tosses: [...ZERO_TOSSES],
             // An empty draw pile opens the toss window immediately (empty hand).
             handState: s.deck.drawPile.length === 0 ? 'tossed' : 'ready',
@@ -243,7 +250,7 @@ export const createRunStore = () => {
           set({
             seed: '',
             phase: 'menu',
-            hand: emptyHand(),
+            hand: emptyHand(5),
             tosses: [...ZERO_TOSSES],
             handState: 'ready',
             deck: { drawPile: [], discardPile: [] },

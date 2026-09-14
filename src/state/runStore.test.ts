@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { scoreHand } from '@/core/scoring'
 import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND } from '@/core/balance'
-import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/types'
+import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/helpers'
 import type { CoinEffect, FilledHandSlot, Hand } from '@/core/types'
 import { createRunStore } from './runStore'
 
@@ -35,7 +35,7 @@ describe('runStore', () => {
     const s = store.getState()
     expect(s.phase).toBe('run')
     expect(s.seed).toBe('test123')
-    expect(s.hand).toEqual(emptyHand())
+    expect(s.hand).toEqual(emptyHand(5))
     expect(s.handState).toBe('ready')
     expect(s.deck.drawPile).toHaveLength(BASE_DECK_SIZE)
     expect(s.deck.discardPile).toHaveLength(0)
@@ -86,7 +86,7 @@ describe('runStore', () => {
     expect(isSome(s.lastScore)).toBe(true)
     if (isSome(s.lastScore)) expect(s.blindScore).toBe(scoreTotal(s.lastScore.value))
     expect(s.handsLeft).toBe(HANDS_PER_BLIND - 1)
-    expect(s.hand).toEqual(emptyHand())
+    expect(s.hand).toEqual(emptyHand(5))
     expect(s.handState).toBe('ready')
   })
 
@@ -226,7 +226,7 @@ describe('runStore', () => {
     store.setState({ deck: { drawPile: [], discardPile: [] } })
     store.getState().tossSlot(0) // nothing left to draw — window opens immediately
     expect(store.getState().handState).toBe('tossed')
-    expect(store.getState().hand).toEqual(emptyHand())
+    expect(store.getState().hand).toEqual(emptyHand(5))
     store.getState().score()
     expect(store.getState().lastScore).toEqual(some({ kind: 'none', cash: 0 }))
   })
@@ -258,7 +258,7 @@ describe('runStore', () => {
     expect(s.blindIndex).toBe(1)
     expect(s.blindScore).toBe(0)
     expect(s.handsLeft).toBe(HANDS_PER_BLIND)
-    expect(s.hand).toEqual(emptyHand())
+    expect(s.hand).toEqual(emptyHand(5))
     expect(s.handState).toBe('ready')
     // blind start: whole collection reshuffled into the draw pile, discard cleared
     expect(s.deck.drawPile).toHaveLength(BASE_DECK_SIZE)
@@ -364,7 +364,7 @@ describe('runStore', () => {
     const s = store.getState()
     expect(s.phase).toBe('menu')
     expect(s.seed).toBe('')
-    expect(s.hand).toEqual(emptyHand())
+    expect(s.hand).toEqual(emptyHand(5))
     expect(s.deck.drawPile).toHaveLength(0)
     expect(s.handsLeft).toBe(HANDS_PER_BLIND)
   })

@@ -8,14 +8,14 @@ Implement the full type block from **[SDD Data Design → Core Types](../../sdd/
 
 ## Checkpoints
 
-- [ ] 1.1 Primitives/unions: `Face`, `CoinEffectId` (11 ids: 8 + draw1/2/3), `TierId` (6), `BlindKind`, `Phase`, `HandPhase` (5), `BossRuleId` (4), `CharmId` (5), `CharmCategory` (4).
-- [ ] 1.2 `Coin { id: number; effects: CoinEffectId[]; faceParams?: { weight?: Face; doubleSide?: Face } }` — face is **not** on the coin (see 1.3); `faceParams` is per-effect so a merged coin can hold both Weight and Double-Side faces.
-- [ ] 1.3 `Slot { coin; face: Face; echoUsed }`, `Hand = (Coin|null)[]`, `Play = (Slot|null)[]` (length 5; `null` = empty = nothing).
-- [ ] 1.4 `ShopOffer` discriminated union (`charm | coin | handSize`).
-- [ ] 1.5 Record interfaces: `Tier`, `Blind`, `CharmDef`, `CoinDef`, `Deck`, `Score`.
-- [ ] 1.6 `RunState` — every field from the SDD Run State block (seed, phase, round, blindIndex, hand, play, handPhase, handSize, handsLeft, blindScore, cash, charms, deck, shop, lastScore, runScore, won, rngState).
-- [ ] 1.7 All exported from one `types.ts`; no runtime logic, no defaults.
-- [ ] 1.8 `tsc --noEmit` clean.
+- [x] 1.1 Primitives/unions: `Face`, `CoinEffectId` (11 ids: 8 + draw1/2/3), `TierId` (6), `BlindKind`, `Phase`, `HandPhase` (5), `BossRuleId` (4), `CharmId` (5), `CharmCategory` (4).
+- [x] 1.2 `Coin { id: number; effects: CoinEffectId[]; faceParams?: { weight?: Face; doubleSide?: Face } }` — face is **not** on the coin (see 1.3); `faceParams` is per-effect so a merged coin can hold both Weight and Double-Side faces.
+- [x] 1.3 `Slot { coin; face: Face; echoUsed }`, `Hand = (Coin|null)[]`, `Play = (Slot|null)[]` (length 5; `null` = empty = nothing).
+- [x] 1.4 `ShopOffer` discriminated union (`charm | coin | handSize`).
+- [x] 1.5 Record interfaces: `Tier`, `Blind`, `CharmDef`, `CoinDef`, `Deck`, `Score`.
+- [x] 1.6 `RunState` — every field from the SDD Run State block (seed, phase, round, blindIndex, hand, play, handPhase, handSize, handsLeft, blindScore, cash, charms, deck, shop, lastScore, runScore, won, rngState).
+- [x] 1.7 All exported from one `types.ts`; no runtime logic, no defaults.
+- [x] 1.8 `tsc --noEmit` clean.
 
 ## Exit gate
 

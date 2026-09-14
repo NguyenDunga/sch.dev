@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng, type Rng } from './rng'
 import { detectTier, matchTier, resolveFace, scoreHand } from './scoring'
 import { TIERS } from './balance'
-import { filledSlot, none, scoreTotal, some } from './types'
+import { filledSlot, none, scoreTotal, some } from './helpers'
 import type { Coin, CoinEffect, Face, Hand, Option, TierId } from './types'
 
 // All 32 possible full hands pinned to their scoring tier (highest-value-wins).

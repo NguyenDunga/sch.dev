@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import { TIERS } from '@/core/balance'
-import { isSome } from '@/core/types'
+import { isSome } from '@/core/helpers'
 import type { Option, Score } from '@/core/types'
 
 function CountUp({ value, duration = 0.5 }: { value: number; duration?: number }) {
