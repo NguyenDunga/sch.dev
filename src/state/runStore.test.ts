@@ -6,7 +6,11 @@
 
 import { describe, expect, it } from 'vitest'
 import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
-import type { HandPhase, HandSlot } from '@/core/types'
+import { buildCollection, shuffleCollection } from '@/core/deck'
+import { none, some } from '@/core/helpers'
+import { createRng } from '@/core/rng'
+import { resolveFace } from '@/core/scoring'
+import type { Face, HandPhase, HandSlot, Option } from '@/core/types'
 import { createRunStore } from './runStore'
 
 /** The coin id in a slot, or -1 when the slot is empty. */
@@ -438,5 +442,64 @@ describe('M4.5 — confirmPlay', () => {
         expect(['H', 'T']).toContain(slot.face)
       }
     }
+  })
+})
+
+describe('M4.6 — toss (auto on confirmPlay)', () => {
+  it('sets a face on every picked coin; empty play slots stay empty', () => {
+    const store = drawnStore('m4-6a')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(3)
+
+    store.getState().confirmPlay()
+    const st = store.getState()
+
+    expect(st.play[0].kind).toBe('filled')
+    expect(st.play[1].kind).toBe('filled')
+    expect(['H', 'T']).toContain(st.play[0].face)
+    expect(['H', 'T']).toContain(st.play[1].face)
+    expect(st.play.slice(2).every((s) => s.kind === 'empty')).toBe(true)
+  })
+
+  it('resolves faces in play order with exactly one roll per picked coin (golden sequence)', () => {
+    const seed = 'm4-6b'
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(2)
+    store.getState().pickCoin(5)
+    store.getState().confirmPlay()
+    const st = store.getState()
+    const faces = st.play.map((s) => (s.kind === 'filled' ? s.face : null))
+
+    // Reference: the RNG draw-order contract (SDD Data Design) —
+    // 1. blind-start shuffle, 2. per-hand draw (no rng), 4. per-slot toss in play order.
+    const rng = createRng(seed)
+    const deck = shuffleCollection(rng, buildCollection())
+    const hand = deck.drawPile.slice(0, HAND_SIZE)
+    const picked = [hand[0], hand[2], hand[5]]
+    const expected: Face[] = []
+    picked.forEach((coin, i) => {
+      const left: Option<Face> = i > 0 ? some(expected[i - 1]) : none
+      expected.push(resolveFace(rng, coin, left))
+    })
+
+    expect(faces.slice(0, picked.length)).toEqual(expected)
+    // Exactly shuffle + 3 face rolls — hand coins are never resolved in the toss.
+    expect(st.rngState).toEqual(rng.state())
+  })
+
+  it('same seed + same picks → identical faces (determinism)', () => {
+    const run = (seed: string) => {
+      const store = createRunStore()
+      store.getState().startRun(seed)
+      store.getState().drawHand()
+      store.getState().pickCoin(1)
+      store.getState().pickCoin(4)
+      store.getState().confirmPlay()
+      return store.getState().play.map((s) => (s.kind === 'filled' ? s.face : null))
+    }
+    expect(run('m4-6c')).toEqual(run('m4-6c'))
   })
 })
