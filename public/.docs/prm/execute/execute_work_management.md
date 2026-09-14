@@ -92,18 +92,18 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 5.1 `matchTier(play, boss)` reads non-null faces | Not started | | |
-| 5.2 threeSame | Not started | | |
-| 5.3 fourSame | Not started | | |
-| 5.4 jackpot (5-same) | Not started | | |
-| 5.5 fourRow (4-in-a-row) | Not started | | |
-| 5.6 alternating | Not started | | |
-| 5.7 tripleRun | Not started | | |
-| 5.8 Priority resolution | Not started | | |
-| 5.9 ≤2 slots → null | Not started | | |
-| 5.10 Boss rules (noAlternating / noJackpots) | Not started | | |
-| 5.11 One case per tier at min | Not started | | |
-| 5.12 2-coin → null test | Not started | | |
+| 5.1 `matchTier(play, boss)` reads non-null faces | Done | 2026-09-14 | 3 tests: HHT.H → threeSame (empty slots count as nothing); H.H.H → tripleRun (empty slots do not break runs — pattern read on the face sequence); HHHH. → fourRow (not jackpot) |
+| 5.2 threeSame | Done | 2026-09-14 | HHTH → threeSame (smallest count where it can win — at 3 coins HHH is shadowed by tripleRun) |
+| 5.3 fourSame | Done | 2026-09-14 | HHHTH → fourSame (≥4 of a face, non-adjacent; at 4 coins HHHH is shadowed by fourRow) |
+| 5.4 jackpot (5-same) | Done | 2026-09-14 | HHHHH → jackpot |
+| 5.5 fourRow (4-in-a-row) | Done | 2026-09-14 | HHHH → fourRow |
+| 5.6 alternating | Done | 2026-09-14 | HTHTH → alternating (exactly 5 strictly alternating) |
+| 5.7 tripleRun | Done | 2026-09-14 | HHH → tripleRun |
+| 5.8 Priority resolution | Done | 2026-09-14 | 5 tests: HHHHH → jackpot (never fourRow/fourSame/tripleRun); HHHHT → fourRow over fourSame; HTHTH → alternating over threeSame (H 3×); HHHTH → fourSame over tripleRun; HHTT → none |
+| 5.9 ≤2 slots → null | Done | 2026-09-14 | 0/1/2 filled slots (5 shapes) → none |
+| 5.10 Boss rules (noAlternating / noJackpots) | Done | 2026-09-14 | noAlternating: HTHTH → none (explicit override, no fall-through to threeSame); non-alternating unaffected. noJackpots: HHHHH → fourSame (fixed demotion, not fourRow); HHHHT still fourRow. shortFuse/heavyTarget do not affect tiers |
+| 5.11 One case per tier at min | Done | 2026-09-14 | Matrix: tripleRun 3, threeSame 4, fourRow 4, fourSame 5, jackpot 5, alternating 5 (smallest count where each tier can win); plus below-minimum no-match cases (HHT, HHTT → none) |
+| 5.12 2-coin → null test | Done | 2026-09-14 | All 4 two-coin plays (HH/HT/TH/TT) → none |
 
 ### M6 — Scoring Pipeline (`src/core/scoring.ts`) → [wbs](../plan/plan_wbs-m6-scoring.md)
 
