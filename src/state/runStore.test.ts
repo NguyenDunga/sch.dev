@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH, HEAVY_TARGET_BONUS } from '@/core/balance'
+import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -1487,5 +1487,43 @@ describe('M10.7 — miss the target after the hand budget → lose (even with ca
     expect(st.won).toBe(false)
     expect(st.cash).toBe(50) // cash is not a substitute for the target
     expect(st.handsLeft).toBe(0)
+  })
+})
+
+describe('M10.8 — full 12-blind walk (mocked clears) reaches win', () => {
+  it('every blind clears → shop → next blind; blind 11 → runEnd win; no undefined transition', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-8')
+
+    for (let i = 0; i < BLINDS.length; i++) {
+      const blind = BLINDS[i]
+      const target =
+        blind.kind === 'boss' && blind.rule === 'heavyTarget'
+          ? blind.target * HEAVY_TARGET_MULT
+          : blind.target
+      store.setState({ blindIndex: i, round: blind.round, blindScore: target, handsLeft: 1 })
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      store.getState().score()
+
+      const st = store.getState()
+      if (i === BLINDS.length - 1) {
+        expect(st.phase).toBe('runEnd')
+        expect(st.won).toBe(true)
+      } else {
+        // clear → shop with a full offer row → leave → the next blind, fresh
+        expect(st.phase).toBe('shop')
+        expect(st.shop.offers).toHaveLength(SHOP_SLOTS)
+        store.getState().leaveShop()
+        const next = store.getState()
+        expect(next.phase).toBe('run')
+        expect(next.blindIndex).toBe(i + 1)
+        expect(next.round).toBe(BLINDS[i + 1].round)
+        expect(next.blindScore).toBe(0)
+        expect(next.handsLeft).toBeGreaterThan(0)
+      }
+    }
+    expect(store.getState().won).toBe(true)
   })
 })
