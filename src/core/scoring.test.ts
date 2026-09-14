@@ -3,12 +3,12 @@
 // Checkpoints 5.1–5.12 (plan_wbs-m5-tier-matching.md), 6.1–6.10 (plan_wbs-m6-scoring.md).
 
 import { describe, expect, it } from 'vitest'
-import { matchTier, scoreHand } from './scoring'
+import { matchTier, resolveFace, scoreHand } from './scoring'
 import { filledSlot, none, some } from './helpers'
 import { createRng } from './rng'
 import type { Rng } from './rng'
 import { JACKPOT_PAYOUT, TAX_PAYOUT, TIERS } from './balance'
-import type { BossRuleId, CoinEffect, Face, Option, Play, TierId } from './types'
+import type { BossRuleId, Coin, CoinEffect, Face, Option, Play, TierId } from './types'
 
 /** Build a 5-slot play from a string: 'H'/'T' = tossed coin, '.' = empty slot. */
 function play(s: string): Play {
@@ -387,5 +387,100 @@ describe('balance baseline — exhaustive 32-hand EV (plan_balance-baseline.md, 
     }
     expect(expected).toBe(58.4375) // pins the baseline number
     expect(total / 32).toBe(expected)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// M7 — Coin face effects: resolveFace (odds stage → roll → Reverse).
+// Cash (tax/jackpot) is proven in the M6.5/M6.8/M6.10 blocks; draw (M4.4) and
+// echo (M4.7) are store-driven and proven in runStore.test.ts.
+// ---------------------------------------------------------------------------
+
+describe('M7 — coin face effects (resolveFace)', () => {
+  const coin = (effects: CoinEffect[]): Coin => ({ id: 1, effects })
+  const leftH: Option<Face> = some('H')
+  const leftT: Option<Face> = some('T')
+  const noLeft: Option<Face> = none
+
+  it('7.7 weight: 75/25 toward its favoured face', () => {
+    const w = coin([{ kind: 'weight', favored: 'H' }])
+    expect(resolveFace(fakeRng([0.1]), w, noLeft)).toBe('H') // 0.1 < 0.75
+    expect(resolveFace(fakeRng([0.9]), w, noLeft)).toBe('T') // 0.9 ≥ 0.75
+    const wT = coin([{ kind: 'weight', favored: 'T' }])
+    expect(resolveFace(fakeRng([0.1]), wT, noLeft)).toBe('T') // leans T
+    expect(resolveFace(fakeRng([0.9]), wT, noLeft)).toBe('H')
+  })
+
+  it('7.7 doubleSide: 100/0 toward its favoured face', () => {
+    const d = coin([{ kind: 'doubleSide', favored: 'T' }])
+    expect(resolveFace(fakeRng([0.0]), d, noLeft)).toBe('T')
+    expect(resolveFace(fakeRng([0.99]), d, noLeft)).toBe('T')
+  })
+
+  it('7.7 chaos: uniform random 0–100% odds, rolled fresh each flip', () => {
+    const c = coin([{ kind: 'chaos' }])
+    // odds 0.3, roll 0.2 → H; odds 0.3, roll 0.5 → T (two rng draws per flip)
+    expect(resolveFace(fakeRng([0.3, 0.2]), c, noLeft)).toBe('H')
+    expect(resolveFace(fakeRng([0.3, 0.5]), c, noLeft)).toBe('T')
+  })
+
+  it('7.7 magnetic: 75/25 toward the left neighbour face; no bias when left is empty', () => {
+    const m = coin([{ kind: 'magnetic' }])
+    expect(resolveFace(fakeRng([0.1]), m, leftT)).toBe('T') // leans left T
+    expect(resolveFace(fakeRng([0.9]), m, leftT)).toBe('H')
+    expect(resolveFace(fakeRng([0.1]), m, leftH)).toBe('H') // leans left H
+    // left empty → falls through to the next priority (here: base 50/50)
+    expect(resolveFace(fakeRng([0.9]), m, noLeft)).toBe('T') // 0.9 ≥ 0.5
+  })
+
+  it('7.7 reverse: inverts the rolled face (after the odds stage)', () => {
+    const r = coin([{ kind: 'reverse' }])
+    expect(resolveFace(fakeRng([0.1]), r, noLeft)).toBe('T') // H rolled, inverted
+    expect(resolveFace(fakeRng([0.9]), r, noLeft)).toBe('H') // T rolled, inverted
+    // synergy: flips a weight lean
+    const wr = coin([{ kind: 'weight', favored: 'H' }, { kind: 'reverse' }])
+    expect(resolveFace(fakeRng([0.1]), wr, noLeft)).toBe('T') // H lean inverted
+  })
+
+  it('7.7 base (plain coin): 50/50, one rng draw', () => {
+    const plain = coin([])
+    expect(resolveFace(fakeRng([0.1]), plain, noLeft)).toBe('H')
+    expect(resolveFace(fakeRng([0.9]), plain, noLeft)).toBe('T')
+  })
+
+  it('7.2 odds-stage priority: magnetic > doubleSide > chaos > weight > base', () => {
+    // magnetic beats doubleSide (left some)
+    const md = coin([{ kind: 'magnetic' }, { kind: 'doubleSide', favored: 'T' }])
+    expect(resolveFace(fakeRng([0.1]), md, leftH)).toBe('H') // magnetic lean wins
+    // …but with left empty, doubleSide applies
+    expect(resolveFace(fakeRng([0.9]), md, noLeft)).toBe('T')
+    // doubleSide beats chaos + weight (always T, one draw)
+    const dcw = coin([
+      { kind: 'doubleSide', favored: 'T' },
+      { kind: 'chaos' },
+      { kind: 'weight', favored: 'H' },
+    ])
+    expect(resolveFace(fakeRng([0.1]), dcw, noLeft)).toBe('T')
+    // chaos beats weight: two draws (odds 0.5, roll 0.5 → T); weight alone would give H
+    const cw = coin([{ kind: 'chaos' }, { kind: 'weight', favored: 'H' }])
+    expect(resolveFace(fakeRng([0.5, 0.5]), cw, noLeft)).toBe('T')
+    // weight beats base: one draw, 0.6 < 0.75 → H; base would give T
+    const wb = coin([{ kind: 'weight', favored: 'H' }])
+    expect(resolveFace(fakeRng([0.6]), wb, noLeft)).toBe('H')
+  })
+
+  it('7.8 merged coin (two face effects): resolves by priority', () => {
+    const merged = coin([{ kind: 'weight', favored: 'H' }, { kind: 'doubleSide', favored: 'T' }])
+    expect(resolveFace(fakeRng([0.1]), merged, noLeft)).toBe('T') // doubleSide wins
+    expect(resolveFace(fakeRng([0.9]), merged, noLeft)).toBe('T')
+  })
+
+  it('7.8 merged coin (face + cash): face resolves, tax cash still pays in scoreHand', () => {
+    const p = effectPlay([
+      ['H', [{ kind: 'weight', favored: 'H' }, { kind: 'tax' }]],
+      ['T', [{ kind: 'tax' }]],
+    ])
+    const s = scoreHand(p, noBoss, [], fakeRng([0.1, 0.1]))
+    expect(s).toEqual({ kind: 'none', cash: TAX_PAYOUT * 2 })
   })
 })

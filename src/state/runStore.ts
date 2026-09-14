@@ -11,7 +11,7 @@
 // An action fired in the wrong handPhase is a no-op.
 //
 // The RNG lives in a closure (not serializable); `rngState` mirrors it for
-// save/resume (M11). C3: matchTier (M5) + scoreHand (M6) are real; resolveFace is a stub until M7.
+// save/resume (M11). C3: resolveFace (M7), matchTier (M5) + scoreHand (M6) are all real.
 
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
@@ -50,6 +50,8 @@ export interface RunActions {
   echoReflip: (slotIndex: number) => void
   /** buff → score → draw: C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1 (endBlind at 0). */
   score: () => void
+  /** shop: toId gains all of fromId's effects (stack freely, no cap); fromId removed from the collection; free. */
+  mergeCoin: (fromId: number, toId: number) => void
   /** UI convenience (C9 Menu button): back to the menu. */
   toMenu: () => void
 }
@@ -254,6 +256,21 @@ export function createRunStore() {
           if (s.handsLeft <= 0) endBlind(s)
         })
       },
+
+      mergeCoin: (fromId, toId) =>
+        set((st) => {
+          if (st.phase !== 'shop') return
+          if (fromId === toId) return
+          const collection = [...st.deck.drawPile, ...st.deck.discardPile]
+          const from = collection.find((c) => c.id === fromId)
+          const to = collection.find((c) => c.id === toId)
+          if (!from || !to) return
+          // Target gains all of the source's effects (stack freely, no cap);
+          // the source is removed from the collection. Free.
+          to.effects = [...to.effects, ...from.effects]
+          st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== fromId)
+          st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== fromId)
+        }),
 
       toMenu: () =>
         set((st) => {

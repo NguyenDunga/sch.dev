@@ -3,12 +3,26 @@
 // M4 ships the hand-phase state machine (C4) and calls C3 through its final
 // signatures, so the store never changes when the real pipeline lands. Current
 // state:
-//   - resolveFace: STUB (M7) — fair 50/50 roll (real: effect odds stage)
+//   - resolveFace: real (M7) — odds stage → roll → Reverse
 //   - matchTier:   real (M5) — highest-value tier on the tossed coins
 //   - scoreHand:   real (M6) — tier → base → boosters → total + coin cash
 //
 // Source of truth for the real implementations:
 // public/.docs/sdd/software_design_component.md (C3).
+
+// -- Coin effects (v1 core set of 9) --
+// Face (resolveFace: odds stage → roll → Reverse):
+//   weight     75/25 toward its favoured face
+//   doubleSide 100/0 toward its favoured face
+//   chaos      uniform random 0–100% odds on every flip
+//   magnetic   75/25 toward the left neighbour's face (no bias if left is empty)
+//   reverse    inverts the rolled face (applied after the odds stage)
+// Cash (scoreHand step 5, M6):
+//   tax      +$1 per coin in the play, deterministic
+//   jackpot  +$4 per coin in the play, 25% roll via rng
+// Draw / re-flip (store-driven, M4):
+//   draw   discarding the coin redraws N face-down (draw1/2/3)
+//   echo   one re-flip per coin in the buff phase (echoReflip)
 
 import type { Rng } from './rng'
 import { chance } from './rng'
@@ -17,18 +31,59 @@ import {
   JACKPOT_CHANCE,
   JACKPOT_FEVER_MULT,
   JACKPOT_PAYOUT,
+  MAGNETIC_ODDS,
   PLUS_CHIPS_BONUS,
   PLUS_MULT_BONUS,
   TAX_PAYOUT,
   TIERS,
+  WEIGHT_ODDS,
 } from './balance'
-import type { BossRuleId, CharmId, Coin, Face, Option, Play, Score, TierId } from './types'
+import type { BossRuleId, CharmId, Coin, CoinEffectKind, Face, Option, Play, Score, TierId } from './types'
 
-/** STUB (M7): fair 50/50 roll. Real: odds stage (Magnetic > Double-Side > Chaos > Weight > base) → roll → Reverse. */
+const opposite = (f: Face): Face => (f === 'H' ? 'T' : 'H')
+
+/**
+ * M7: face resolution — odds stage → roll → Reverse.
+ *
+ * Odds-stage priority (highest effect present wins):
+ *   magnetic (75% toward the left neighbour's face; no bias if left is empty,
+ *   in which case the next priority applies) > doubleSide (100/0 toward its
+ *   favoured face) > chaos (uniform random 0–100% odds) > weight (75/25 toward
+ *   its favoured face) > base (50/50).
+ * Then the face is rolled against the odds, and Reverse inverts it.
+ * Echo re-flip (buff phase) = the store calls this again.
+ */
 export function resolveFace(rng: Rng, coin: Coin, left: Option<Face>): Face {
-  void coin
-  void left
-  return rng.next() < 0.5 ? 'H' : 'T'
+  const effect = (kind: CoinEffectKind) => coin.effects.find((e) => e.kind === kind)
+
+  // Odds stage — the highest-priority odds effect present sets the odds.
+  let target: Face
+  let p: number
+  const doubleSide = effect('doubleSide')
+  const weight = effect('weight')
+  if (left.some && effect('magnetic')) {
+    target = left.value
+    p = MAGNETIC_ODDS
+  } else if (doubleSide && doubleSide.kind === 'doubleSide') {
+    target = doubleSide.favored
+    p = 1
+  } else if (effect('chaos')) {
+    target = 'H'
+    p = rng.next() // uniform 0–100% odds, rolled fresh each flip
+  } else if (weight && weight.kind === 'weight') {
+    target = weight.favored
+    p = WEIGHT_ODDS
+  } else {
+    target = 'H'
+    p = 0.5
+  }
+
+  // Roll
+  let face = rng.next() < p ? target : opposite(target)
+
+  // Reverse inverts the result
+  if (effect('reverse')) face = opposite(face)
+  return face
 }
 
 /**

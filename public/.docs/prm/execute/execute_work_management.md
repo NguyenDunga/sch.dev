@@ -125,15 +125,15 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 7.1 List the 9 (comment block) | Not started | | |
-| 7.2 Face effects (odds priority) | Not started | | |
-| 7.3 Cash effects (Tax/Jackpot) | Not started | | |
-| 7.4 Draw-enchant (store discard) | Not started | | |
-| 7.5 Echo (store echoReflip) | Not started | | |
-| 7.6 Merge stacks effects | Not started | | |
-| 7.7 9 isolated effect tests | Not started | | |
-| 7.8 Merged-coin test | Not started | | |
-| 7.9 No out-of-scope effects | Not started | | |
+| 7.1 List the 9 (comment block) | Done | 2026-09-14 | Comment block at the top of scoring.ts listing all 9 effects grouped face (weight/doubleSide/chaos/magnetic/reverse) / cash (tax/jackpot) / draw+re-flip (draw/echo) |
+| 7.2 Face effects (odds priority) | Done | 2026-09-14 | resolveFace: magnetic (75% toward left face; falls through to next priority when left is empty) > doubleSide (100/0) > chaos (uniform 0–100% odds, 2 rng draws) > weight (75/25) > base (50/50); roll; Reverse inverts after the odds stage. Favoured face read from the effect variant (post-faceParams types) |
+| 7.3 Cash effects (Tax/Jackpot) | Done | 2026-09-14 | Already landed in M6 (scoreHand step 5): Tax +$1 deterministic, Jackpot +$4 on 25% rng roll — proven by M6.5/M6.8/M6.10 tests |
+| 7.4 Draw-enchant (store discard) | Done | 2026-09-14 | Already landed in M4.4: discard on a draw-N coin redraws N face-down (discarded slot first) — proven by M4.4 tests |
+| 7.5 Echo (store echoReflip) | Done | 2026-09-14 | Already landed in M4.7: one re-flip per Echo coin re-runs resolveFace, echoUsed gate — proven by M4.7 tests (now exercising the real M7 resolution) |
+| 7.6 Merge stacks effects | Done | 2026-09-14 | store mergeCoin(fromId, toId): shop-phase action; toId gains all of fromId's effects (stack, no cap), fromId removed from the collection (either pile), free. 4 tests: basic merge + free, two face effects stack, source in discard pile, no-ops (wrong phase / unknown id / self-merge) |
+| 7.7 9 isolated effect tests | Done | 2026-09-14 | Isolated tests: weight, doubleSide, chaos, magnetic, reverse, base (scoring.test.ts M7 block); tax, jackpot (M6.5/M6.8); echo, draw (M4.7/M4.4) |
+| 7.8 Merged-coin test | Done | 2026-09-14 | weight+doubleSide merged coin resolves by priority (doubleSide wins); weight+tax merged coin resolves its face and still pays tax cash in scoreHand; store-level two-face-effect stack test |
+| 7.9 No out-of-scope effects | Done | 2026-09-14 | grep of src/ for the 16 future effect names (Shapeshift…Insurance): zero matches (one "mirrors" comment false-positive) |
 
 ### M8 — Charms (`balance.ts` + `scoring.ts` + store) → [wbs](../plan/plan_wbs-m8-charms.md)
 

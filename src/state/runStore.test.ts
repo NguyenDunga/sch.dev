@@ -811,3 +811,82 @@ describe('M4.11 — post-score state', () => {
     expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE)
   })
 })
+
+describe('M7.6 — mergeCoin (shop action)', () => {
+  /** A store in the shop phase with two injected effect coins in the collection. */
+  function shopStore() {
+    const store = createRunStore()
+    store.getState().startRun('m7-6')
+    store.setState({ phase: 'shop' })
+    store.setState((s) => ({
+      deck: {
+        drawPile: [
+          { id: 900, effects: [{ kind: 'weight', favored: 'H' as Face }] },
+          { id: 901, effects: [] },
+          ...s.deck.drawPile,
+        ],
+        discardPile: s.deck.discardPile,
+      },
+    }))
+    return store
+  }
+
+  it('target gains all of the source effects; source removed from the collection; free', () => {
+    const store = shopStore()
+    const cashBefore = store.getState().cash
+    store.getState().mergeCoin(900, 901)
+    const st = store.getState()
+
+    const target = [...st.deck.drawPile, ...st.deck.discardPile].find((c) => c.id === 901)
+    expect(target?.effects).toEqual([{ kind: 'weight', favored: 'H' }])
+    expect([...st.deck.drawPile, ...st.deck.discardPile].some((c) => c.id === 900)).toBe(false)
+    expect(st.cash).toBe(cashBefore) // free
+  })
+
+  it('effects stack (no cap): a coin with a face effect gains a second face effect', () => {
+    const store = shopStore()
+    store.setState((s) => ({
+      deck: {
+        drawPile: s.deck.drawPile.map((c) =>
+          c.id === 901 ? { id: 901, effects: [{ kind: 'doubleSide', favored: 'T' as Face }] } : c,
+        ),
+        discardPile: s.deck.discardPile,
+      },
+    }))
+    store.getState().mergeCoin(900, 901)
+    const target = store.getState().deck.drawPile.find((c) => c.id === 901)
+    expect(target?.effects).toEqual([
+      { kind: 'doubleSide', favored: 'T' },
+      { kind: 'weight', favored: 'H' },
+    ])
+  })
+
+  it('works when the source sits in the discard pile', () => {
+    const store = shopStore()
+    store.setState((s) => ({
+      deck: {
+        drawPile: s.deck.drawPile.filter((c) => c.id !== 900),
+        discardPile: [{ id: 900, effects: [{ kind: 'tax' }] }, ...s.deck.discardPile],
+      },
+    }))
+    store.getState().mergeCoin(900, 901)
+    const st = store.getState()
+    expect(st.deck.discardPile.some((c) => c.id === 900)).toBe(false)
+    expect(st.deck.drawPile.find((c) => c.id === 901)?.effects).toEqual([{ kind: 'tax' }])
+  })
+
+  it('no-ops: wrong phase, unknown id, self-merge', () => {
+    const store = shopStore()
+    const before = store.getState()
+
+    store.setState({ phase: 'run' })
+    store.getState().mergeCoin(900, 901)
+    expect(store.getState().deck).toEqual(before.deck) // wrong phase
+
+    store.setState({ phase: 'shop' })
+    store.getState().mergeCoin(4242, 901)
+    store.getState().mergeCoin(900, 4242)
+    store.getState().mergeCoin(900, 900)
+    expect(store.getState().deck).toEqual(before.deck) // unknown ids + self-merge
+  })
+})
