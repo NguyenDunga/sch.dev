@@ -18,7 +18,7 @@ export function returnHandToPile(deck: Deck, hand: Hand): Deck // after scoring:
 
 ## Checkpoints
 
-- [ ] 3.1 `buildCollection()` → `BASE_DECK_SIZE` plain coins, distinct ids, `effects: []`.
+- [x] 3.1 `buildCollection()` → `BASE_DECK_SIZE` plain coins, distinct ids, `effects: []`.
 - [ ] 3.2 `shuffleCollection(rng, deck)` — merges drawPile+discardPile, Fisher–Yates with `rng`, clears discard; seed-deterministic order; same multiset of ids.
 - [ ] 3.3 `drawFromDeck(deck)` — pops one coin (no rng); returns `null` when the draw pile is empty (hand shrinks — no placeholder coin).
 - [ ] 3.4 `discardToPile` / `returnHandToPile` — append to discard; inputs unmutated.

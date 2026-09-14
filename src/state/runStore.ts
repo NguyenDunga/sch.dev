@@ -9,7 +9,7 @@ import {
   shuffleCollection,
 } from '@/core/deck'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND } from '@/core/balance'
+import { BLINDS, HANDS_PER_BLIND } from '@/core/balance'
 import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/helpers'
 import type { Deck, Face, Hand, Option, Phase, Score } from '@/core/types'
 
@@ -121,7 +121,7 @@ export const createRunStore = () => {
         newRun: (seed) => {
           const s = seed ?? generateSeed()
           rng = createRng(s)
-          set({ seed: s, deck: buildCollection(BASE_DECK_SIZE), won: false })
+          set({ seed: s, deck: buildCollection(), won: false })
           startBlind(0)
         },
 
