@@ -80,6 +80,14 @@ describe('shuffleCollection', () => {
     shuffleCollection(createRng('abc'), split)
     expect(split).toEqual(before)
   })
+
+  it('blind start: clears the discard pile and the draw pile holds the full collection', () => {
+    const deck = smallDeck(6)
+    const split: Deck = { drawPile: deck.drawPile.slice(4), discardPile: deck.drawPile.slice(0, 4) }
+    const shuffled = shuffleCollection(createRng('abc'), split)
+    expect(shuffled.discardPile).toHaveLength(0)
+    expect(shuffled.drawPile).toHaveLength(6)
+  })
 })
 
 describe('finite pile within a blind (no mid-blind reshuffle)', () => {

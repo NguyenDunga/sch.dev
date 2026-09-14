@@ -70,7 +70,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | 3.4 `discardToPile` / `returnHandToPile` | Done | 2026-09-14 | 5 tests: append (draw pile untouched), hand order + empty slots count as nothing, append to existing discards, deck + hand unmutated |
 | 3.5 Empty-pile → none test | Done | 2026-09-14 | `drawFromDeck` on an empty draw pile returns `none`, no throw |
 | 3.6 No mid-blind reshuffle test | Done | 2026-09-14 | Drain the 5-coin pile; hand + discards grow to 5, draw pile stays empty, further draws yield `none` |
-| 3.7 Shuffle clears discard test | Not started | | |
+| 3.7 Shuffle clears discard test | Done | 2026-09-14 | Asymmetric 2+4 split: discard cleared, drawPile length = collection size (6) |
 
 ### M4 — Hand Phase State Machine (`src/state/runStore.ts`) → [wbs](../plan/plan_wbs-m4-hand-phase.md)
 

@@ -26,7 +26,7 @@ export function returnHandToPile(deck: Deck, hand: Hand): Deck // after scoring:
 - [x] 3.4 `discardToPile` / `returnHandToPile` — append to discard; inputs unmutated.
 - [x] 3.5 Test: drawing from an empty pile returns `none`, no throw.
 - [x] 3.6 Test: no function moves discard→draw within a blind (drain the pile; it stays empty; discard grows).
-- [ ] 3.7 Test: `shuffleCollection` clears the discard pile and the resulting drawPile length equals the collection size.
+- [x] 3.7 Test: `shuffleCollection` clears the discard pile and the resulting drawPile length equals the collection size.
 
 ## Exit gate
 
