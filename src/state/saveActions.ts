@@ -10,7 +10,7 @@ import { shuffleCollection } from '@/core/deck'
 import { emptyHand, none, some } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { Option, RunState } from '@/core/types'
-import type { Draft, GetFn, SetFn } from './storeTypes'
+import type { GetFn, SetFn } from './storeTypes'
 import { generateOffers } from './shopActions'
 
 const SAVE_KEY = 'fifty-fifty-run'

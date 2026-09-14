@@ -23,7 +23,6 @@ import {
   HEAVY_TARGET_MULT,
   PAYDAY_BONUS,
   PLAY_SIZE,
-  SHORT_FUSE_HANDS,
   START_CASH,
 } from '@/core/balance'
 import {
@@ -37,7 +36,7 @@ import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/
 import { createRng, generateSeed } from '@/core/rng'
 import type { Rng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import type { BossRuleId, Face, Option, RunState } from '@/core/types'
+import type { BossRuleId, Face, Option } from '@/core/types'
 import type { Draft, GetFn, SetFn } from './storeTypes'
 import { generateOffers } from './shopActions'
 
