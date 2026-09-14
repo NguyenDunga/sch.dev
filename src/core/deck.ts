@@ -1,5 +1,6 @@
 import type { Rng } from './rng'
-import type { Coin, Deck, Slot } from './types'
+import { isFilled, none, some } from './types'
+import type { Coin, Deck, Hand, Option } from './types'
 
 /**
  * C11 — coin collection (Balatro-style, SDD C11, 2026-09-13 Q&A round 2).
@@ -12,7 +13,7 @@ import type { Coin, Deck, Slot } from './types'
 /** Fresh run: base collection of plain 50/50 coins (ids 0..size-1). */
 export function buildCollection(size: number): Deck {
   return {
-    drawPile: Array.from({ length: size }, (_, i) => ({ id: i, effects: [] as Coin['effects'] })),
+    drawPile: Array.from({ length: size }, (_, i): Coin => ({ id: i, effects: [] })),
     discardPile: [],
   }
 }
@@ -32,11 +33,12 @@ export function shuffleCollection(rng: Rng, deck: Deck): Deck {
 }
 
 /**
- * Pop the next coin from the draw pile (no rng — the shuffle supplies the
- * randomness). null when the pile is empty (the hand shrinks).
+ * Peek the next coin from the draw pile (no rng — the shuffle supplies the
+ * randomness). `none` when the pile is empty (the hand shrinks). The caller
+ * pops the pile (`drawPile.slice(1)`) after taking the coin.
  */
-export function drawFromDeck(deck: Deck): Coin | null {
-  return deck.drawPile.length > 0 ? deck.drawPile[0] : null
+export function drawFromDeck(deck: Deck): Option<Coin> {
+  return deck.drawPile.length > 0 ? some(deck.drawPile[0]) : none
 }
 
 /** Move a coin to the discard pile — gone for the rest of the blind. */
@@ -49,7 +51,7 @@ export function discardToPile(deck: Deck, coin: Coin): Deck {
  * blind, no circulation; recycled into the draw pile at the next blind start).
  * Empty slots count as nothing.
  */
-export function returnHandToPile(deck: Deck, hand: (Slot | null)[]): Deck {
-  const coins = hand.filter((s): s is Slot => s !== null).map((s) => s.coin)
+export function returnHandToPile(deck: Deck, hand: Hand): Deck {
+  const coins = hand.filter(isFilled).map((s) => s.coin)
   return { ...deck, discardPile: [...deck.discardPile, ...coins] }
 }

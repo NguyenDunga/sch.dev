@@ -47,12 +47,12 @@ describe('BLINDS', () => {
     expect(BLINDS.map((b) => b.reward)).toEqual([4, 6, 10, 4, 6, 10, 4, 6, 10, 4, 6, 10])
   })
 
-  it('one boss rule per round, on the boss blind', () => {
-    expect(BLINDS.map((b) => b.boss)).toEqual([
-      undefined, undefined, 'noAlternating',
-      undefined, undefined, 'shortFuse',
-      undefined, undefined, 'noJackpots',
-      undefined, undefined, 'heavyTarget',
+  it('one boss rule per round, carried inside the boss variant (no rule on small/big)', () => {
+    expect(BLINDS.map((b) => (b.kind === 'boss' ? b.rule : null))).toEqual([
+      null, null, 'noAlternating',
+      null, null, 'shortFuse',
+      null, null, 'noJackpots',
+      null, null, 'heavyTarget',
     ])
   })
 })

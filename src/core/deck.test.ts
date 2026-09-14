@@ -8,6 +8,8 @@ import {
 } from './deck'
 import { createRng } from './rng'
 import { BASE_DECK_SIZE } from './balance'
+import { filledSlot, none, some } from './types'
+import type { Hand } from './types'
 
 describe('buildCollection', () => {
   it('builds the base collection of plain 50/50 coins with unique ids', () => {
@@ -16,7 +18,6 @@ describe('buildCollection', () => {
     expect(deck.discardPile).toHaveLength(0)
     for (const coin of deck.drawPile) {
       expect(coin.effects).toEqual([])
-      expect(coin.param).toBeUndefined()
     }
     expect(new Set(deck.drawPile.map((c) => c.id)).size).toBe(BASE_DECK_SIZE)
   })
@@ -54,17 +55,16 @@ describe('shuffleCollection', () => {
 })
 
 describe('drawFromDeck', () => {
-  it('pops coins from the draw pile in order (no rng)', () => {
+  it('peeks coins from the draw pile in order (no rng)', () => {
     const deck = buildCollection(3)
-    const first = drawFromDeck(deck)
-    expect(first).toBe(deck.drawPile[0])
-    expect(drawFromDeck({ ...deck, drawPile: deck.drawPile.slice(1) })).toBe(
-      deck.drawPile[1],
+    expect(drawFromDeck(deck)).toEqual(some(deck.drawPile[0]))
+    expect(drawFromDeck({ ...deck, drawPile: deck.drawPile.slice(1) })).toEqual(
+      some(deck.drawPile[1]),
     )
   })
 
-  it('returns null when the pile is empty (the hand shrinks)', () => {
-    expect(drawFromDeck({ drawPile: [], discardPile: [] })).toBeNull()
+  it('returns none when the pile is empty (the hand shrinks)', () => {
+    expect(drawFromDeck({ drawPile: [], discardPile: [] })).toEqual(none)
   })
 })
 
@@ -82,12 +82,12 @@ describe('discardToPile', () => {
 describe('returnHandToPile', () => {
   it('moves all hand coins to the discard pile; empty slots count as nothing', () => {
     const deck = buildCollection(5)
-    const hand = [
-      { coin: deck.drawPile[0], face: 'H' as const, echoUsed: false },
-      null,
-      { coin: deck.drawPile[1], face: 'T' as const, echoUsed: false },
-      null,
-      null,
+    const hand: Hand = [
+      filledSlot(deck.drawPile[0], 'H'),
+      { kind: 'empty' },
+      filledSlot(deck.drawPile[1], 'T'),
+      { kind: 'empty' },
+      { kind: 'empty' },
     ]
     const next = returnHandToPile(deck, hand)
     expect(next.discardPile).toEqual([deck.drawPile[0], deck.drawPile[1]])
@@ -98,12 +98,12 @@ describe('returnHandToPile', () => {
   it('keeps existing discards (hand coins are appended)', () => {
     const deck = buildCollection(5)
     const discarded = discardToPile(deck, deck.drawPile[0])
-    const hand = [
-      { coin: deck.drawPile[1], face: 'H' as const, echoUsed: false },
-      null,
-      null,
-      null,
-      null,
+    const hand: Hand = [
+      filledSlot(deck.drawPile[1], 'H'),
+      { kind: 'empty' },
+      { kind: 'empty' },
+      { kind: 'empty' },
+      { kind: 'empty' },
     ]
     const next = returnHandToPile(discarded, hand)
     expect(next.discardPile).toEqual([deck.drawPile[0], deck.drawPile[1]])

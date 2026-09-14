@@ -4,15 +4,37 @@ Part of the [Software Architecture](software_design_architechture.md). Balance v
 
 ## Core Types (`src/core/types.ts`)
 
+**No-null policy (Rust mentality, 2026-09-14):** the model carries no `null` and no optional-as-absence field. Absence is an explicit `Option<T>`; every "either/or" is a tagged union, so illegal states (a Weight coin with no favoured face, a boss blind with no rule, a scored hand with a null tier) are unrepresentable.
+
 ```ts
 type Face = 'H' | 'T'
+
+// Rust's Option<T> — used instead of `null` for "maybe" values (neighbours, draws, last score).
+type Option<T> = { some: true; value: T } | { some: false }
+
+type DrawCount = 1 | 2 | 3
+
+// Coin effects as a tagged union: each variant carries exactly its own data. A Weight/Double-Side
+// coin always has a favoured face; a Chaos coin can never carry one. (Replaces the old
+// `effects: CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
+type CoinEffect =
+  | { kind: 'weight'; favored: Face }
+  | { kind: 'doubleSide'; favored: Face }
+  | { kind: 'chaos' } | { kind: 'echo' } | { kind: 'magnetic' } | { kind: 'reverse' }
+  | { kind: 'tax' } | { kind: 'jackpot' }
+  | { kind: 'draw'; count: DrawCount }
+type CoinEffectKind = CoinEffect['kind']
+
+// Shop catalog id (Draw sold as 3 tiers). At purchase a Draw-N id → { kind: 'draw'; count: N },
+// and Weight/Double-Side roll their favoured face into the effect variant.
 type CoinEffectId = 'weight' | 'doubleSide' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
-interface Coin { id: number; effects: CoinEffectId[]; faceParams?: { weight?: Face; doubleSide?: Face } }
-  // faceParams: rolled favored face per face-fixing effect (set on purchase). Kept per-effect so a merged coin
-  //             holding both Weight and Double-Side can carry each one's face independently.
-interface Slot { coin: Coin; face: Face; echoUsed: boolean }         // one tossed coin in a play slot
-type Hand = (Coin | null)[]                                          // length = handSize (base 8); face-down coins drawn this hand
-type Play = (Slot | null)[]                                          // length 5; the picked coins (1–5), tossed in the toss phase; null = empty slot (counts as nothing — no wilds)
+
+interface Coin { id: number; effects: CoinEffect[] }                   // effects carry their own params — no shared optional
+
+interface FilledHandSlot { kind: 'filled'; coin: Coin; face: Face; echoUsed: boolean }  // one tossed coin
+type HandSlot = { kind: 'empty' } | FilledHandSlot                     // an empty slot is an explicit variant, never null
+type Hand = HandSlot[]                                                 // length = handSize (base 8); coins drawn this hand
+type Play = HandSlot[]                                                 // length 5; the picked coins (1–5), tossed in the toss phase; empty slot counts as nothing (no wilds)
 type TierId = 'jackpot' | 'fourRow' | 'alternating' | 'fourSame' | 'tripleRun' | 'threeSame'
 type BlindKind = 'small' | 'big' | 'boss'
 type Phase = 'menu' | 'run' | 'shop' | 'runEnd'
@@ -23,11 +45,22 @@ type CharmCategory = 'flip' | 'scoring' | 'pattern' | 'economy'
 type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: CoinEffectId } | { kind: 'handSize' }
 
 interface Tier { id: TierId; name: string; chips: number; mult: number }
-interface Blind { round: number; kind: BlindKind; target: number; reward: number; boss?: BossRuleId }
+
+// The boss rule lives inside the 'boss' variant — only a boss blind has a rule, and it always has one.
+// No optional `boss?` field dangling on small/big blinds.
+type Blind = { round: number; target: number; reward: number } & (
+  | { kind: 'small' } | { kind: 'big' } | { kind: 'boss'; rule: BossRuleId }
+)
+
 interface CharmDef { id: CharmId; name: string; category: CharmCategory; price: number }
 interface CoinDef { effect: CoinEffectId; name: string; price: number }   // 11 catalog entries = 8 single-effect coins + Draw-1/2/3 (9 effect types; Draw has 3 tiers)
 interface Deck { drawPile: Coin[]; discardPile: Coin[] }                  // persistent collection == drawPile + discardPile (+ any coins currently in hand/play mid-blind)
-interface Score { tier: TierId; chips: number; mult: number; total: number; cash: number }  // cash: coin cash effects (Tax/Jackpot)
+
+// A hand's score: either no tier matched (scores 0, but may still earn coin cash) or a scored tier.
+// No `tier: null` sentinel — a scored hand always has its numbers, a no-tier hand never carries stray ones.
+type Score =
+  | { kind: 'none'; cash: number }
+  | { kind: 'scored'; tier: TierId; chips: number; mult: number; total: number; cash: number }  // cash: coin cash effects (Tax/Jackpot)
 ```
 
 ## Run State (zustand store shape)
@@ -38,7 +71,7 @@ interface RunState {
   phase: Phase
   round: number              // 1..4
   blindIndex: number         // 0..11 into the 12-blind table
-  hand: Hand                 // handSize slots (base 8); face-down; null = empty (nothing)
+  hand: Hand                 // handSize slots (base 8); empty slots are { kind: 'empty' } (nothing), never null
   play: Play                 // 5 slots; the picked coins, tossed in the toss phase
   handPhase: HandPhase       // draw → play → toss → buff → score
   handSize: number           // 8 base; +1 per shop hand-size upgrade
@@ -48,7 +81,7 @@ interface RunState {
   charms: CharmId[]          // owned charms, in charm-bar (scoring) order
   deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
   shop: { offers: ShopOffer[]; rerollUsed: boolean }
-  lastScore: Score | null    // for the UI ticker
+  lastScore: Option<Score>   // for the UI ticker; none before the first hand is scored
   runScore: number           // total score across the run (summary)
   won: boolean               // set when blind 12 is cleared
   rngState: number[]         // serialized RNG state (xoroshiro128+: 4 × int32)

@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import { TIERS } from '@/core/balance'
-import type { Score } from '@/core/types'
+import { isSome } from '@/core/types'
+import type { Option, Score } from '@/core/types'
 
 function CountUp({ value, duration = 0.5 }: { value: number; duration?: number }) {
   const mv = useMotionValue(0)
@@ -14,8 +15,8 @@ function CountUp({ value, duration = 0.5 }: { value: number; duration?: number }
 }
 
 /** chips × mult = total for the last hand, counting up on each score. */
-export function ScoreTicker({ score }: { score: Score | null }) {
-  if (!score) {
+export function ScoreTicker({ score }: { score: Option<Score> }) {
+  if (!isSome(score)) {
     return (
       <div className="score-ticker" aria-live="polite">
         <span className="score-ticker-tier">—</span>
@@ -24,18 +25,23 @@ export function ScoreTicker({ score }: { score: Score | null }) {
     )
   }
 
-  const tier = score.tier ? TIERS.find((t) => t.id === score.tier)! : null
+  const result = score.value
+  const scored = result.kind === 'scored'
+  const tierName = scored ? TIERS.find((t) => t.id === result.tier)!.name : 'No coins'
+  const chips = scored ? result.chips : 0
+  const mult = scored ? result.mult : 0
+  const total = scored ? result.total : 0
   return (
     <div className="score-ticker" aria-live="polite">
-      <span className="score-ticker-tier">{tier ? tier.name : 'No coins'}</span>
-      <span className={`score-ticker-math${score.total === 0 ? ' score-ticker--idle' : ''}`}>
-        <CountUp value={score.chips} /> × <CountUp value={score.mult} /> ={' '}
+      <span className="score-ticker-tier">{tierName}</span>
+      <span className={`score-ticker-math${total === 0 ? ' score-ticker--idle' : ''}`}>
+        <CountUp value={chips} /> × <CountUp value={mult} /> ={' '}
         <span className="score-ticker-total">
-          <CountUp value={score.total} />
+          <CountUp value={total} />
         </span>
       </span>
-      {score.cash > 0 && (
-        <span className="score-ticker-cash">+${score.cash} cash</span>
+      {result.cash > 0 && (
+        <span className="score-ticker-cash">+${result.cash} cash</span>
       )}
     </div>
   )

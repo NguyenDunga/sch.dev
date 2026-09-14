@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import type { CoinEffectId, Face } from '@/core/types'
+import { isFilled } from '@/core/types'
+import type { CoinEffect, CoinEffectKind, HandSlot } from '@/core/types'
 
 /** One coin flip duration (ms). */
 const COIN_FLIP_MS = 550
@@ -8,7 +9,7 @@ const COIN_FLIP_MS = 550
 const COIN_STAGGER_MS = 40
 
 /** Short badge labels for coin effects (shown under the coin). */
-const EFFECT_LABELS: Record<CoinEffectId, string> = {
+const EFFECT_LABELS: Record<CoinEffectKind, string> = {
   weight: 'W',
   doubleSide: 'DS',
   chaos: 'C',
@@ -17,9 +18,12 @@ const EFFECT_LABELS: Record<CoinEffectId, string> = {
   reverse: 'R',
   tax: '$',
   jackpot: 'J',
-  draw1: '↻1',
-  draw2: '↻2',
-  draw3: '↻3',
+  draw: '↻',
+}
+
+/** Badge text for one effect (Draw shows its tier). */
+function effectLabel(effect: CoinEffect): string {
+  return effect.kind === 'draw' ? `↻${effect.count}` : EFFECT_LABELS[effect.kind]
 }
 
 /**
@@ -33,17 +37,15 @@ const EFFECT_LABELS: Record<CoinEffectId, string> = {
  * tossed (discard the coin, or re-flip it once when it is an unused Echo).
  */
 export function Coin({
-  face,
-  effects,
+  slot,
   echoAvailable,
   tosses,
   index,
   tappable,
   onTap,
 }: {
-  face: Face | null
-  /** The coin's permanent effects (empty for plain coins). */
-  effects: CoinEffectId[]
+  /** The hand slot this coin renders: empty (idle) or filled with a tossed coin. */
+  slot: HandSlot
   /** true when this Echo coin may still be re-flipped this hand. */
   echoAvailable: boolean
   /** How many times this slot has been tossed (initial toss + re-flips + redraws). */
@@ -63,18 +65,7 @@ export function Coin({
     prevTosses.current = tosses
   }, [tosses])
 
-  const badges =
-    effects.length > 0 ? (
-      <span className="coin-badges">
-        {effects.map((e) => (
-          <span key={e} className="coin-badge" title={e}>
-            {EFFECT_LABELS[e]}
-          </span>
-        ))}
-      </span>
-    ) : null
-
-  if (face === null) {
+  if (!isFilled(slot)) {
     if (!tappable) return <div className="coin coin--idle" aria-hidden />
     return (
       <button
@@ -85,6 +76,18 @@ export function Coin({
       />
     )
   }
+
+  const { face, coin } = slot
+  const badges =
+    coin.effects.length > 0 ? (
+      <span className="coin-badges">
+        {coin.effects.map((e) => (
+          <span key={e.kind} className="coin-badge" title={e.kind}>
+            {effectLabel(e)}
+          </span>
+        ))}
+      </span>
+    ) : null
 
   const target = spins * 360 + (face === 'T' ? 180 : 0)
   const inner = (
@@ -102,8 +105,7 @@ export function Coin({
       <div className="coin-face coin-face--tails">T</div>
     </motion.div>
   )
-  const label =
-    face === 'H' ? 'heads' : 'tails'
+  const label = face === 'H' ? 'heads' : 'tails'
   const action = echoAvailable ? 're-flip' : 'discard'
 
   if (!tappable) {

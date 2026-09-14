@@ -1,22 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { scoreHand } from '@/core/scoring'
 import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND } from '@/core/balance'
-import type { Coin, Slot } from '@/core/types'
+import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/types'
+import type { CoinEffect, FilledHandSlot, Hand } from '@/core/types'
 import { createRunStore } from './runStore'
 
 type Store = ReturnType<typeof createRunStore>
 
-const plain = (id: number, face: 'H' | 'T'): Slot => ({
-  coin: { id, effects: [] },
-  face,
-  echoUsed: false,
-})
+/** An empty hand slot literal, for equality assertions. */
+const E = { kind: 'empty' } as const
 
-const special = (id: number, effects: Coin['effects'], face: 'H' | 'T'): Slot => ({
-  coin: { id, effects },
-  face,
-  echoUsed: false,
-})
+const plain = (id: number, face: 'H' | 'T'): FilledHandSlot => filledSlot({ id, effects: [] }, face)
+
+const special = (id: number, effects: CoinEffect[], face: 'H' | 'T'): FilledHandSlot =>
+  filledSlot({ id, effects }, face)
+
+/** Read a slot that must be filled (throws on an empty slot). */
+const at = (hand: Hand, i: number): FilledHandSlot => {
+  const slot = hand[i]
+  if (!isFilled(slot)) throw new Error(`slot ${i} is empty`)
+  return slot
+}
 
 /** Toss one full hand (or as many coins as the draw pile allows). */
 function playHand(store: Store) {
@@ -31,14 +35,14 @@ describe('runStore', () => {
     const s = store.getState()
     expect(s.phase).toBe('run')
     expect(s.seed).toBe('test123')
-    expect(s.hand).toEqual([null, null, null, null, null])
+    expect(s.hand).toEqual(emptyHand())
     expect(s.handState).toBe('ready')
     expect(s.deck.drawPile).toHaveLength(BASE_DECK_SIZE)
     expect(s.deck.discardPile).toHaveLength(0)
     expect(s.blindIndex).toBe(0)
     expect(s.handsLeft).toBe(HANDS_PER_BLIND)
     expect(s.blindScore).toBe(0)
-    expect(s.lastScore).toBeNull()
+    expect(s.lastScore).toEqual(none)
     expect(s.won).toBe(false)
   })
 
@@ -54,9 +58,9 @@ describe('runStore', () => {
     const topCoin = store.getState().deck.drawPile[0]
     store.getState().tossSlot(0)
     const s = store.getState()
-    expect(s.hand[0]?.coin.id).toBe(topCoin.id)
-    expect(s.hand[0]?.face).toBeOneOf(['H', 'T'])
-    expect(s.hand.slice(1)).toEqual([null, null, null, null])
+    expect(at(s.hand, 0).coin.id).toBe(topCoin.id)
+    expect(at(s.hand, 0).face).toBeOneOf(['H', 'T'])
+    expect(s.hand.slice(1)).toEqual([E, E, E, E])
     expect(s.handState).toBe('ready')
     expect(s.deck.drawPile).toHaveLength(BASE_DECK_SIZE - 1)
     expect(s.tosses[0]).toBe(1)
@@ -78,83 +82,66 @@ describe('runStore', () => {
     const hand = store.getState().hand
     store.getState().score()
     const s = store.getState()
-    expect(s.lastScore).toEqual(scoreHand(hand, { next: () => 0, state: () => [] }))
-    expect(s.blindScore).toBe(s.lastScore!.total)
+    expect(s.lastScore).toEqual(some(scoreHand(hand, { next: () => 0, state: () => [] })))
+    expect(isSome(s.lastScore)).toBe(true)
+    if (isSome(s.lastScore)) expect(s.blindScore).toBe(scoreTotal(s.lastScore.value))
     expect(s.handsLeft).toBe(HANDS_PER_BLIND - 1)
-    expect(s.hand).toEqual([null, null, null, null, null])
+    expect(s.hand).toEqual(emptyHand())
     expect(s.handState).toBe('ready')
   })
 
   it('discard sends a plain coin to the discard pile (gone for the blind)', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [
-      plain(100, 'H'),
-      plain(101, 'T'),
-      null,
-      null,
-      null,
-    ]
+    const hand: Hand = [plain(100, 'H'), plain(101, 'T'), E, E, E]
     store.setState({ hand, handState: 'tossed' })
     const deckBefore = store.getState().deck
     store.getState().discard(0)
     const s = store.getState()
-    expect(s.hand[0]).toBeNull()
+    expect(s.hand[0]).toEqual(E)
     expect(s.hand[1]).toEqual(plain(101, 'T'))
-    expect(s.deck.discardPile).toEqual([hand[0]!.coin])
+    expect(s.deck.discardPile).toEqual([at(hand, 0).coin])
     expect(s.deck.drawPile).toEqual(deckBefore.drawPile)
   })
 
   it('discard of a draw-1 coin redraws one coin into the slot', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [
-      special(100, ['draw1'], 'H'),
-      plain(101, 'T'),
-      null,
-      null,
-      null,
-    ]
+    const hand: Hand = [special(100, [{ kind: 'draw', count: 1 }], 'H'), plain(101, 'T'), E, E, E]
     store.setState({ hand, handState: 'tossed' })
     const deckBefore = store.getState().deck
     const topCoin = deckBefore.drawPile[0]
     store.getState().discard(0)
     const s = store.getState()
-    expect(s.hand[0]?.coin.id).toBe(topCoin.id)
-    expect(s.hand[0]?.echoUsed).toBe(false)
+    expect(at(s.hand, 0).coin.id).toBe(topCoin.id)
+    expect(at(s.hand, 0).echoUsed).toBe(false)
     expect(s.tosses[0]).toBe(1)
-    expect(s.deck.discardPile).toEqual([hand[0]!.coin])
+    expect(s.deck.discardPile).toEqual([at(hand, 0).coin])
     expect(s.deck.drawPile).toHaveLength(deckBefore.drawPile.length - 1)
-    expect(s.deck.drawPile[0]?.id).not.toBe(topCoin.id)
+    expect(s.deck.drawPile[0].id).not.toBe(topCoin.id)
   })
 
   it('discard of a draw-3 coin redraws into empty slots: discarded slot first, then left-to-right', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [
-      special(100, ['draw3'], 'H'),
-      plain(101, 'T'),
-      null,
-      null,
-      null,
-    ]
+    const hand: Hand = [special(100, [{ kind: 'draw', count: 3 }], 'H'), plain(101, 'T'), E, E, E]
     store.setState({ hand, handState: 'tossed' })
     const pile = store.getState().deck.drawPile
     store.getState().discard(0)
     const s = store.getState()
     // slots 0, 2, 3 refilled (slot 1 is occupied); slot 4 stays empty
-    expect(s.hand[0]?.coin.id).toBe(pile[0].id)
+    expect(at(s.hand, 0).coin.id).toBe(pile[0].id)
     expect(s.hand[1]).toEqual(plain(101, 'T'))
-    expect(s.hand[2]?.coin.id).toBe(pile[1].id)
-    expect(s.hand[3]?.coin.id).toBe(pile[2].id)
-    expect(s.hand[4]).toBeNull()
+    expect(at(s.hand, 2).coin.id).toBe(pile[1].id)
+    expect(at(s.hand, 3).coin.id).toBe(pile[2].id)
+    expect(s.hand[4]).toEqual(E)
     expect(s.deck.drawPile).toHaveLength(pile.length - 3)
   })
 
   it('discard is a no-op before the toss window or on an empty slot', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [plain(100, 'H'), null, null, null, null]
+    const hand: Hand = [plain(100, 'H'), E, E, E, E]
     store.setState({ hand })
     store.getState().discard(0) // handState still 'ready'
     expect(store.getState().hand[0]).toEqual(plain(100, 'H'))
@@ -166,20 +153,14 @@ describe('runStore', () => {
   it('echoReflip re-resolves an Echo coin once, then is a no-op', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [
-      special(100, ['echo'], 'H'),
-      plain(101, 'T'),
-      null,
-      null,
-      null,
-    ]
+    const hand: Hand = [special(100, [{ kind: 'echo' }], 'H'), plain(101, 'T'), E, E, E]
     store.setState({ hand, handState: 'tossed' })
     expect(store.getState().tosses[0]).toBe(0)
     store.getState().echoReflip(0)
     let s = store.getState()
-    expect(s.hand[0]?.echoUsed).toBe(true)
+    expect(at(s.hand, 0).echoUsed).toBe(true)
     expect(s.tosses[0]).toBe(1)
-    const afterFirst = s.hand[0]!
+    const afterFirst = at(s.hand, 0)
     store.getState().echoReflip(0)
     s = store.getState()
     expect(s.hand[0]).toEqual(afterFirst)
@@ -189,7 +170,7 @@ describe('runStore', () => {
   it('echoReflip is a no-op on non-Echo coins or before the toss window', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
-    const hand: (Slot | null)[] = [plain(100, 'H'), null, null, null, null]
+    const hand: Hand = [plain(100, 'H'), E, E, E, E]
     store.setState({ hand })
     store.getState().echoReflip(0)
     expect(store.getState().hand[0]).toEqual(plain(100, 'H'))
@@ -204,7 +185,7 @@ describe('runStore', () => {
     expect(store.getState().handState).toBe('tossed')
     // a 1-coin play scores 0 (≤2 coins match no tier — empty slots are nothing)
     store.getState().score()
-    expect(store.getState().lastScore).toEqual({ tier: null, chips: 0, mult: 0, total: 0, cash: 0 })
+    expect(store.getState().lastScore).toEqual(some({ kind: 'none', cash: 0 }))
     expect(store.getState().handsLeft).toBe(HANDS_PER_BLIND - 1)
   })
 
@@ -231,11 +212,11 @@ describe('runStore', () => {
     store.getState().tossSlot(2) // 3rd coin — pile now empty, window opens with a 3-coin hand
     const hand = store.getState().hand
     expect(store.getState().handState).toBe('tossed')
-    expect(hand.filter((x) => x !== null)).toHaveLength(3)
+    expect(hand.filter(isFilled)).toHaveLength(3)
     store.getState().score()
     // a 3-coin hand scores only if it is HHH/TTT (Triple-run); empty slots are nothing
     expect(store.getState().lastScore).toEqual(
-      scoreHand(hand, { next: () => 0, state: () => [] }),
+      some(scoreHand(hand, { next: () => 0, state: () => [] })),
     )
   })
 
@@ -245,9 +226,9 @@ describe('runStore', () => {
     store.setState({ deck: { drawPile: [], discardPile: [] } })
     store.getState().tossSlot(0) // nothing left to draw — window opens immediately
     expect(store.getState().handState).toBe('tossed')
-    expect(store.getState().hand).toEqual([null, null, null, null, null])
+    expect(store.getState().hand).toEqual(emptyHand())
     store.getState().score()
-    expect(store.getState().lastScore).toEqual({ tier: null, chips: 0, mult: 0, total: 0, cash: 0 })
+    expect(store.getState().lastScore).toEqual(some({ kind: 'none', cash: 0 }))
   })
 
   it('a partial hand completes as soon as the draw pile is empty', () => {
@@ -262,7 +243,7 @@ describe('runStore', () => {
     store.getState().tossSlot(1) // 2nd coin — pile now empty
     const s = store.getState()
     expect(s.handState).toBe('tossed')
-    expect(s.hand.filter((x) => x !== null)).toHaveLength(2)
+    expect(s.hand.filter(isFilled)).toHaveLength(2)
     s.score()
     expect(store.getState().handsLeft).toBe(HANDS_PER_BLIND - 1)
   })
@@ -277,7 +258,7 @@ describe('runStore', () => {
     expect(s.blindIndex).toBe(1)
     expect(s.blindScore).toBe(0)
     expect(s.handsLeft).toBe(HANDS_PER_BLIND)
-    expect(s.hand).toEqual([null, null, null, null, null])
+    expect(s.hand).toEqual(emptyHand())
     expect(s.handState).toBe('ready')
     // blind start: whole collection reshuffled into the draw pile, discard cleared
     expect(s.deck.drawPile).toHaveLength(BASE_DECK_SIZE)
@@ -342,8 +323,8 @@ describe('runStore', () => {
         b.getState().tossSlot(slot)
       }
       hands.push(
-        a.getState().hand.map((s) => s?.face ?? '.').join(''),
-        b.getState().hand.map((s) => s?.face ?? '.').join(''),
+        a.getState().hand.map((s) => (isFilled(s) ? s.face : '.')).join(''),
+        b.getState().hand.map((s) => (isFilled(s) ? s.face : '.')).join(''),
       )
       a.getState().score()
       b.getState().score()
@@ -371,7 +352,7 @@ describe('runStore', () => {
     const store = createRunStore()
     store.getState().newRun('test123')
     store.getState().score()
-    expect(store.getState().lastScore).toBeNull()
+    expect(store.getState().lastScore).toEqual(none)
     expect(store.getState().handsLeft).toBe(HANDS_PER_BLIND)
   })
 
@@ -383,7 +364,7 @@ describe('runStore', () => {
     const s = store.getState()
     expect(s.phase).toBe('menu')
     expect(s.seed).toBe('')
-    expect(s.hand).toEqual([null, null, null, null, null])
+    expect(s.hand).toEqual(emptyHand())
     expect(s.deck.drawPile).toHaveLength(0)
     expect(s.handsLeft).toBe(HANDS_PER_BLIND)
   })

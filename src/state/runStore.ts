@@ -9,8 +9,9 @@ import {
   shuffleCollection,
 } from '@/core/deck'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import { BASE_DECK_SIZE, BLINDS, DRAW_COUNT, HANDS_PER_BLIND } from '@/core/balance'
-import type { Deck, HandState, Phase, Score, Slot } from '@/core/types'
+import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND } from '@/core/balance'
+import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/types'
+import type { Deck, Face, Hand, HandState, Option, Phase, Score } from '@/core/types'
 
 const SEED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -21,14 +22,20 @@ function randomSeed(): string {
   ).join('')
 }
 
-const EMPTY_HAND: (Slot | null)[] = [null, null, null, null, null]
 const ZERO_TOSSES = [0, 0, 0, 0, 0]
+
+/** The left neighbour's face, or `none` at the left edge / next to an empty slot. */
+function leftFace(hand: Hand, slot: number): Option<Face> {
+  if (slot <= 0) return none
+  const left = hand[slot - 1]
+  return isFilled(left) ? some(left.face) : none
+}
 
 export interface RunState {
   seed: string
   phase: Phase
-  /** 5 slots; null until the slot is tossed (drawn from the draw pile). */
-  hand: (Slot | null)[]
+  /** 5 slots; empty slots are `{ kind: 'empty' }` until tossed (drawn from the draw pile). */
+  hand: Hand
   /** Toss count per slot (initial toss + re-flips + redraws) — drives the coin spin. */
   tosses: number[]
   handState: HandState
@@ -37,7 +44,8 @@ export interface RunState {
   blindIndex: number
   handsLeft: number
   blindScore: number
-  lastScore: Score | null
+  /** Last hand's score for the UI ticker; `none` before the first hand is scored. */
+  lastScore: Option<Score>
   /** Set when the run ends (M2: the single blind is cleared or missed). */
   won: boolean
   /** Start a fresh run (random 8-char seed when omitted). */
@@ -69,10 +77,14 @@ export interface RunState {
  * coin deck (2026-09-13 Q&A round 2): 12 blinds (4 rounds × small/big/boss,
  * escalating targets), win/lose → run end. Boss rules (M3.2), charms (M3.3),
  * shop/cash (M3.4), and save/resume (M4) land later.
- * The Rng lives in the closure: it is not serializable.
+ *
+ * The Rng lives in the closure (it is not serializable). It always holds a
+ * valid generator — seeded on `newRun` — and every run action is guarded by
+ * `phase === 'run'`, which is only reached after `newRun` seeds it, so there is
+ * no null-rng state to check for.
  */
 export const createRunStore = () => {
-  let rng: Rng | null = null
+  let rng: Rng = createRng('')
 
   return create<RunState>()(
     immer((set, get) => {
@@ -82,169 +94,166 @@ export const createRunStore = () => {
        * blind (Short Fuse lands with boss rules in M3.2).
        */
       const startBlind = (blindIndex: number) => {
-        if (!rng) return
         set({
           phase: 'run',
-          hand: [...EMPTY_HAND],
+          hand: emptyHand(),
           tosses: [...ZERO_TOSSES],
           handState: 'ready',
           deck: shuffleCollection(rng, get().deck),
           blindIndex,
           handsLeft: HANDS_PER_BLIND,
           blindScore: 0,
-          lastScore: null,
+          lastScore: none,
         })
       }
 
       return {
-      seed: '',
-      phase: 'menu',
-      hand: [...EMPTY_HAND],
-      tosses: [...ZERO_TOSSES],
-      handState: 'ready',
-      deck: { drawPile: [], discardPile: [] },
-      blindIndex: 0,
-      handsLeft: HANDS_PER_BLIND,
-      blindScore: 0,
-      lastScore: null,
-      won: false,
+        seed: '',
+        phase: 'menu',
+        hand: emptyHand(),
+        tosses: [...ZERO_TOSSES],
+        handState: 'ready',
+        deck: { drawPile: [], discardPile: [] },
+        blindIndex: 0,
+        handsLeft: HANDS_PER_BLIND,
+        blindScore: 0,
+        lastScore: none,
+        won: false,
 
-      newRun: (seed) => {
-        const s = seed ?? randomSeed()
-        rng = createRng(s)
-        set({ seed: s, deck: buildCollection(BASE_DECK_SIZE), won: false })
-        startBlind(0)
-      },
+        newRun: (seed) => {
+          const s = seed ?? randomSeed()
+          rng = createRng(s)
+          set({ seed: s, deck: buildCollection(BASE_DECK_SIZE), won: false })
+          startBlind(0)
+        },
 
-      tossSlot: (slot) => {
-        const s = get()
-        if (s.phase !== 'run' || s.handState !== 'ready' || s.hand[slot] !== null || !rng)
-          return
-        const coin = drawFromDeck(s.deck)
-        if (coin === null) {
-          // Draw pile empty — the hand shrinks to nothing; open the toss window.
+        tossSlot: (slot) => {
+          const s = get()
+          if (s.phase !== 'run' || s.handState !== 'ready' || isFilled(s.hand[slot])) return
+          const drawn = drawFromDeck(s.deck)
+          if (!isSome(drawn)) {
+            // Draw pile empty — the hand shrinks to nothing; open the toss window.
+            set({ handState: 'tossed' })
+            return
+          }
+          const coin = drawn.value
+          const face = resolveFace(rng, coin, leftFace(s.hand, slot))
+          const hand = [...s.hand]
+          hand[slot] = filledSlot(coin, face)
+          const drawPile = s.deck.drawPile.slice(1)
+          const allTossed = hand.every(isFilled) || drawPile.length === 0
+          set({
+            hand,
+            tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
+            deck: { ...s.deck, drawPile },
+            handState: allTossed ? 'tossed' : 'ready',
+          })
+        },
+
+        openTossWindow: () => {
+          const s = get()
+          if (s.phase !== 'run' || s.handState !== 'ready') return
+          if (!s.hand.some(isFilled)) return
           set({ handState: 'tossed' })
-          return
-        }
-        const leftFace = slot > 0 ? (s.hand[slot - 1]?.face ?? null) : null
-        const face = resolveFace(rng, coin, leftFace)
-        const hand = [...s.hand]
-        hand[slot] = { coin, face, echoUsed: false }
-        const drawPile = s.deck.drawPile.slice(1)
-        const allTossed = hand.every((h) => h !== null) || drawPile.length === 0
-        set({
-          hand,
-          tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
-          deck: { ...s.deck, drawPile },
-          handState: allTossed ? 'tossed' : 'ready',
-        })
-      },
+        },
 
-      openTossWindow: () => {
-        const s = get()
-        if (s.phase !== 'run' || s.handState !== 'ready') return
-        if (!s.hand.some((h) => h !== null)) return
-        set({ handState: 'tossed' })
-      },
+        echoReflip: (slot) => {
+          const s = get()
+          if (s.phase !== 'run' || s.handState !== 'tossed') return
+          const current = s.hand[slot]
+          if (
+            !isFilled(current) ||
+            !current.coin.effects.some((e) => e.kind === 'echo') ||
+            current.echoUsed
+          )
+            return
+          const face = resolveFace(rng, current.coin, leftFace(s.hand, slot))
+          const hand = [...s.hand]
+          hand[slot] = { ...current, face, echoUsed: true }
+          set({
+            hand,
+            tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
+          })
+        },
 
-      echoReflip: (slot) => {
-        const s = get()
-        if (s.phase !== 'run' || s.handState !== 'tossed' || !rng) return
-        const current = s.hand[slot]
-        if (current === null || !current.coin.effects.includes('echo') || current.echoUsed)
-          return
-        const leftFace = slot > 0 ? (s.hand[slot - 1]?.face ?? null) : null
-        const face = resolveFace(rng, current.coin, leftFace)
-        const hand = [...s.hand]
-        hand[slot] = { ...current, face, echoUsed: true }
-        set({
-          hand,
-          tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
-        })
-      },
-
-      discard: (slot) => {
-        const s = get()
-        if (s.phase !== 'run' || s.handState !== 'tossed' || !rng) return
-        const current = s.hand[slot]
-        if (current === null) return
-        let deck = discardToPile(s.deck, current.coin)
-        const hand = [...s.hand]
-        hand[slot] = null
-        const tosses = [...s.tosses]
-        const drawEffect = current.coin.effects.find(
-          (e): e is 'draw1' | 'draw2' | 'draw3' =>
-            e === 'draw1' || e === 'draw2' || e === 'draw3',
-        )
-        if (drawEffect !== undefined) {
-          // Redraw into empty slots: the discarded slot first, then left-to-right.
-          const order = [...new Set([slot, 0, 1, 2, 3, 4])].filter((i) => hand[i] === null)
-          let drawn = 0
-          for (const target of order) {
-            if (drawn >= DRAW_COUNT[drawEffect]) break
-            const coin = drawFromDeck(deck)
-            if (coin === null) break
-            const leftFace = target > 0 ? (hand[target - 1]?.face ?? null) : null
-            hand[target] = { coin, face: resolveFace(rng, coin, leftFace), echoUsed: false }
-            tosses[target] += 1
-            deck = { ...deck, drawPile: deck.drawPile.slice(1) }
-            drawn += 1
+        discard: (slot) => {
+          const s = get()
+          if (s.phase !== 'run' || s.handState !== 'tossed') return
+          const current = s.hand[slot]
+          if (!isFilled(current)) return
+          let deck = discardToPile(s.deck, current.coin)
+          const hand = [...s.hand]
+          hand[slot] = { kind: 'empty' }
+          const tosses = [...s.tosses]
+          const drawEffect = current.coin.effects.find((e) => e.kind === 'draw')
+          if (drawEffect) {
+            // Redraw into empty slots: the discarded slot first, then left-to-right.
+            const order = [...new Set([slot, 0, 1, 2, 3, 4])].filter((i) => !isFilled(hand[i]))
+            let drawn = 0
+            for (const target of order) {
+              if (drawn >= drawEffect.count) break
+              const next = drawFromDeck(deck)
+              if (!isSome(next)) break
+              const coin = next.value
+              hand[target] = filledSlot(coin, resolveFace(rng, coin, leftFace(hand, target)))
+              tosses[target] += 1
+              deck = { ...deck, drawPile: deck.drawPile.slice(1) }
+              drawn += 1
+            }
           }
-        }
-        set({ hand, tosses, deck })
-      },
+          set({ hand, tosses, deck })
+        },
 
-      score: () => {
-        const s = get()
-        if (s.phase !== 'run' || s.handState !== 'tossed' || !rng) return
-        const result = scoreHand(s.hand, rng)
-        // All hand coins → discard pile (gone for the rest of the blind;
-        // recycled into the draw pile at the next blind start).
-        const deck = returnHandToPile(s.deck, s.hand)
-        const blindScore = s.blindScore + result.total
-        const handsLeft = s.handsLeft - 1
-        set({
-          lastScore: result,
-          hand: [...EMPTY_HAND],
-          tosses: [...ZERO_TOSSES],
-          // An empty draw pile opens the toss window immediately (empty hand).
-          handState: s.deck.drawPile.length === 0 ? 'tossed' : 'ready',
-          deck,
-          blindScore,
-          handsLeft,
-        })
-        if (handsLeft === 0) {
-          const blind = BLINDS[s.blindIndex]
-          if (blindScore < blind.target) {
-            // Miss → run end (lose).
-            set({ phase: 'runEnd', won: false })
-          } else if (s.blindIndex === BLINDS.length - 1) {
-            // Blind 12 cleared → run end (win).
-            set({ phase: 'runEnd', won: true })
-          } else {
-            // Blind cleared → auto-advance to the next blind.
-            // (The shop interstitial replaces this in M9/M10.)
-            startBlind(s.blindIndex + 1)
+        score: () => {
+          const s = get()
+          if (s.phase !== 'run' || s.handState !== 'tossed') return
+          const result = scoreHand(s.hand, rng)
+          // All hand coins → discard pile (gone for the rest of the blind;
+          // recycled into the draw pile at the next blind start).
+          const deck = returnHandToPile(s.deck, s.hand)
+          const blindScore = s.blindScore + scoreTotal(result)
+          const handsLeft = s.handsLeft - 1
+          set({
+            lastScore: some(result),
+            hand: emptyHand(),
+            tosses: [...ZERO_TOSSES],
+            // An empty draw pile opens the toss window immediately (empty hand).
+            handState: s.deck.drawPile.length === 0 ? 'tossed' : 'ready',
+            deck,
+            blindScore,
+            handsLeft,
+          })
+          if (handsLeft === 0) {
+            const blind = BLINDS[s.blindIndex]
+            if (blindScore < blind.target) {
+              // Miss → run end (lose).
+              set({ phase: 'runEnd', won: false })
+            } else if (s.blindIndex === BLINDS.length - 1) {
+              // Blind 12 cleared → run end (win).
+              set({ phase: 'runEnd', won: true })
+            } else {
+              // Blind cleared → auto-advance to the next blind.
+              // (The shop interstitial replaces this in M9/M10.)
+              startBlind(s.blindIndex + 1)
+            }
           }
-        }
-      },
+        },
 
-      toMenu: () => {
-        rng = null
-        set({
-          seed: '',
-          phase: 'menu',
-          hand: [...EMPTY_HAND],
-          tosses: [...ZERO_TOSSES],
-          handState: 'ready',
-          deck: { drawPile: [], discardPile: [] },
-          blindIndex: 0,
-          handsLeft: HANDS_PER_BLIND,
-          blindScore: 0,
-          lastScore: null,
-          won: false,
-        })
-      },
+        toMenu: () => {
+          set({
+            seed: '',
+            phase: 'menu',
+            hand: emptyHand(),
+            tosses: [...ZERO_TOSSES],
+            handState: 'ready',
+            deck: { drawPile: [], discardPile: [] },
+            blindIndex: 0,
+            handsLeft: HANDS_PER_BLIND,
+            blindScore: 0,
+            lastScore: none,
+            won: false,
+          })
+        },
       }
     })
   )

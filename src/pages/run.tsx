@@ -2,6 +2,7 @@ import { Coin } from '@/components/hand/coin'
 import { ScoreTicker } from '@/components/hand/score-ticker'
 import { Button } from '@/components/ui/button'
 import { BLINDS } from '@/core/balance'
+import { isFilled } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const
@@ -26,7 +27,7 @@ export function RunScreen() {
   const blind = BLINDS[blindIndex]
   const inTossWindow = handState === 'tossed'
   const pileEmpty = deck.drawPile.length === 0
-  const tossedCount = hand.filter((h) => h !== null).length
+  const tossedCount = hand.filter(isFilled).length
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-8 p-6">
@@ -47,25 +48,25 @@ export function RunScreen() {
 
       <div className="flex gap-3">
         {hand.map((slot, i) => {
+          const filled = isFilled(slot)
           const echoAvailable =
             inTossWindow &&
-            slot !== null &&
-            slot.coin.effects.includes('echo') &&
+            filled &&
+            slot.coin.effects.some((e) => e.kind === 'echo') &&
             !slot.echoUsed
           const tappable =
-            (handState === 'ready' && slot === null && !pileEmpty) ||
-            (inTossWindow && slot !== null)
+            (handState === 'ready' && !filled && !pileEmpty) ||
+            (inTossWindow && filled)
           return (
             <Coin
               key={i}
-              face={slot?.face ?? null}
-              effects={slot?.coin.effects ?? []}
+              slot={slot}
               echoAvailable={echoAvailable}
               tosses={tosses[i]}
               index={i}
               tappable={tappable}
               onTap={() => {
-                if (inTossWindow && slot !== null) {
+                if (inTossWindow && filled) {
                   if (echoAvailable) echoReflip(i)
                   else discard(i)
                 } else {

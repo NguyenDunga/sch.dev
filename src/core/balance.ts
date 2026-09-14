@@ -15,16 +15,16 @@ export const TIERS: Tier[] = [
 export const BLINDS: Blind[] = [
   { round: 1, kind: 'small', target: 300, reward: 4 },
   { round: 1, kind: 'big', target: 500, reward: 6 },
-  { round: 1, kind: 'boss', target: 800, reward: 10, boss: 'noAlternating' },
+  { round: 1, kind: 'boss', target: 800, reward: 10, rule: 'noAlternating' },
   { round: 2, kind: 'small', target: 600, reward: 4 },
   { round: 2, kind: 'big', target: 1000, reward: 6 },
-  { round: 2, kind: 'boss', target: 1500, reward: 10, boss: 'shortFuse' },
+  { round: 2, kind: 'boss', target: 1500, reward: 10, rule: 'shortFuse' },
   { round: 3, kind: 'small', target: 1000, reward: 4 },
   { round: 3, kind: 'big', target: 1600, reward: 6 },
-  { round: 3, kind: 'boss', target: 2400, reward: 10, boss: 'noJackpots' },
+  { round: 3, kind: 'boss', target: 2400, reward: 10, rule: 'noJackpots' },
   { round: 4, kind: 'small', target: 1500, reward: 4 },
   { round: 4, kind: 'big', target: 2400, reward: 6 },
-  { round: 4, kind: 'boss', target: 3500, reward: 10, boss: 'heavyTarget' },
+  { round: 4, kind: 'boss', target: 3500, reward: 10, rule: 'heavyTarget' },
 ]
 
 export const BOSS_RULES: BossRule[] = [
@@ -81,9 +81,3 @@ export const JACKPOT_PAYOUT = 4
 /** Face-effect odds (odds stage, balance-baseline). */
 export const WEIGHT_ODDS = 0.75
 export const MAGNETIC_ODDS = 0.75
-/** Draw-enchant tiers → redraw count. */
-export const DRAW_COUNT: Record<'draw1' | 'draw2' | 'draw3', number> = {
-  draw1: 1,
-  draw2: 2,
-  draw3: 3,
-}

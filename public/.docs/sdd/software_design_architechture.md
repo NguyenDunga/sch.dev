@@ -80,19 +80,19 @@ All MIT/open-source, $0 (charter §7).
 
 ```
 [draw phase, automatic] store.drawHand()
-  → core.drawFromDeck(deck) ×handSize (base 8) → face-down coins in the hand (null when the pile is short)
+  → core.drawFromDeck(deck) ×handSize (base 8) → face-down coins in the hand (Option<Coin>: none when the pile is short — the slot stays { kind: 'empty' })
 [play phase] player freely picks 1–5 coins into the play slots
   → store.pickCoin(i) / store.unpickCoin(i)
   → [discard: unlimited — player may discard any hand coins]
     → store.discard(i) → core.discardToPile(deck, coin)
       (+ core.drawFromDeck ×N face-down if the coin has a draw enchant)
 [toss phase, automatic] store.confirmPlay()
-  → core.resolveFace(rng, coin, leftFace) per picked coin, in play order (rng advances per coin effect)
+  → core.resolveFace(rng, coin, left) per picked coin, in play order (left: Option<Face>; rng advances per coin effect)
 [buff phase] player may re-flip each Echo coin once
-  → store.echoReflip(i) → core.resolveFace(rng, coin, leftFace) again
+  → store.echoReflip(i) → core.resolveFace(rng, coin, left) again
   → owned charms (buffs) apply to the tossed coins
 [score phase] player taps Score (explicit — no auto-score timer)
-  → core.scoreHand(play, bossRule, charms, rng) → {tier, chips, mult, total, cash}
+  → core.scoreHand(play, bossRule, charms, rng) → Score ({ kind: 'none' | 'scored', … })
   → core.returnHandToPile(deck, hand) → all hand coins (tossed + unpicked) → discard pile
   → store: blindScore += total; cash += coin cash; handsLeft -= 1
   → UI: coin animation, chips×mult ticker, SFX
@@ -121,3 +121,4 @@ All MIT/open-source, $0 (charter §7).
 | 2026-09-14 | Round 4: empty slots count as **nothing** (wilds removed — pattern evaluated on the tossed coins only); player freely tosses 1–5 coins per hand; base deck re-tuned 74 → 80 (no-wilds calculation: all 10 hands full, no dead hands) | BlueCloud (Q&A answers) | Scoring rule change — scope change; deck size — balance change |
 | 2026-09-14 | Doc sync (no design change): tech-stack animation row corrected to motion/framer-motion (records the C10 decision of 2026-09-12); `Coin.param` → `faceParams` so merge can stack Weight + Double-Side; coin-effect count stated consistently (9 effect types, 11 catalog entries); WBS cross-refs updated from the retired M1–M4 numbering to the M0–M15 build milestones; repo layout corrected to `src/pages/` + `src/components/` | Qwen | SDD self-consistency + alignment with the M0–M15 WBS |
 | 2026-09-14 | UX build-out ("Balatro-grade smoothness"): added the [UX / Interaction & Juice](software_design_ux.md) SDD doc; new **Ceramic Tactile** flat/low-shadow theme; added @react-three/fiber + drei + rapier (flat-shaded 3D coin + physics) and lucide-react to the stack; **juice scope expanded** to particles + screen shake + a richer per-event SFX set (still flat art, still no music) | BlueCloud | UX scope + theme + tech amendment (charter §3/§4); see scope plan change log |
+| 2026-09-14 | No-null data model (Rust mentality, no design/scope change): every `null` and optional-as-absence removed from the domain — coin effects are now a tagged union carrying their own params (was `effects[]` + shared `faceParams?`), the boss rule lives inside the `boss` blind variant (was `boss?`), a hand slot is `{ kind:'empty' } \| { kind:'filled'; … }` (was `Slot \| null`), `Score` is `{ kind:'none' \| 'scored' }` (was `tier: TierId \| null`), and "maybe" values (neighbour face, deck draw, `lastScore`) use `Option<T>`; core/scoring/deck/store + all tests updated, `tsc` + 64 tests + eslint green | EDS | Code-quality: make illegal states unrepresentable |

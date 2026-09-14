@@ -47,13 +47,16 @@ Data-only module, no logic: tier table (6), blind table (12), boss rules (4), ch
 Pure functions implementing the locked pipeline ([Scope Statement](../prm/plan/plan_scope-statement.md)):
 
 ```ts
-resolveFace(rng: Rng, coin: Coin, leftFace: Face | null): Face   // coin effects: odds stage → roll → Reverse (Echo re-flip = call again)
-matchTier(play: Play, boss: BossRule | null): TierId | null         // empty slots count as nothing; pattern on the tossed coins only (null = no tier matched, e.g. ≤2 coins)
-scoreHand(play: Play, boss: BossRule | null, charms: CharmId[], rng: Rng): Score  // tier → base → boosters → total + coin cash
-interface Score { tier: TierId; chips: number; mult: number; total: number; cash: number }
+resolveFace(rng: Rng, coin: Coin, left: Option<Face>): Face   // coin effects: odds stage → roll → Reverse (Echo re-flip = call again); left = none at the edge / next to an empty slot
+matchTier(play: Play, boss: Option<BossRule>): Option<TierId>    // empty slots count as nothing; pattern on the tossed coins only (none = no tier matched, e.g. ≤2 coins)
+scoreHand(play: Play, boss: Option<BossRule>, charms: CharmId[], rng: Rng): Score  // tier → base → boosters → total + coin cash
+// Score is a tagged union — a no-tier hand carries no stray chips/mult; a scored hand always has them:
+type Score =
+  | { kind: 'none'; cash: number }
+  | { kind: 'scored'; tier: TierId; chips: number; mult: number; total: number; cash: number }
 ```
 
-- **Face resolution (toss phase):** odds stage — Magnetic (75% toward left neighbor in the play, if present) > Double-Side (100/0 toward `coin.param`) > Chaos (random 0–100 odds) > Weight (75/25 toward `coin.param`) > base (50/50); roll the face; Reverse inverts it. Echo: the player may re-run resolution once per Echo coin (buff phase).
+- **Face resolution (toss phase):** odds stage — Magnetic (75% toward left neighbor in the play, if present) > Double-Side (100/0 toward its favoured face) > Chaos (random 0–100 odds) > Weight (75/25 toward its favoured face) > base (50/50); roll the face; Reverse inverts it. The favoured face is carried on the coin's `{ kind: 'weight' | 'doubleSide'; favored }` effect variant (no shared `param`). Echo: the player may re-run resolution once per Echo coin (buff phase).
 - **Tier (score phase):** highest-value tier matched (count + sequence tiers; empty slots count as **nothing** — the pattern is evaluated on the tossed coins only, so a k-coin play can only match tiers whose structure fits in k coins; a play of ≤2 coins matches no tier and scores 0). Boss rules applied here: No Alternating → alternating plays score 0 (explicit override, no fall-through); No Jackpots → 5-same scores as 4-same (30×2) — a fixed demotion, **not** a fall-through to the next-highest matched tier (HHHHH also matches 4-in-a-row, but it still scores 4-same).
 - **Base:** chips/mult from the tier table.
 - **Boosters (buff phase, applied at score):** owned scoring boosters applied left-to-right in charm-bar order: +Chips → chips += 10; +Mult → mult += 1; Jackpot Fever → if tier is Jackpot, chips ×= 2.
@@ -67,7 +70,7 @@ Single zustand store (immer + persist). State shape in [Data Design](software_de
 | Action | Effect |
 | --- | --- |
 | `startRun(seed)` | Fresh run: rng from seed, base collection of 80 plain coins built + shuffled into draw pile, round 1 small blind, $4, no charms, handSize 8, phase `run` |
-| `drawHand()` | Draw phase (automatic at hand start): pop up to `handSize` coins face-down from the draw pile into the hand (null when the pile is short); handPhase → `play` |
+| `drawHand()` | Draw phase (automatic at hand start): pop up to `handSize` coins face-down from the draw pile into the hand (fewer — the remaining slots stay `{ kind: 'empty' }`, never null — when the pile is short); handPhase → `play` |
 | `pickCoin(handIndex)` | Play phase: move the hand coin into the next free play slot (max 5); a coin already in the play is unpicked first |
 | `unpickCoin(slotIndex)` | Play phase: return the play coin to the hand |
 | `discard(handIndex)` | Play phase, unlimited: hand coin → discard pile (gone for the blind); if the coin has a draw enchant (draw1/2/3), draw N fresh coins face-down from the draw pile into the hand (empty slots if the pile is short) |
@@ -75,7 +78,7 @@ Single zustand store (immer + persist). State shape in [Data Design](software_de
 | `echoReflip(slotIndex)` | Buff phase: if the play coin has Echo and `echoUsed` is false: re-resolve the face (rng); `echoUsed` = true |
 | `score()` | Score phase: C3 pipeline (tier → base → boosters → total + coin cash); blindScore += total; cash += coin cash; **all hand coins (tossed + unpicked) → discard pile**; handsLeft -= 1; hand/play cleared, handPhase → `draw` (next hand); if handsLeft == 0 → `endBlind()` |
 | `endBlind()` | Target met: cash += reward (+ Payday $5, + Heavy Target $5); blind 12 → run end (win); else → shop (offers drawn from rng). Target missed: run end (lose) |
-| `buy(offer)` | Charm: cash -= price; charm added to bar. Coin: cash -= price; new coin added to the collection (draw pile), Weight/Double-Side `param` rolled (rng). Hand-size: cash -= price; handSize += 1 (cap 10, draft). Offer removed |
+| `buy(offer)` | Charm: cash -= price; charm added to bar. Coin: cash -= price; new coin added to the collection (draw pile), Weight/Double-Side favoured face rolled (rng) into the effect variant. Hand-size: cash -= price; handSize += 1 (cap 10, draft). Offer removed |
 | `reroll()` | If the free reroll is unused: regenerate all offers (rng) |
 | `mergeCoin(fromId, toId)` | Shop action: `toId` coin gains all of `fromId` coin's effects (stack freely, no cap); `fromId` removed from the collection; free |
 | `removeCoin(id)` | Shop action: coin removed from the collection; cash -= $1 |
@@ -91,7 +94,7 @@ Pure functions for the coin collection (Balatro-style, 2026-09-13 Q&A round 2):
 ```ts
 buildCollection(): Deck                       // base 80 plain coins (fresh run)
 shuffleCollection(rng: Rng, deck: Deck): Deck // blind start: merge piles → Fisher–Yates → drawPile; discardPile = []
-drawFromDeck(deck: Deck): Coin | null         // pop draw pile (no rng); null when empty
+drawFromDeck(deck: Deck): Option<Coin>        // peek draw pile (no rng); none when empty
 discardToPile(deck: Deck, coin: Coin): Deck   // coin → discard pile
 returnHandToPile(deck: Deck, hand: Hand): Deck // after scoring: all hand coins → discard pile (gone for the blind, no circulation)
 ```
