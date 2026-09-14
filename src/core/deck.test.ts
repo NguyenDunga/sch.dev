@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildCollection, discardToPile, drawFromDeck, returnHandToPile, shuffleCollection } from './deck'
 import { BASE_DECK_SIZE } from './balance'
 import { createRng, type Rng } from './rng'
-import { filledSlot, some } from './helpers'
+import { filledSlot, none, some } from './helpers'
 import type { Deck, Hand } from './types'
 
 /** Small test deck of n plain coins (ids 0..n-1) — a test fixture, not a balance value. */
@@ -97,6 +97,10 @@ describe('drawFromDeck', () => {
     const before = JSON.parse(JSON.stringify(deck))
     drawFromDeck(deck)
     expect(deck).toEqual(before)
+  })
+
+  it('returns none when the draw pile is empty (no throw)', () => {
+    expect(drawFromDeck({ drawPile: [], discardPile: [] })).toEqual(none)
   })
 })
 

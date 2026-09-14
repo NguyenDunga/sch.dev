@@ -68,7 +68,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | 3.2 `shuffleCollection(rng, deck)` | Done | 2026-09-14 | 6 tests: merge + clear discard, multiset preserved, seed-deterministic, different seeds differ, one rng draw per swap (draw-order contract pinned), input unmutated |
 | 3.3 `drawFromDeck(deck)` (none on empty) | Done | 2026-09-14 | SDD C11 (source of truth) adopted: peek + `Option<Coin>`, `none` on empty — WBS “pop + `Coin | null`” wording was v1.0-era, reconciled in the plan file; 2 tests (peek order/no-consume, purity) |
 | 3.4 `discardToPile` / `returnHandToPile` | Done | 2026-09-14 | 5 tests: append (draw pile untouched), hand order + empty slots count as nothing, append to existing discards, deck + hand unmutated |
-| 3.5 Empty-pile → null test | Not started | | |
+| 3.5 Empty-pile → none test | Done | 2026-09-14 | `drawFromDeck` on an empty draw pile returns `none`, no throw |
 | 3.6 No mid-blind reshuffle test | Not started | | |
 | 3.7 Shuffle clears discard test | Not started | | |
 
