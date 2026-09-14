@@ -1768,3 +1768,48 @@ describe('M11.5 — save → resume (fresh store) round-trip', () => {
     }
   })
 })
+
+describe('M11.6 — no autosave: no phase transition calls save', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('a full walk (hands → shop → buy/reroll/merge/remove → leaveShop → next blind) never writes to localStorage', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem')
+    const store = createRunStore()
+    store.getState().startRun('m11-6')
+
+    // several hands
+    for (let i = 0; i < 3; i++) {
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      store.getState().score()
+    }
+    // clear the blind → shop
+    store.setState({ blindScore: 10_000, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    expect(store.getState().phase).toBe('shop')
+
+    // every shop action
+    const [offer] = store.getState().shop.offers
+    if (offer) store.getState().buy(offer)
+    store.getState().reroll()
+    store.getState().mergeCoin(0, 1)
+    store.getState().removeCoin(2)
+    store.getState().moveCharm(0, 0)
+    // leave → next blind, play a hand there too
+    store.getState().leaveShop()
+    expect(store.getState().phase).toBe('run')
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    // to the menu
+    store.getState().toMenu()
+
+    expect(setItem).not.toHaveBeenCalled()
+  })
+})
