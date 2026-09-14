@@ -14,7 +14,7 @@
 - [x] 12.6 **Run screen (C6)** — Draw/Play: face-down hand, pick 1–5, discard (draw-enchant redraw pip), blind header (round, target, blindScore, handsLeft, draw-pile count). Toss/Buff: 3D flip, Echo re-flip (once per Echo coin), charm bar (C7) drag-to-reorder → `moveCharm`. Score: explicit **Score** button (pulses when ready) → `score`; tier/base/boosters breakdown.
 - [x] 12.7 **Shop screen (C8)** — 5 offer cards (hover raise + tier glow), Reroll (disabled after first use), Merge + Remove, collection view, cash, Leave.
 - [x] 12.8 **Run-end (C9)** — win/lose, run summary (blinds cleared, runScore, cash), seed shown for sharing, Menu.
-- [ ] 12.9 **Manual Save** button on Run → `save`; no autosave.
+- [x] 12.9 **Manual Save** button on Run → `save`; no autosave.
 - [ ] 12.10 **Tactile controls pass** — every button/slot/card has default/hover/active/disabled/selected/focus-visible states (UX §3); hit targets ≥44px; keyboard path works.
 - [ ] 12.11 **Smoke tests** — each screen renders from a valid `RunState` without throwing (the r3f canvas is mockable/skipped in jsdom).
 

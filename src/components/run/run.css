@@ -19,6 +19,17 @@
 
 /* -- blind header ----------------------------------------------------------- */
 
+.run-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.run-top .blind-header {
+  flex: 1;
+}
+
 .blind-header {
   width: 100%;
   display: flex;

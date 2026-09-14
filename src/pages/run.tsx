@@ -15,6 +15,7 @@ import { PlaySlot } from '@/components/hand/play-slot'
 import { ScoreTicker } from '@/components/hand/score-ticker'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
+import { SaveButton } from '@/components/run/save-button'
 import { CharmBar } from '@/components/charm-bar/charm-bar'
 
 /** Hand controls (12.6): pick / discard / 6th-pick shake / confirm. Kept out
@@ -90,6 +91,32 @@ function canReflipAt(play: Play, handPhase: HandPhase, slotIndex: number): boole
   return slot.coin.effects.some((e) => e.kind === 'echo')
 }
 
+interface PlayAreaProps {
+  play: Play
+  hand: Hand
+  revealed: boolean
+  canPick: boolean
+  discardMode: boolean
+  shake: { id: number; n: number } | null
+  onPick: (i: number) => void
+  onUnpick: (i: number) => void
+  getReflip: (i: number) => (() => void) | undefined
+}
+
+/** The play row (5 slots) + the face-down hand row. */
+function PlayArea({ play, hand, revealed, canPick, discardMode, shake, onPick, onUnpick, getReflip }: PlayAreaProps) {
+  return (
+    <div className="play-area">
+      <div className="play-row">
+        {play.map((slot, i) => (
+          <PlaySlot key={i} slot={slot} index={i} revealed={revealed} onUnpick={() => onUnpick(i)} onReflip={getReflip(i)} />
+        ))}
+      </div>
+      <HandRow hand={hand} canPick={canPick} discardMode={discardMode} shake={shake} onPick={onPick} />
+    </div>
+  )
+}
+
 export function RunScreen() {
   const hand = useRunStore((s) => s.hand)
   const play = useRunStore((s) => s.play)
@@ -99,6 +126,7 @@ export function RunScreen() {
   const unpickCoin = useRunStore((s) => s.unpickCoin)
   const echoReflip = useRunStore((s) => s.echoReflip)
   const score = useRunStore((s) => s.score)
+  const save = useRunStore((s) => s.save)
   const { discardMode, setDiscardMode, shake, handleHandTap, handleConfirm } = useHandFlow(hand, play)
 
   // Draw (automatic, SDD C6 step 1): the store sits in 'draw' at hand start;
@@ -115,27 +143,26 @@ export function RunScreen() {
   const canScore = handPhase === 'buff'
 
   // Echo re-flip (buff): an unused Echo coin in the play can be re-tossed once.
-  const canReflip = (slotIndex: number): boolean => canReflipAt(play, handPhase, slotIndex)
+  const getReflip = (i: number) => (canReflipAt(play, handPhase, i) ? () => echoReflip(i) : undefined)
 
   return (
     <main className="run-screen">
-      <BlindHeader />
-      <CharmBar />
-      <div className="play-area">
-        <div className="play-row">
-          {play.map((slot, i) => (
-            <PlaySlot
-              key={i}
-              slot={slot}
-              index={i}
-              revealed={revealed}
-              onUnpick={() => unpickCoin(i)}
-              onReflip={canReflip(i) ? () => echoReflip(i) : undefined}
-            />
-          ))}
-        </div>
-        <HandRow hand={hand} canPick={canPick} discardMode={discardMode} shake={shake} onPick={handleHandTap} />
+      <div className="run-top">
+        <BlindHeader />
+        <SaveButton onSave={save} />
       </div>
+      <CharmBar />
+      <PlayArea
+        play={play}
+        hand={hand}
+        revealed={revealed}
+        canPick={canPick}
+        discardMode={discardMode}
+        shake={shake}
+        onPick={handleHandTap}
+        onUnpick={unpickCoin}
+        getReflip={getReflip}
+      />
       <ScoreTicker score={lastScore} />
       <ActionBar
         handPhase={handPhase}
