@@ -1209,3 +1209,57 @@ describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
     expect(st.cash).toBe(20 - 5)
   })
 })
+
+describe('M9.6 — removeCoin ($1 delete, no refund)', () => {
+  function shopStore(seed: string, cash: number) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      cash,
+      deck: {
+        drawPile: [{ id: 900, effects: [{ kind: 'tax' }] }, ...store.getState().deck.drawPile],
+        discardPile: [{ id: 901, effects: [] }],
+      },
+    })
+    return store
+  }
+
+  it('9.9 removing a coin costs $1 and deletes it (draw pile)', () => {
+    const store = shopStore('m9-6', 5)
+    store.getState().removeCoin(900)
+    const st = store.getState()
+    expect(st.cash).toBe(4)
+    expect(st.deck.drawPile.some((c) => c.id === 900)).toBe(false)
+  })
+
+  it('9.9 removing a coin from the discard pile works too; delete only, never a refund', () => {
+    const store = shopStore('m9-6b', 5)
+    store.getState().removeCoin(901)
+    const st = store.getState()
+    expect(st.cash).toBe(4) // cash goes down, never up
+    expect(st.deck.discardPile.some((c) => c.id === 901)).toBe(false)
+  })
+
+  it('9.9 no "sell charm" action exists — charms can only be bought, never sold', () => {
+    const store = shopStore('m9-6c', 5)
+    expect('sellCharm' in store.getState()).toBe(false)
+    expect('removeCharm' in store.getState()).toBe(false)
+  })
+
+  it('no-ops: broke, unknown id, wrong phase', () => {
+    const store = shopStore('m9-6d', 0)
+    const before = store.getState()
+
+    store.getState().removeCoin(900) // broke
+    expect(store.getState()).toEqual(before)
+
+    store.setState({ cash: 5 })
+    store.getState().removeCoin(4242) // unknown
+    expect(store.getState().cash).toBe(5)
+
+    store.setState({ phase: 'run' })
+    store.getState().removeCoin(900)
+    expect(store.getState().cash).toBe(5)
+  })
+})

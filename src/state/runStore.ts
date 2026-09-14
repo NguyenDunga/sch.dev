@@ -25,6 +25,7 @@ import {
   HAND_SIZE_CAP,
   HAND_SIZE_PRICE,
   PLAY_SIZE,
+  REMOVE_COIN_COST,
   SHOP_SLOTS,
   START_CASH,
 } from '@/core/balance'
@@ -64,6 +65,8 @@ export interface RunActions {
   score: () => void
   /** shop: toId gains all of fromId's effects (stack freely, no cap); fromId removed from the collection; free. */
   mergeCoin: (fromId: number, toId: number) => void
+  /** shop: remove a coin from the collection; cash -= REMOVE_COIN_COST ($1). Delete only — never a refund. */
+  removeCoin: (id: number) => void
   /** run/shop: reorder the charms — array order is the charm-bar (scoring) order. */
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
@@ -395,6 +398,18 @@ export function createRunStore() {
           }
           // Remove the bought offer (structurally — the draft wraps the passed object).
           st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
+        }),
+
+      removeCoin: (id) =>
+        set((st) => {
+          if (st.phase !== 'shop') return
+          if (st.cash < REMOVE_COIN_COST) return // broke — reject
+          const inDraw = st.deck.drawPile.some((c) => c.id === id)
+          const inDiscard = st.deck.discardPile.some((c) => c.id === id)
+          if (!inDraw && !inDiscard) return // unknown coin — no-op
+          st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== id)
+          st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== id)
+          st.cash -= REMOVE_COIN_COST
         }),
 
       toMenu: () =>
