@@ -29,7 +29,7 @@ Toss/Buff/Score call M6/M7 (`scoreHand`, `resolveFace`); stub those until then. 
 - [x] 4.5 `confirmPlay`: requires ≥1 picked; → `toss`; unpicked hand coins stay in `hand` (not discarded yet).
 - [x] 4.6 Toss (auto on `confirmPlay`): `resolveFace` per picked coin sets each `Slot.face`; → `buff`.
 - [x] 4.7 `echoReflip`: once per Echo coin (`echoUsed`); a second call on the same slot is a no-op.
-- [ ] 4.8 `score`: run pipeline; `returnHandToPile` moves ALL hand coins (tossed + unpicked) to discard; `handsLeft -= 1`; → `draw`.
+- [x] 4.8 `score`: run pipeline; `returnHandToPile` moves ALL hand coins (tossed + unpicked) to discard; `handsLeft -= 1`; → `draw`.
 - [ ] 4.9 Test: any action out of its phase is a no-op.
 - [ ] 4.10 Test: a full cycle runs; `handsLeft` −1; back to `draw`.
 - [ ] 4.11 Test: after `score`, `hand` and `play` are empty and those coins are in `discardPile`.

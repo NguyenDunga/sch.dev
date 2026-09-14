@@ -597,3 +597,72 @@ describe('M4.7 — echoReflip', () => {
     expect(after.rngState).toEqual(before.rngState)
   })
 })
+
+describe('M4.8 — score', () => {
+  it('moves ALL hand coins (tossed + unpicked) to the discard pile', () => {
+    const store = drawnStore('m4-8a')
+    const allIds = store.getState().hand.map(coinId)
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(2)
+    store.getState().pickCoin(5)
+    store.getState().confirmPlay()
+
+    store.getState().score()
+    const after = store.getState()
+
+    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(
+      [...allIds].sort((a, b) => a - b),
+    )
+    expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE)
+  })
+
+  it('handsLeft −1, back to draw, hand and play emptied', () => {
+    const store = drawnStore('m4-8b')
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+
+    store.getState().score()
+    const after = store.getState()
+
+    expect(after.handsLeft).toBe(HANDS_PER_BLIND - 1)
+    expect(after.handPhase).toBe('draw')
+    expect(after.hand.every((s) => s.kind === 'empty')).toBe(true)
+    expect(after.play.every((s) => s.kind === 'empty')).toBe(true)
+  })
+
+  it('applies the C3 result: blindScore += total, cash += cash, lastScore = result (stub: none/0)', () => {
+    const store = drawnStore('m4-8c')
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    const cashBefore = store.getState().cash
+
+    store.getState().score()
+    const after = store.getState()
+
+    expect(after.blindScore).toBe(0) // the stub scores nothing
+    expect(after.cash).toBe(cashBefore) // the stub pays no coin cash
+    expect(after.lastScore).toEqual({ some: true, value: { kind: 'none', cash: 0 } })
+  })
+
+  it('score on the last hand ends the blind (target missed → runEnd)', () => {
+    const store = drawnStore('m4-8d')
+    store.setState({ handsLeft: 1 })
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+
+    store.getState().score()
+    const after = store.getState()
+
+    expect(after.handsLeft).toBe(0)
+    expect(after.phase).toBe('runEnd')
+    expect(after.won).toBe(false)
+  })
+
+  it('score out of the buff phase is a no-op', () => {
+    const store = drawnStore('m4-8e') // play phase
+    const before = store.getState()
+
+    store.getState().score()
+    expect(store.getState()).toEqual(before)
+  })
+})
