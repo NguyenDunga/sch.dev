@@ -284,18 +284,13 @@ describe('runStore', () => {
     expect(s.deck.discardPile).toHaveLength(0)
   })
 
-  it('clearing a boss blind shows the round transition; continueRun starts the next round', () => {
+  it('clearing a boss blind auto-advances to the next round', () => {
     const store = createRunStore()
     store.getState().newRun('boss1')
-    store.getState().continueRun() // no-op outside the transition
     expect(store.getState().phase).toBe('run')
     store.setState({ blindIndex: 2, blindScore: 99999, handsLeft: 1 }) // round-1 boss, force the clear
     playHand(store)
-    let s = store.getState()
-    expect(s.phase).toBe('roundTransition')
-    expect(s.blindIndex).toBe(2)
-    store.getState().continueRun()
-    s = store.getState()
+    const s = store.getState()
     expect(s.phase).toBe('run')
     expect(s.blindIndex).toBe(3)
     expect(BLINDS[s.blindIndex].round).toBe(2)
@@ -314,11 +309,6 @@ describe('runStore', () => {
       rounds.push(BLINDS[store.getState().blindIndex].round)
       playHand(store)
       if (blind < BLINDS.length - 1) {
-        if (BLINDS[blind].kind === 'boss') {
-          // boss cleared → round transition, then continue
-          expect(store.getState().phase).toBe('roundTransition')
-          store.getState().continueRun()
-        }
         expect(store.getState().phase).toBe('run')
         expect(store.getState().blindIndex).toBe(blind + 1)
       }

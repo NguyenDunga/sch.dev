@@ -37,7 +37,7 @@ export type Hand = (Slot | null)[]
 
 export type TierId = 'jackpot' | 'fourRow' | 'alternating' | 'fourSame' | 'tripleRun' | 'threeSame'
 export type BlindKind = 'small' | 'big' | 'boss'
-export type Phase = 'menu' | 'run' | 'shop' | 'runEnd' | 'roundTransition'
+export type Phase = 'menu' | 'run' | 'shop' | 'runEnd'
 export type HandState = 'ready' | 'tossed'
 export type BossRuleId = 'noAlternating' | 'shortFuse' | 'noJackpots' | 'heavyTarget'
 export type CharmId = 'plusChips' | 'plusMult' | 'extraHand' | 'payday' | 'jackpotFever'

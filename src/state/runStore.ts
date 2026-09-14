@@ -60,8 +60,6 @@ export interface RunState {
   discard: (slot: number) => void
   /** Run the scoring pipeline on the current hand; ends the blind at 0 hands. */
   score: () => void
-  /** Round transition: start the next round's small blind (no-op outside the transition). */
-  continueRun: () => void
   /** Back to the menu; discards the run. */
   toMenu: () => void
 }
@@ -223,21 +221,12 @@ export const createRunStore = () => {
           } else if (s.blindIndex === BLINDS.length - 1) {
             // Blind 12 cleared → run end (win).
             set({ phase: 'runEnd', won: true })
-          } else if (blind.kind === 'boss') {
-            // Boss cleared → round transition screen (next round).
-            set({ phase: 'roundTransition' })
           } else {
-            // Small/big cleared → auto-advance to the next blind
-            // (the shop interstitial lands in M3.4).
+            // Blind cleared → auto-advance to the next blind.
+            // (The shop interstitial replaces this in M9/M10.)
             startBlind(s.blindIndex + 1)
           }
         }
-      },
-
-      continueRun: () => {
-        const s = get()
-        if (s.phase !== 'roundTransition') return
-        startBlind(s.blindIndex + 1)
       },
 
       toMenu: () => {
