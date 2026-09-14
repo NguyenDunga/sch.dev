@@ -196,7 +196,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
 | 12.1 Theme tokens + lucide (no-blur-shadow) | Done | 2026-09-14 | Ceramic Tactile tokens in `index.css` `:root` (palette, tier colors, radii 8/14/22, motion, shadow rule); Tailwind `@theme`/`@theme inline` + shadcn semantic tokens wired to them; Fredoka display font (score numerals) + Geist UI; lucide-react (already present). Re-themed button (coral/teal/ink, 2px ink sticker border), coin faces (flat — no radial gradients), score ticker. **Shadow audit: no blurred drop shadows anywhere** — only hard offsets (`3px 3px 0 var(--ink)` style) + coral glow bloom on the CTA pulse (glow allowed). Also fixed 17 pre-existing `tsc -b` errors (HandSlot narrowing in handFlow.test via a `filled()` helper) so the build is green |
-| 12.2 App phase router + transitions | Not started | | |
+| 12.2 App phase router + transitions | Done | 2026-09-14 | `App.tsx` renders the screen for `RunState.phase` (menu/run/shop/runEnd) via a phase→screen map; `AnimatePresence mode="wait"` + `motion.div` keyed on phase plays the screen-in/out (UX §5: slide 24px + fade, `SPRING.soft` ≈ 300ms) on every phase change; `useReducedMotion` degrades it to a plain cross-fade (UX §8). `overflow-x-clip` on body guards the slide-in |
 | 12.3 Menu (C5) | Not started | | |
 | 12.4 Coin component + interaction states | Not started | | |
 | 12.5 3D coin (r3f, lands on Slot.face) | Not started | | |
