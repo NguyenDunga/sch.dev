@@ -89,6 +89,10 @@ export const REMOVE_COIN_COST = 1
 export const TAX_PAYOUT = 1
 export const JACKPOT_CHANCE = 0.25
 export const JACKPOT_PAYOUT = 4
+/** Scoring booster magnitudes (charm effects, applied left→right at score — SDD C3). */
+export const PLUS_CHIPS_BONUS = 10
+export const PLUS_MULT_BONUS = 1
+export const JACKPOT_FEVER_MULT = 2
 /** Face-effect odds (odds stage, balance-baseline). */
 export const WEIGHT_ODDS = 0.75
 export const MAGNETIC_ODDS = 0.75

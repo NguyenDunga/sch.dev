@@ -11,7 +11,7 @@
 // An action fired in the wrong handPhase is a no-op.
 //
 // The RNG lives in a closure (not serializable); `rngState` mirrors it for
-// save/resume (M11). C3 calls are stubs until M5/M6 land.
+// save/resume (M11). C3: matchTier (M5) + scoreHand (M6) are real; resolveFace is a stub until M7.
 
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'

@@ -109,16 +109,17 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 6.1 Tier step | Not started | | |
-| 6.2 Base step (null → 0/0) | Not started | | |
-| 6.3 Boosters step (left→right) | Not started | | |
-| 6.4 Score = chips × mult | Not started | | |
-| 6.5 Coin cash step | Not started | | |
-| 6.6 Charm-order test | Not started | | |
-| 6.7 No-charm test | Not started | | |
-| 6.8 Deterministic Tax test | Not started | | |
-| 6.9 Reproducible Jackpot cash test | Not started | | |
-| 6.10 Null-tier zero-score test | Not started | | |
+| 6.1 Tier step | Done | 2026-09-14 | scoreHand step 1 = matchTier(play, boss); tests: HHTH → threeSame 15×1; noJackpots demotes HHHHH to fourSame through the tier step |
+| 6.2 Base step (null → 0/0) | Done | 2026-09-14 | chips/mult from TIERS[tier]; no tier → { kind: 'none', cash } with no chips/mult/total |
+| 6.3 Boosters step (left→right) | Done | 2026-09-14 | plusChips +10 / plusMult +1 / jackpotFever ×2 chips (jackpot tier only); magnitudes as new balance.ts constants (PLUS_CHIPS_BONUS, PLUS_MULT_BONUS, JACKPOT_FEVER_MULT); extraHand/payday ignored |
+| 6.4 Score = chips × mult | Done | 2026-09-14 | boosters applied before multiplying: (15+10)×(1+1)=50; all-three-on-jackpot (50+10)×2 chips, 5 mult → 600; no-tier hand total 0 |
+| 6.5 Coin cash step | Done | 2026-09-14 | $1 per Tax coin (deterministic) + $4 per Jackpot coin passing its 25% roll via chance(rng, JACKPOT_CHANCE); threshold proven (0.24 passes, 0.25/0.26 fail); merged coin pays both effects |
+| 6.6 Charm-order test | Done | 2026-09-14 | [plusChips, jackpotFever] → 480 vs [jackpotFever, plusChips] → 440 on HHHHH — totals differ |
+| 6.7 No-charm test | Done | 2026-09-14 | all 6 tiers with no charms: total = TIERS chips × mult for each |
+| 6.8 Deterministic Tax test | Done | 2026-09-14 | counting-rng spy: Tax-only scored hand consumes 0 rng draws, pays $3 |
+| 6.9 Reproducible Jackpot cash test | Done | 2026-09-14 | same seed → identical cash (5 Jackpot coins); over 20 seeds the 25% roll produces both paying and non-paying hands |
+| 6.10 Null-tier zero-score test | Done | 2026-09-14 | 2-coin play with Tax + Jackpot coins → { kind: 'none' }, no total, but coin cash still pays ($5 roll-pass / $1 roll-fail) |
+| — 32-hand EV test (baseline pin, per WBS note) | Done | 2026-09-14 | exhaustive enumeration of all 32 five-coin patterns through scoreHand: EV = 1870/32 = 58.4375, expected computed from TIERS × baseline distribution (not hardcoded); matches plan_balance-baseline.md corrected 2026-09-12. M4 store-test "stub" comments updated (assertions unchanged — those plays are ≤2 coins → no tier) |
 
 ### M7 — Coin Effects (`src/core/scoring.ts` + `balance.ts` + store) → [wbs](../plan/plan_wbs-m7-coin-effects.md)
 

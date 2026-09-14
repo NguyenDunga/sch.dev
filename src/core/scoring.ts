@@ -5,13 +5,23 @@
 // state:
 //   - resolveFace: STUB (M7) — fair 50/50 roll (real: effect odds stage)
 //   - matchTier:   real (M5) — highest-value tier on the tossed coins
-//   - scoreHand:   STUB (M6) — no tier, no coin cash
+//   - scoreHand:   real (M6) — tier → base → boosters → total + coin cash
 //
 // Source of truth for the real implementations:
 // public/.docs/sdd/software_design_component.md (C3).
 
 import type { Rng } from './rng'
+import { chance } from './rng'
 import { isFilled, none, some } from './helpers'
+import {
+  JACKPOT_CHANCE,
+  JACKPOT_FEVER_MULT,
+  JACKPOT_PAYOUT,
+  PLUS_CHIPS_BONUS,
+  PLUS_MULT_BONUS,
+  TAX_PAYOUT,
+  TIERS,
+} from './balance'
 import type { BossRuleId, CharmId, Coin, Face, Option, Play, Score, TierId } from './types'
 
 /** STUB (M7): fair 50/50 roll. Real: odds stage (Magnetic > Double-Side > Chaos > Weight > base) → roll → Reverse. */
@@ -68,11 +78,46 @@ export function matchTier(play: Play, boss: Option<BossRuleId>): Option<TierId> 
   return none
 }
 
-/** STUB (M6): no tier, no coin cash. Real: tier → base → boosters → total + coin cash (Tax/Jackpot). */
+/**
+ * M6: the exact scoring pipeline, in order, no steps merged.
+ *   1. Tier     — matchTier(play, boss) (boss tier rules applied inside M5)
+ *   2. Base     — {chips, mult} from TIERS; no tier → {0, 0}
+ *   3. Boosters — charms left→right: plusChips +10 chips, plusMult +1 mult,
+ *                 jackpotFever ×2 chips (jackpot tier only); only these three
+ *   4. Score    — total = chips × mult (0 for a no-tier hand)
+ *   5. Coin cash — $1 per Tax coin (deterministic) + $4 per Jackpot coin
+ *                 passing its 25% roll (rng, never Math.random); paid to cash,
+ *                 outside chips × mult
+ */
 export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[], rng: Rng): Score {
-  void play
-  void boss
-  void charms
-  void rng
-  return { kind: 'none', cash: 0 }
+  // 1. Tier (boss rules already applied inside matchTier)
+  const tierOpt = matchTier(play, boss)
+  const tier = tierOpt.some ? tierOpt.value : null
+
+  // 2. Base
+  const base = tier ? TIERS.find((t) => t.id === tier) : undefined
+  let chips = base?.chips ?? 0
+  let mult = base?.mult ?? 0
+
+  // 3. Boosters, left→right, only the three scoring boosters
+  for (const charm of charms) {
+    if (charm === 'plusChips') chips += PLUS_CHIPS_BONUS
+    else if (charm === 'plusMult') mult += PLUS_MULT_BONUS
+    else if (charm === 'jackpotFever' && tier === 'jackpot') chips *= JACKPOT_FEVER_MULT
+  }
+
+  // 4. Score
+  const total = tier ? chips * mult : 0
+
+  // 5. Coin cash (per coin in the play; a merged coin carries both effects)
+  let cash = 0
+  for (const slot of play) {
+    if (!isFilled(slot)) continue
+    for (const effect of slot.coin.effects) {
+      if (effect.kind === 'tax') cash += TAX_PAYOUT
+      else if (effect.kind === 'jackpot' && chance(rng, JACKPOT_CHANCE)) cash += JACKPOT_PAYOUT
+    }
+  }
+
+  return tier ? { kind: 'scored', tier, chips, mult, total, cash } : { kind: 'none', cash }
 }

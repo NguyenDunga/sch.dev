@@ -630,7 +630,7 @@ describe('M4.8 — score', () => {
     expect(after.play.every((s) => s.kind === 'empty')).toBe(true)
   })
 
-  it('applies the C3 result: blindScore += total, cash += cash, lastScore = result (stub: none/0)', () => {
+  it('applies the C3 result: blindScore += total, cash += cash, lastScore = result (1-coin play → no tier, plain coins → no cash)', () => {
     const store = drawnStore('m4-8c')
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
@@ -639,8 +639,8 @@ describe('M4.8 — score', () => {
     store.getState().score()
     const after = store.getState()
 
-    expect(after.blindScore).toBe(0) // the stub scores nothing
-    expect(after.cash).toBe(cashBefore) // the stub pays no coin cash
+    expect(after.blindScore).toBe(0) // a 1-coin play matches no tier
+    expect(after.cash).toBe(cashBefore) // plain coins pay no coin cash
     expect(after.lastScore).toEqual({ some: true, value: { kind: 'none', cash: 0 } })
   })
 
@@ -760,7 +760,7 @@ describe('M4.10 — full cycle repeated', () => {
     expect(final.handsLeft).toBe(0)
     expect(final.deck.drawPile).toHaveLength(0)
     expect(final.deck.discardPile).toHaveLength(BASE_DECK_SIZE)
-    expect(final.phase).toBe('runEnd') // the stub scores 0 → target missed
+    expect(final.phase).toBe('runEnd') // 1-coin hands score 0 → target missed
     expect(final.won).toBe(false)
   })
 
