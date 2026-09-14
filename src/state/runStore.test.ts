@@ -1082,3 +1082,63 @@ describe('M9.2 — reroll (one free per shop)', () => {
     expect(store.getState().shop).toEqual(before.shop)
   })
 })
+
+describe('M9.3 — buy (charm) + rejections', () => {
+  function shopStore(seed: string) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      cash: 10,
+      shop: {
+        offers: [
+          { kind: 'charm', charm: 'plusChips' },
+          { kind: 'coin', effect: 'tax' },
+          { kind: 'handSize' },
+          { kind: 'charm', charm: 'payday' },
+          { kind: 'coin', effect: 'draw1' },
+        ],
+        rerollUsed: false,
+      },
+    })
+    return store
+  }
+
+  it('buy a charm: cash -= price, charm added, offer removed', () => {
+    const store = shopStore('m9-3')
+    store.getState().buy({ kind: 'charm', charm: 'plusChips' })
+    const st = store.getState()
+
+    expect(st.cash).toBe(10 - 5) // plusChips price
+    expect(st.charms).toEqual(['plusChips'])
+    expect(st.shop.offers).toHaveLength(4)
+    expect(st.shop.offers.some((o) => o.kind === 'charm' && o.charm === 'plusChips')).toBe(false)
+  })
+
+  it('reject when broke: state unchanged', () => {
+    const store = shopStore('m9-3b')
+    store.setState({ cash: 4 }) // plusChips costs 5
+    const before = store.getState()
+
+    store.getState().buy({ kind: 'charm', charm: 'plusChips' })
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('9.8 reject an already-owned charm: state unchanged', () => {
+    const store = shopStore('m9-3c')
+    store.setState({ charms: ['plusChips'] })
+    const before = store.getState()
+
+    store.getState().buy({ kind: 'charm', charm: 'plusChips' })
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('buy out of the shop phase is a no-op', () => {
+    const store = shopStore('m9-3d')
+    store.setState({ phase: 'run' })
+    const before = store.getState()
+
+    store.getState().buy({ kind: 'charm', charm: 'plusChips' })
+    expect(store.getState()).toEqual(before)
+  })
+})

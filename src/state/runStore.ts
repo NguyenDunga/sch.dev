@@ -23,6 +23,7 @@ import {
   HANDS_PER_BLIND,
   HAND_SIZE,
   HAND_SIZE_CAP,
+  HAND_SIZE_PRICE,
   PLAY_SIZE,
   SHOP_SLOTS,
   START_CASH,
@@ -67,6 +68,12 @@ export interface RunActions {
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
   reroll: () => void
+  /**
+   * shop: buy an offer — cash -= price; charm → charms (M9.3), coin → collection
+   * with rolled favoured face (M9.4), handSize → handSize + 1 (M9.7); the offer
+   * is removed. Reject (state unchanged) if broke or the charm is already owned.
+   */
+  buy: (offer: ShopOffer) => void
   /** UI convenience (C9 Menu button): back to the menu. */
   toMenu: () => void
 }
@@ -93,6 +100,14 @@ function generateOffers(rng: Rng, charms: RunState['charms'], handSize: number):
     ;[pool[i], pool[j]] = [pool[j], pool[i]]
   }
   return pool.slice(0, SHOP_SLOTS)
+}
+
+/** Two offers are the same item (structural — the immer draft wraps references). */
+function sameOffer(a: ShopOffer, b: ShopOffer): boolean {
+  if (a.kind !== b.kind) return false
+  if (a.kind === 'handSize' || b.kind === 'handSize') return a.kind === b.kind
+  if (a.kind === 'charm' && b.kind === 'charm') return a.charm === b.charm
+  return a.kind === 'coin' && b.kind === 'coin' && a.effect === b.effect
 }
 
 /** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
@@ -330,6 +345,25 @@ export function createRunStore() {
           st.shop.offers = generateOffers(rng, st.charms, st.handSize)
           st.shop.rerollUsed = true
           st.rngState = rng.state()
+        }),
+
+      buy: (offer) =>
+        set((st) => {
+          if (st.phase !== 'shop') return
+          const price =
+            offer.kind === 'charm'
+              ? CHARMS.find((c) => c.id === offer.charm)?.price
+              : offer.kind === 'coin'
+                ? COIN_EFFECTS.find((c) => c.effect === offer.effect)?.price
+                : HAND_SIZE_PRICE
+          if (price === undefined || st.cash < price) return // broke — reject
+          if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)
+          // M9.4: coin purchase (favoured-face roll); M9.7: hand-size purchase (cap).
+          if (offer.kind !== 'charm') return
+          st.cash -= price
+          st.charms.push(offer.charm)
+          // Remove the bought offer (structurally — the draft wraps the passed object).
+          st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
         }),
 
       toMenu: () =>
