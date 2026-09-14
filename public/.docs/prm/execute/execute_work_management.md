@@ -177,12 +177,12 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 11.1 `save()` ({version:2,state}, explicit) | Not started | | |
-| 11.2 `resume()` (null/absent no-op) | Not started | | |
-| 11.3 Resume in `run` (blind start) | Not started | | |
-| 11.4 Resume in `shop` (same offers) | Not started | | |
-| 11.5 Round-trip deep-equal test | Not started | | |
-| 11.6 No-autosave test | Not started | | |
+| 11.1 `save()` ({version:2,state}, explicit) | Done | 2026-09-14 | Store action: run/shop phases only; writes { version: 2, state } to localStorage key 'fifty-fifty-run' (incl. rngState + coin collection). 3 tests: shape/fields, explicit-only, menu no-op |
+| 11.2 `resume()` (null/absent no-op) | Done | 2026-09-14 | Store action: absent / unparseable / v1 (non-migratable) / non-run-shop phase → no-op; valid v2 → restores seed, round/blind, cash, charms + order, collection, handSize, runScore, rngState (rng restored before any draw). 4 tests |
+| 11.3 Resume in `run` (blind start) | Done | 2026-09-14 | Reset: hand/play/handPhase/lastScore/blindScore, handsLeft to the blind's initial budget (10; 8 on Short Fuse; +1 Extra Hand), whole collection re-reshuffled from the restored rngState (discard cleared). 3 tests |
+| 11.4 Resume in `shop` (same offers) | Done | 2026-09-14 | Lands at the shop; offers regenerated deterministically from the restored rngState (two fresh resumes of one save → identical offers); rerollUsed preserved (a spent reroll stays spent). 2 tests |
+| 11.5 Round-trip deep-equal test | Done | 2026-09-14 | save → resume in a fresh store: every persisted field deep-equals the saved state; the collection's coins and their effect payloads survive (piles compared as a set — re-reshuffled at blind start) |
+| 11.6 No-autosave test | Done | 2026-09-14 | Spy on localStorage.setItem across a full walk (3 hands → clear → shop: buy/reroll/merge/remove/moveCharm → leaveShop → next-blind hand → toMenu): never called |
 
 ### M12 — UI Screens, Theme & Interaction → [wbs](../plan/plan_wbs-m12-ui.md)
 
