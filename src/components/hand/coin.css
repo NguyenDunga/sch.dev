@@ -1,0 +1,103 @@
+@theme {
+  --color-coin-gold: oklch(0.84 0.15 85);
+  --color-coin-gold-deep: oklch(0.67 0.13 70);
+  --color-coin-gold-ink: oklch(0.45 0.11 60);
+  --color-coin-silver: oklch(0.84 0.01 250);
+  --color-coin-silver-deep: oklch(0.64 0.015 250);
+  --color-coin-silver-ink: oklch(0.35 0.02 250);
+}
+
+.coin {
+  width: 3.5rem;
+  height: 3.5rem;
+  perspective: 8rem;
+}
+
+.coin-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.coin-badges {
+  display: flex;
+  gap: 0.15rem;
+  min-height: 1rem;
+}
+
+.coin-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1rem;
+  padding: 0 0.3rem;
+  border-radius: 0.3rem;
+  background: var(--color-muted);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted-foreground);
+  user-select: none;
+}
+
+.coin--tappable {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.coin--tappable:hover {
+  transform: scale(1.06);
+}
+
+.coin--tappable:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.coin--idle {
+  border-radius: 9999px;
+  background: var(--color-muted);
+  border: 2px solid var(--color-border);
+}
+
+.coin-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.coin-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  backface-visibility: hidden;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  user-select: none;
+}
+
+.coin-face--heads {
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--color-coin-gold),
+    var(--color-coin-gold-deep)
+  );
+  border: 2px solid var(--color-coin-gold-deep);
+  color: var(--color-coin-gold-ink);
+}
+
+.coin-face--tails {
+  transform: rotateY(180deg);
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--color-coin-silver),
+    var(--color-coin-silver-deep)
+  );
+  border: 2px solid var(--color-coin-silver-deep);
+  color: var(--color-coin-silver-ink);
+}

@@ -1,0 +1,66 @@
+@theme {
+    /* 50/50 game palette — Balatro-style chip colors (button.tsx) */
+    --color-gold: oklch(0.84 0.15 85);
+    --color-gold-deep: oklch(0.55 0.14 55);
+    --color-cream: oklch(0.93 0.04 90);
+    --color-cream-deep: oklch(0.62 0.06 70);
+    --color-ember: oklch(0.58 0.2 25);
+    --color-ember-deep: oklch(0.42 0.17 20);
+    --color-ink: oklch(0.3 0.06 55);
+
+    /* Game button juice (button.tsx) */
+    --animate-btn-cta: btn-cta 2.6s ease-in-out infinite;
+    --animate-btn-wobble: btn-wobble 0.45s ease-in-out;
+    --animate-btn-flash: btn-flash 0.6s ease-out forwards;
+
+    @keyframes btn-cta {
+        /* bob + gold glow breathe, tuned to the primary (gold) face shadow */
+        0%,
+        100% {
+            translate: 0 0;
+            box-shadow:
+                0 4px 0 0 var(--color-gold-deep),
+                0 10px 18px -6px rgba(0, 0, 0, 0.5),
+                0 0 0.5rem 0 rgba(255, 196, 64, 0.25);
+        }
+        50% {
+            translate: 0 -0.15rem;
+            box-shadow:
+                0 4px 0 0 var(--color-gold-deep),
+                0 10px 18px -6px rgba(0, 0, 0, 0.5),
+                0 0 1.5rem 0.25rem rgba(255, 196, 64, 0.5);
+        }
+    }
+
+    @keyframes btn-wobble {
+        0% {
+            rotate: 0deg;
+        }
+        30% {
+            rotate: -1.5deg;
+        }
+        65% {
+            rotate: 1.2deg;
+        }
+        100% {
+            rotate: 0deg;
+        }
+    }
+
+    @keyframes btn-flash {
+        0% {
+            translate: -130% 0;
+        }
+        100% {
+            translate: 130% 0;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-btn-cta,
+    .animate-btn-wobble,
+    .animate-btn-flash {
+        animation: none !important;
+    }
+}
