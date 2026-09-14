@@ -386,3 +386,57 @@ describe('M4.4 — discard', () => {
     expect(after.deck.drawPile).toHaveLength(0)
   })
 })
+
+describe('M4.5 — confirmPlay', () => {
+  it('requires ≥1 picked coin — an empty play is a no-op', () => {
+    const store = drawnStore('m4-5a')
+    const before = store.getState()
+    const rngBefore = before.rngState
+
+    store.getState().confirmPlay()
+    const after = store.getState()
+
+    expect(after.handPhase).toBe('play')
+    expect(after.play).toEqual(before.play)
+    expect(after.rngState).toEqual(rngBefore) // no face resolution ran
+  })
+
+  it('moves play → toss → buff (buff is the resting phase)', () => {
+    const store = drawnStore('m4-5b')
+    store.getState().pickCoin(0)
+
+    store.getState().confirmPlay()
+    expect(store.getState().handPhase).toBe('buff')
+  })
+
+  it('unpicked hand coins stay in the hand (not discarded yet)', () => {
+    const store = drawnStore('m4-5c')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(1)
+
+    store.getState().confirmPlay()
+    const after = store.getState()
+
+    // 6 of 8 hand coins remain, still in the hand.
+    expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(HAND_SIZE - 2)
+    // Nothing has been discarded yet — that happens at score.
+    expect(after.deck.discardPile).toHaveLength(0)
+  })
+
+  it('resolves the picked coins faces in the toss (rng consumed, valid faces)', () => {
+    const store = drawnStore('m4-5d')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(2)
+    const rngBefore = store.getState().rngState
+
+    store.getState().confirmPlay()
+    const after = store.getState()
+
+    expect(after.rngState).not.toEqual(rngBefore)
+    for (const slot of after.play) {
+      if (slot.kind === 'filled') {
+        expect(['H', 'T']).toContain(slot.face)
+      }
+    }
+  })
+})
