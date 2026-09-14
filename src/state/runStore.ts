@@ -132,6 +132,13 @@ export function createRunStore() {
             st.hand[i] = filledSlot(d.value, FACE_DOWN)
             st.deck.drawPile = st.deck.drawPile.slice(1)
           }
+          if (!st.hand.some(isFilled)) {
+            // Empty pile at hand start: auto-skip the hand (no score), handsLeft −1,
+            // back to draw (design decision 2026-09-14 — the SDD was silent here).
+            st.handsLeft -= 1
+            if (st.handsLeft <= 0) endBlind(st)
+            return
+          }
           st.handPhase = 'play'
         }),
 

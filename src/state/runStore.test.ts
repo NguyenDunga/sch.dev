@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
 import type { HandPhase } from '@/core/types'
 import { createRunStore } from './runStore'
 
@@ -146,7 +146,7 @@ describe('M4.2 — drawHand', () => {
     expect(st.deck.drawPile).toHaveLength(0)
   })
 
-  it('an empty pile leaves the hand empty and still moves to play', () => {
+  it('an empty pile at hand start auto-skips the hand (no score, handsLeft −1, stays in draw)', () => {
     const store = createRunStore()
     store.getState().startRun('m4-2d')
     store.setState({ deck: { drawPile: [], discardPile: [] } })
@@ -154,7 +154,25 @@ describe('M4.2 — drawHand', () => {
     store.getState().drawHand()
     const st = store.getState()
 
-    expect(st.handPhase).toBe('play')
+    expect(st.handPhase).toBe('draw') // auto-skipped: no play phase, back to draw
     expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
+    expect(st.handsLeft).toBe(HANDS_PER_BLIND - 1)
+    expect(st.blindScore).toBe(0)
+  })
+
+  it('auto-skip on the last hand ends the blind (target missed → runEnd)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m4-2e')
+    store.setState({
+      deck: { drawPile: [], discardPile: [] },
+      handsLeft: 1,
+    })
+
+    store.getState().drawHand()
+    const st = store.getState()
+
+    expect(st.handsLeft).toBe(0)
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
   })
 })

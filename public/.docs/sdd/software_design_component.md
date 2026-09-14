@@ -70,7 +70,7 @@ Single zustand store (immer + persist). State shape in [Data Design](software_de
 | Action | Effect |
 | --- | --- |
 | `startRun(seed)` | Fresh run: rng from seed, base collection of 80 plain coins built + shuffled into draw pile, round 1 small blind, $4, no charms, handSize 8, phase `run` |
-| `drawHand()` | Draw phase (automatic at hand start): pop up to `handSize` coins face-down from the draw pile into the hand (fewer — the remaining slots stay `{ kind: 'empty' }`, never null — when the pile is short); handPhase → `play` |
+| `drawHand()` | Draw phase (automatic at hand start): pop up to `handSize` coins face-down from the draw pile into the hand (fewer — the remaining slots stay `{ kind: 'empty' }`, never null — when the pile is short); handPhase → `play`. **Empty pile at hand start: auto-skip the hand** — `handsLeft −1`, no score, stays in `draw` (design decision 2026-09-14; prevents a deadlock where an empty hand can never be played) |
 | `pickCoin(handIndex)` | Play phase: move the hand coin into the next free play slot (max 5); a coin already in the play is unpicked first |
 | `unpickCoin(slotIndex)` | Play phase: return the play coin to the hand |
 | `discard(handIndex)` | Play phase, unlimited: hand coin → discard pile (gone for the blind); if the coin has a draw enchant (draw1/2/3), draw N fresh coins face-down from the draw pile into the hand (empty slots if the pile is short) |

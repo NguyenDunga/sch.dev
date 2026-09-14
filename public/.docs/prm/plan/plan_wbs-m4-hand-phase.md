@@ -22,6 +22,8 @@ Toss/Buff/Score call M6/M7 (`scoreHand`, `resolveFace`); stub those until then. 
 
 - [x] 4.1 `handPhase` only ever moves along `draw→play→toss→buff→score→draw`.
 - [x] 4.2 `drawHand` (auto): up to `handSize` coins face-down into `hand` (fewer if the pile is short); → `play`.
+
+> **4.2 design decision (2026-09-14):** empty pile at hand start (reachable with hand-size upgrades / draw-enchant coins) would otherwise deadlock the machine (empty hand → nothing to pick → `confirmPlay` needs ≥1). Resolution: **auto-skip the hand** — `handsLeft −1`, no score, stays in `draw`. Recorded in SDD C4.
 - [ ] 4.3 `pickCoin` / `unpickCoin`: play slots hold 1–5; picking a 6th is a no-op; re-picking a played coin unpicks it first.
 - [ ] 4.4 `discard`: plain coin → discard (gone for the blind); `draw1/2/3` coin → redraw N into the hand.
 - [ ] 4.5 `confirmPlay`: requires ≥1 picked; → `toss`; unpicked hand coins stay in `hand` (not discarded yet).
