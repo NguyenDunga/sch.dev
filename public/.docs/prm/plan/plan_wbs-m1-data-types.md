@@ -1,63 +1,22 @@
 # M1 — Core Data Types
 
-**Depends:** M0 · **File:** `src/core/types.ts` (single source for all shared types) · **Source:** [Scope Statement](plan_scope-statement.md) → Core Rules; [Balance Baseline](plan_balance-baseline.md) · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M0 · **File:** `src/core/types.ts` · **Source of truth:** [SDD Data Design](../../sdd/software_design_data.md) → Core Types + Run State · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: define every shared shape once. Types only — no logic, no defaults. Every later milestone imports from here; names are load-bearing.*
+*Goal: define every shared shape once, exactly as the SDD Data Design lists them. Types only — no logic, no defaults. Every later milestone imports from here.*
 
-## Contract
-
-```ts
-export type CoinId = string;
-
-export type CoinEffect =                       // 9 v1 variants (odds/prices in balance.ts COIN_CATALOG)
-  | { kind: 'weight'; face: boolean }          // 75/25 toward fixed face (rolled on purchase)
-  | { kind: 'doubleSide'; face: boolean }      // 100/0 fixed face
-  | { kind: 'chaos' }                          // uniform random odds each flip
-  | { kind: 'echo' }                           // re-flip once per hand
-  | { kind: 'magnetic' }                       // 75/25 toward left neighbour's face
-  | { kind: 'reverse' }                        // invert rolled face
-  | { kind: 'tax' }                            // +$1/hand
-  | { kind: 'jackpot' }                        // 25% -> +$4/hand
-  | { kind: 'draw'; n: 1 | 2 | 3 };            // discard -> redraw n
-
-export interface Coin { id: CoinId; isHeads: boolean | null; effects: CoinEffect[]; }
-
-export type CharmId = 'plusChips' | 'plusMult' | 'extraHand' | 'payday' | 'jackpotFever';
-export interface Charm { id: CharmId; name: string; kind: 'booster' | 'other'; }
-
-export enum Tier { Jackpot='jackpot', FourInARow='fourInARow', Alternating='alternating',
-  FourSame='fourSame', TripleRun='tripleRun', ThreeSame='threeSame' }   // minCoins carried by TIER_TABLE
-
-export enum HandPhase { Draw='draw', Play='play', Toss='toss', Buff='buff', Score='score' }
-
-export type RoundIndex = 0|1|2|3;
-export type BlindIndex = 0|1|2;                // small, big, boss
-export type BossRuleId = 'noAlternating'|'shortFuse'|'noJackpots'|'heavyTarget';
-export interface BossRule { id: BossRuleId; round: RoundIndex; }
-
-export type ShopOffer =
-  | { kind: 'charm'; charmId: CharmId; price: number }
-  | { kind: 'specialCoin'; effect: CoinEffect; price: number }
-  | { kind: 'handSizeUpgrade'; price: number };
-
-export interface RunState {
-  seed: string; deck: Coin[]; drawPile: Coin[]; hand: Coin[]; discardPile: Coin[];
-  money: number; roundIndex: RoundIndex; blindIndex: BlindIndex;
-  handsLeft: number; blindTarget: number; blindTotal: number;
-  ownedCharms: Charm[];        // array order == charm-bar order
-  handSize: number;            // starts at HAND_SIZE_START
-  phase: HandPhase;
-}
-```
-
-`blindTotal` and `phase` are additions to the original RunState list (the pipeline and phase machine need them).
+Implement the full type block from **[SDD Data Design → Core Types](../../sdd/software_design_data.md)** verbatim (it is the authority — do not restate or vary it here). Checkpoints below are that block, item by item.
 
 ## Checkpoints
 
-- [ ] 1.1–1.8 Define each shape above verbatim: `Coin`, `CoinEffect` (exactly 9), `Charm`/`CharmId` (5), `Tier` (6), `HandPhase`, `RunState`, `BossRule`/`BossRuleId` (4), `ShopOffer` (3).
-- [ ] 1.9 All exported from one `types.ts`; no runtime logic, no defaults.
-- [ ] 1.10 `tsc --noEmit` clean.
+- [ ] 1.1 Primitives/unions: `Face`, `CoinEffectId` (11 ids: 8 + draw1/2/3), `TierId` (6), `BlindKind`, `Phase`, `HandPhase` (5), `BossRuleId` (4), `CharmId` (5), `CharmCategory` (4).
+- [ ] 1.2 `Coin { id: number; effects: CoinEffectId[]; faceParams?: { weight?: Face; doubleSide?: Face } }` — face is **not** on the coin (see 1.3); `faceParams` is per-effect so a merged coin can hold both Weight and Double-Side faces.
+- [ ] 1.3 `Slot { coin; face: Face; echoUsed }`, `Hand = (Coin|null)[]`, `Play = (Slot|null)[]` (length 5; `null` = empty = nothing).
+- [ ] 1.4 `ShopOffer` discriminated union (`charm | coin | handSize`).
+- [ ] 1.5 Record interfaces: `Tier`, `Blind`, `CharmDef`, `CoinDef`, `Deck`, `Score`.
+- [ ] 1.6 `RunState` — every field from the SDD Run State block (seed, phase, round, blindIndex, hand, play, handPhase, handSize, handsLeft, blindScore, cash, charms, deck, shop, lastScore, runScore, won, rngState).
+- [ ] 1.7 All exported from one `types.ts`; no runtime logic, no defaults.
+- [ ] 1.8 `tsc --noEmit` clean.
 
 ## Exit gate
 
-`tsc --noEmit` clean; member counts exact (9 effects / 5 charms / 6 tiers / 4 boss rules); `types.ts` has no runtime code.
+`tsc --noEmit` clean; `types.ts` matches the SDD block field-for-field; member counts exact (11 effect ids / 6 tiers / 5 charms / 4 boss rules / 5 hand phases); no runtime code.

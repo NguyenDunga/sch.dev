@@ -1,30 +1,30 @@
 # M3 — Deck & Draw Pile
 
-**Depends:** M1, M2 · **Files:** `src/core/deck.ts` (+`.test.ts`) · **Source:** [Balance Baseline](plan_balance-baseline.md) → Deck & Deck Size Calc · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M1, M2 · **Files:** `src/core/deck.ts` (+`.test.ts`) · **Source of truth:** [SDD Component Design](../../sdd/software_design_component.md) C11; [Balance Baseline](plan_balance-baseline.md) → Deck & Deck Size Calc · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: the coin-collection lifecycle. The draw pile is finite per blind — no mid-blind reshuffle; the hand shrinks on deck-out.*
+*Goal: the coin-collection lifecycle (Balatro-style). The draw pile is finite per blind — no mid-blind reshuffle; the hand shrinks on deck-out. All functions pure.*
 
-## Contract
+## Contract (SDD C11)
 
 ```ts
-// all PURE — return new arrays, never mutate inputs
-export function createBaseDeck(): Coin[];                              // BASE_DECK_SIZE plain coins (effects:[])
-export function shuffleIntoDrawPile(deck: Coin[], rng: Rng): Coin[];
-export function drawCoins(drawPile: Coin[], count: number): { drawn: Coin[]; drawPile: Coin[] };
-export function discardCoins(discardPile: Coin[], coins: Coin[]): Coin[];
+export function buildCollection(): Deck                        // BASE_DECK_SIZE plain coins (effects:[]); fresh run
+export function shuffleCollection(rng: Rng, deck: Deck): Deck  // blind start: merge piles -> Fisher–Yates -> drawPile; discardPile = []
+export function drawFromDeck(deck: Deck): Coin | null          // pop one from drawPile (no rng); null when empty
+export function discardToPile(deck: Deck, coin: Coin): Deck    // coin -> discardPile
+export function returnHandToPile(deck: Deck, hand: Hand): Deck // after scoring: all hand coins -> discardPile
 ```
 
-Use `BASE_DECK_SIZE` from `balance.ts`; base coins have unique `id`, `isHeads:null`, `effects:[]`.
+`buildCollection` uses `BASE_DECK_SIZE` from `balance.ts` (do not hardcode). The store draws a hand by calling `drawFromDeck` up to `handSize` times (M4).
 
 ## Checkpoints
 
-- [ ] 3.1 `createBaseDeck()` → `BASE_DECK_SIZE` plain coins, distinct ids.
-- [ ] 3.2 `shuffleIntoDrawPile` — seed-deterministic order, same multiset of ids.
-- [ ] 3.3 `drawCoins` — takes up to `count` from the top; short pile → `drawn.length < count` (no padding).
-- [ ] 3.4 `discardCoins` — append, input unmutated.
-- [ ] 3.5 Test: over-draw returns only what's available, no throw.
-- [ ] 3.6 Test: no function reshuffles discard→draw within a blind (drain the pile, it stays empty).
-- [ ] 3.7 Test: blind-start reset → `drawPile.length === deck.length`, `discardPile` empty.
+- [ ] 3.1 `buildCollection()` → `BASE_DECK_SIZE` plain coins, distinct ids, `effects: []`.
+- [ ] 3.2 `shuffleCollection(rng, deck)` — merges drawPile+discardPile, Fisher–Yates with `rng`, clears discard; seed-deterministic order; same multiset of ids.
+- [ ] 3.3 `drawFromDeck(deck)` — pops one coin (no rng); returns `null` when the draw pile is empty (hand shrinks — no placeholder coin).
+- [ ] 3.4 `discardToPile` / `returnHandToPile` — append to discard; inputs unmutated.
+- [ ] 3.5 Test: drawing from an empty pile returns `null`, no throw.
+- [ ] 3.6 Test: no function moves discard→draw within a blind (drain the pile; it stays empty; discard grows).
+- [ ] 3.7 Test: `shuffleCollection` clears the discard pile and the resulting drawPile length equals the collection size.
 
 ## Exit gate
 

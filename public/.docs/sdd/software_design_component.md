@@ -4,19 +4,21 @@ Part of the [Software Architecture](software_design_architechture.md). Balance v
 
 ## Component Inventory
 
-| ID | Component | Layer | WBS |
+| ID | Component | Layer | WBS milestones |
 | --- | --- | --- | --- |
-| C1 | RNG wrapper | core | 1.3 |
-| C2 | Balance tables | core | 2.1 |
-| C3 | Scoring pipeline (face resolution, tiers, coin cash) | core | 2.1, 3.2, 3.3, 3.6 |
-| C4 | Run store | state | 1.2, 2.3, 3.1–3.4, 3.6, 4.2 |
-| C5 | Menu screen | UI | 4.1 |
-| C6 | Run screen | UI | 2.2, 3.1, 3.6 |
-| C7 | Charm bar (drag) | UI | 3.3 |
-| C8 | Shop screen | UI | 3.4 |
-| C9 | Run-end (game over) screen | UI | 3.5 |
-| C10 | Juice (animation, ticker, confetti, SFX) | UI | 2.2, 4.3 |
-| C11 | Coin deck (collection, draw / discard / reshuffle) | core | 3.6 |
+| C1 | RNG wrapper | core | M2 |
+| C2 | Balance tables | core | M1 (data filled across M5–M10) |
+| C3 | Scoring pipeline (face resolution, tiers, coin cash) | core | M5, M6, M7 |
+| C4 | Run store | state | M4, M9, M10, M11, M12 |
+| C5 | Menu screen | UI | M12 |
+| C6 | Run screen | UI | M12 |
+| C7 | Charm bar (drag) | UI | M8, M12 |
+| C8 | Shop screen | UI | M9, M12 |
+| C9 | Run-end (game over) screen | UI | M12 |
+| C10 | Juice (animation, ticker, confetti, SFX) | UI | M13 |
+| C11 | Coin deck (collection, draw / discard / reshuffle) | core | M3 |
+
+> WBS milestones are the M0–M15 build breakdown; see [WBS Overview](../prm/plan/plan_wbs-overview.md).
 
 ## Core Components
 
@@ -38,7 +40,7 @@ createRng(seed: string): Rng
 
 ### C2 — Balance tables (`src/core/balance.ts`)
 
-Data-only module, no logic: tier table (6), blind table (12), boss rules (4), charm pool (5), coin-effect pool (11: 8 effect coins + 3 draw tiers), constants (incl. base deck size 80, remove-coin cost, Tax/Jackpot payouts). Values from [balance-baseline](../prm/plan/plan_balance-baseline.md); tuning here is not a scope change.
+Data-only module, no logic: tier table (6), blind table (12), boss rules (4), charm pool (5), coin-effect pool (9 effect types → 11 catalog entries: 8 single-effect coins + Draw-1/2/3), constants (incl. base deck size 80, remove-coin cost, Tax/Jackpot payouts). Values from [balance-baseline](../prm/plan/plan_balance-baseline.md); tuning here is not a scope change.
 
 ### C3 — Scoring pipeline (`src/core/scoring.ts`)
 
@@ -52,7 +54,7 @@ interface Score { tier: TierId; chips: number; mult: number; total: number; cash
 ```
 
 - **Face resolution (toss phase):** odds stage — Magnetic (75% toward left neighbor in the play, if present) > Double-Side (100/0 toward `coin.param`) > Chaos (random 0–100 odds) > Weight (75/25 toward `coin.param`) > base (50/50); roll the face; Reverse inverts it. Echo: the player may re-run resolution once per Echo coin (buff phase).
-- **Tier (score phase):** highest-value tier matched (count + sequence tiers; empty slots count as **nothing** — the pattern is evaluated on the tossed coins only, so a k-coin play can only match tiers whose structure fits in k coins; a play of ≤2 coins matches no tier and scores 0). Boss rules applied here: No Alternating → alternating plays score 0 (explicit override, no fall-through); No Jackpots → 5-same demoted to 4-same (30×2).
+- **Tier (score phase):** highest-value tier matched (count + sequence tiers; empty slots count as **nothing** — the pattern is evaluated on the tossed coins only, so a k-coin play can only match tiers whose structure fits in k coins; a play of ≤2 coins matches no tier and scores 0). Boss rules applied here: No Alternating → alternating plays score 0 (explicit override, no fall-through); No Jackpots → 5-same scores as 4-same (30×2) — a fixed demotion, **not** a fall-through to the next-highest matched tier (HHHHH also matches 4-in-a-row, but it still scores 4-same).
 - **Base:** chips/mult from the tier table.
 - **Boosters (buff phase, applied at score):** owned scoring boosters applied left-to-right in charm-bar order: +Chips → chips += 10; +Mult → mult += 1; Jackpot Fever → if tier is Jackpot, chips ×= 2.
 - **Score:** total = chips × mult.

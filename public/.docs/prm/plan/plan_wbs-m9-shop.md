@@ -1,33 +1,34 @@
 # M9 — Shop
 
-**Depends:** M7, M8 · **Files:** `src/core/shop.ts` (+`.test.ts`); prices in `balance.ts` · **Source:** [Scope Statement](plan_scope-statement.md) → Shop · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M7, M8 · **File:** `src/state/runStore.ts` (+`.test.ts`); prices/pool in `src/core/balance.ts` · **Source of truth:** [SDD Component Design](../../sdd/software_design_component.md) C4/C8; [Scope Statement](plan_scope-statement.md) → Shop · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: between-blind shop — 5 offers, exactly 1 free reroll, merge, remove.*
+*Goal: the between-blind shop — 5 offers, exactly 1 free reroll, merge, remove, hand-size upgrade. All shop logic lives in the store (SDD C4).*
 
-## Contract
+## Store actions (SDD C4)
 
 ```ts
-export interface Shop { offers: ShopOffer[]; rerollUsed: boolean; }   // 5 offers
-export function generateShopOffers(rng: Rng, run: RunState): Shop;
-export function rerollShop(rng: Rng, run: RunState, shop: Shop): Shop;                    // once only
-export function buyOffer(run: RunState, offer: ShopOffer): RunState | { error: string };
-export function mergeCoins(run: RunState, targetId: CoinId, sourceId: CoinId): RunState;  // free
-export function removeCoin(run: RunState, id: CoinId): RunState | { error: string };      // costs $1
+// offers are generated on entering the shop (endBlind) and by reroll; shop = { offers: ShopOffer[]; rerollUsed: boolean }
+buy(offer)                     // cash -= price; charm -> charms; coin -> collection (roll Weight/Double-Side faceParams); handSize -> handSize+1; reject if broke or charm owned
+reroll()                       // if !rerollUsed: regenerate all offers (rng); rerollUsed = true
+mergeCoin(fromId, toId)        // toId gains fromId's effects (stack, no cap); fromId removed; free
+removeCoin(id)                 // remove coin from collection; cash -= REMOVE_COIN_COST ($1)
+leaveShop()                    // next blind (M10)
 ```
+
+Offers are drawn from: charms not yet owned + coin effects (COIN_EFFECTS) + a hand-size upgrade; `SHOP_SLOTS`=5, `FREE_REROLLS`=1, caps in `balance.ts`.
 
 ## Checkpoints
 
-- [ ] 9.1 `generateShopOffers` → 5 offers from {unowned charms, special coins, hand-size upgrade}.
-- [ ] 9.2 `rerollShop` — 1 free reroll, regenerates all 5, sets `rerollUsed`; second call is a no-op.
-- [ ] 9.3 `buyOffer` — deduct price, add item; `{error}` if broke or charm already owned (run unchanged).
-- [ ] 9.4 `mergeCoins` — source's effects fold into target (M7 `mergeEffects`), source removed, free.
-- [ ] 9.5 `removeCoin` — flat $1 delete; `money` only decreases, never refunds.
-- [ ] 9.6 Hand-size upgrade — `handSize += step` (balance.ts), up to cap; past cap → `{error}`.
-- [ ] 9.7 Test: reroll usable exactly once per shop.
-- [ ] 9.8 Test: buying an owned charm → `{error}`.
-- [ ] 9.9 Test: remove costs $1, no refund.
-- [ ] 9.10 Test: no `sell` export exists.
+- [ ] 9.1 Offer generation → 5 offers from {unowned charms, coins, hand-size upgrade}; no owned charm offered.
+- [ ] 9.2 `reroll` — usable once (`rerollUsed`); regenerates all 5; second call is a no-op.
+- [ ] 9.3 `buy` — deduct price, add item; reject (state unchanged) if `cash < price` or charm already owned.
+- [ ] 9.4 `buy` a coin rolls its `faceParams` (Weight/Double-Side) via rng and adds it to the collection.
+- [ ] 9.5 `mergeCoin` — effects stack onto target, source removed, free (`cash` unchanged).
+- [ ] 9.6 `removeCoin` — `cash -= REMOVE_COIN_COST`; delete only, never a refund.
+- [ ] 9.7 Hand-size upgrade — `handSize += 1` up to `HAND_SIZE_CAP`; past cap rejected.
+- [ ] 9.8 Test: reroll once per shop; buying an owned charm rejected.
+- [ ] 9.9 Test: remove costs $1, no refund; no "sell charm" action exists.
 
 ## Exit gate
 
-`npx vitest run src/core/shop.test.ts` green; one-reroll, no-duplicate-charm, $1-delete rules proven.
+`npx vitest run src/state/runStore.test.ts` green (shop subset); one-reroll, no-duplicate-charm, $1-delete (no sell-back) proven.

@@ -7,7 +7,9 @@ Part of the [Software Architecture](software_design_architechture.md). Balance v
 ```ts
 type Face = 'H' | 'T'
 type CoinEffectId = 'weight' | 'doubleSide' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
-interface Coin { id: number; effects: CoinEffectId[]; param?: Face }  // param: rolled favored face for weight/doubleSide (set on purchase)
+interface Coin { id: number; effects: CoinEffectId[]; faceParams?: { weight?: Face; doubleSide?: Face } }
+  // faceParams: rolled favored face per face-fixing effect (set on purchase). Kept per-effect so a merged coin
+  //             holding both Weight and Double-Side can carry each one's face independently.
 interface Slot { coin: Coin; face: Face; echoUsed: boolean }         // one tossed coin in a play slot
 type Hand = (Coin | null)[]                                          // length = handSize (base 8); face-down coins drawn this hand
 type Play = (Slot | null)[]                                          // length 5; the picked coins (1–5), tossed in the toss phase; null = empty slot (counts as nothing — no wilds)
@@ -23,8 +25,8 @@ type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: Coi
 interface Tier { id: TierId; name: string; chips: number; mult: number }
 interface Blind { round: number; kind: BlindKind; target: number; reward: number; boss?: BossRuleId }
 interface CharmDef { id: CharmId; name: string; category: CharmCategory; price: number }
-interface CoinDef { effect: CoinEffectId; name: string; price: number }   // v1 core set (9 + 3 draw tiers)
-interface Deck { drawPile: Coin[]; discardPile: Coin[] }                  // collection = drawPile + discardPile
+interface CoinDef { effect: CoinEffectId; name: string; price: number }   // 11 catalog entries = 8 single-effect coins + Draw-1/2/3 (9 effect types; Draw has 3 tiers)
+interface Deck { drawPile: Coin[]; discardPile: Coin[] }                  // persistent collection == drawPile + discardPile (+ any coins currently in hand/play mid-blind)
 interface Score { tier: TierId; chips: number; mult: number; total: number; cash: number }  // cash: coin cash effects (Tax/Jackpot)
 ```
 
@@ -75,6 +77,7 @@ interface RunState {
   - Saved in `shop`: resume at the shop — offers regenerated identically from `rngState`.
   - Preserved across resume: seed, round/blind, cash, charms + order, coin collection, rngState, runScore.
   - Reset across resume: hand, play, handsLeft, blindScore, handPhase, lastScore, draw/discard piles (re-reshuffled).
+  - **Determinism note (open design item):** resume re-reshuffles at blind start using the *current* `rngState`, which has already advanced past the original blind-start shuffle — so a resumed blind draws a **different** pile than the pre-save one, and "same seed + same choices → identical run" holds only for **uninterrupted** runs. This is intentional (resume = a clean blind restart) but lets a reload re-roll a blind. If save-scumming a blind should be prevented, snapshot the pre-shuffle `rngState` (or the shuffled pile) at blind start and restore *that* on resume. Not yet decided.
 
 ## Balance Data (`src/core/balance.ts`)
 
@@ -84,7 +87,7 @@ Data-only tables (draft values from [balance-baseline](../prm/plan/plan_balance-
 - `BLINDS: Blind[12]` — 4 rounds × small/big/boss; targets 300 → 3500 (Heavy Target ×1.5 applied at runtime → 5250); rewards $4/$6/$10
 - `BOSS_RULES: BossRule[4]` — No Alternating · Short Fuse · No Jackpots · Heavy Target (target ×1.5, +$5)
 - `CHARMS: CharmDef[5]` — pool with categories and prices (Re-Toss removed 2026-09-13)
-- `COIN_EFFECTS: CoinDef[11]` — v1 core set: Weight · Double-Side · Chaos · Echo · Magnetic · Reverse · Tax · Jackpot · Draw-1 · Draw-2 · Draw-3 (prices in balance-baseline)
+- `COIN_EFFECTS: CoinDef[11]` — 9 effect types (Draw split into 3 tiers → 11 entries): Weight · Double-Side · Chaos · Echo · Magnetic · Reverse · Tax · Jackpot · Draw-1 · Draw-2 · Draw-3 (prices in balance-baseline)
 - Constants: `HANDS_PER_BLIND = 10` · `SHORT_FUSE_HANDS = 8` · `HAND_SIZE = 8` · `PLAY_SIZE = 5` · `HAND_SIZE_UPGRADE_PRICE = 10` (draft) · `HAND_SIZE_CAP = 10` (draft) · `START_CASH = 4` · `SHOP_SLOTS = 5` · `FREE_REROLLS = 1` · `PAYDAY_BONUS = 5` · `HEAVY_TARGET_BONUS = 5` · `BASE_DECK_SIZE = 80` (re-tuned 2026-09-14, no-wilds calculation — see balance-baseline Deck Size Calculation) · `REMOVE_COIN_COST = 1` · `TAX_PAYOUT = 1` · `JACKPOT_CHANCE = 0.25` · `JACKPOT_PAYOUT = 4`
 
 ## Data Flow Summary

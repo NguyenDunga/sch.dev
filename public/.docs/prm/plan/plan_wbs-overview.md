@@ -8,15 +8,18 @@ Work Breakdown Structure for the 50/50 build. The project is decomposed into **1
 
 ## Build Conventions (read first)
 
-These apply to every milestone. A checkpoint is **done** only when `tsc --noEmit`, `npm run lint`, and the relevant tests are all green.
+These apply to every milestone. **The [SDD](../../sdd/software_design_architechture.md) is the source of truth** for types, module layout, and function signatures — this WBS follows it. A checkpoint is **done** only when `tsc --noEmit`, `npm run lint`, and the relevant tests are all green.
 
-- **Commands:** `npm run dev`, `npm run build`, `npm run test` (vitest), `npm run lint` (ESLint), `tsc --noEmit` (type-check). Run one test file with `npx vitest run <path>`.
-- **Layout:** pure engine logic in `src/core/` (no React imports anywhere in `core`); run state in `src/state/`; UI in `src/pages/` + `src/components/`; helpers in `src/lib/`.
-- **Types:** every shared type is defined once in `src/core/types.ts` (M1) and imported — never re-declared in another file.
-- **Tunable values** (tier chips/mult, blind targets/rewards, boss effects, deck size, prices, odds) live **only** in `src/core/balance.ts`, which mirrors [balance-baseline](plan_balance-baseline.md) — the source of truth. Reference them by their exported constant name (e.g. `TIER_TABLE`, `BASE_DECK_SIZE`, `BLIND_TARGETS`, `BOSS_RULES`, `COIN_CATALOG`, `CHARM_POOL`); **never hardcode a copy** of a number in engine or test code.
-- **Coin convention:** `isHeads === true` = Heads = **win**; `false` = Tails = loss; `null` = not yet tossed.
-- **Purity:** engine functions in `src/core/` are pure — they take state/inputs and return new values; they never mutate their arguments and never touch `localStorage`, `Date`, or the DOM (the one exception is M11's save module, which owns `localStorage`).
-- **Randomness:** all randomness goes through the M2 seeded `Rng`. `Math.random()` is **banned** in `src/core/` and `src/state/` (enforced by an M14 grep/lint check). Determinism rule: same seed + same action sequence ⇒ identical run.
+- **Commands:** `npm run dev`, `npm run build`, `npm test` (vitest), `npm run lint` (ESLint), `tsc --noEmit`. Run one test file with `npx vitest run <path>`.
+- **Module map** (from [SDD Component Design](../../sdd/software_design_component.md)):
+  - `src/core/` — pure, no React/store/DOM: `types.ts`, `rng.ts` (C1), `balance.ts` (C2, data-only), `scoring.ts` (C3: `resolveFace` / `matchTier` / `scoreHand`), `deck.ts` (C11: collection build/shuffle/draw/discard/return).
+  - `src/state/runStore.ts` — the single zustand store (C4): the hand-phase machine, shop actions, and save/resume all live here.
+  - `src/pages/` — screens (menu, run, shop, run-end, C5–C9); `src/components/` — game components + juice (C7, C10); `src/lib/` — small UI helpers.
+- **Types:** every shared type is defined once in `src/core/types.ts` (M1), exactly as in [SDD Data Design](../../sdd/software_design_data.md) — never re-declared. Face is `type Face = 'H' | 'T'`; a tossed coin's face lives on `Slot.face`, not on the coin.
+- **Tunable values** (tier chips/mult, blind targets/rewards, boss effects, deck size, prices, odds) live **only** in `src/core/balance.ts`, which mirrors [balance-baseline](plan_balance-baseline.md) — the source of truth. Reference them by their SDD name (`TIERS`, `BLINDS`, `BOSS_RULES`, `CHARMS`, `COIN_EFFECTS`, and the constants `HAND_SIZE`, `PLAY_SIZE`, `HANDS_PER_BLIND`, `BASE_DECK_SIZE`, …); **never hardcode a copy** of a number in engine or test code.
+- **Coin convention:** `Face` is `'H'` (Heads = **win**) or `'T'` (Tails = loss). A coin in the hand is face-down until tossed (`Hand` holds `Coin | null`); the resolved face is set on its `Slot` in the toss phase.
+- **Purity:** `src/core/` functions are pure — inputs in, new values out; never mutate arguments, never touch `localStorage`/`Date`/DOM. Orchestration and the only `localStorage` access live in the store.
+- **Randomness:** all randomness goes through the single seeded `Rng` (C1, one instance per run) in the fixed **draw-order contract** ([SDD Data Design](../../sdd/software_design_data.md)). `Math.random()` is **banned** in `src/core/` and `src/state/` (M14 grep check). Determinism rule: same seed + same action sequence ⇒ identical run (uninterrupted; see the resume note in Data Design).
 - **Test placement:** tests are colocated as `<module>.test.ts` beside the module they cover.
 
 ## Milestone Index
@@ -47,9 +50,9 @@ These apply to every milestone. A checkpoint is **done** only when `tsc --noEmit
 ├── M0  Project Setup & Tooling      — scaffold, tooling, folders, dev/build/test green
 ├── M1  Core Data Types              — Coin, CoinEffect(×9), Charm(×5), Tier(×6), HandPhase, RunState, BossRule, ShopOffer
 ├── M2  Seeded RNG                   — createRng(seed), generateSeed(), determinism tests
-├── M3  Deck & Draw Pile            — createBaseDeck(80), shuffle, draw, discard (finite per blind)
+├── M3  Deck & Draw Pile            — deck.ts: build/shuffle/draw/discard/return (finite per blind)
 ├── M4  Hand Phase State Machine     — Draw → Play → Toss → Buff → Score reducer
-├── M5  Pattern / Tier Matching      — matchTier(faces) → highest of 6 tiers | null
+├── M5  Pattern / Tier Matching      — matchTier(play, boss) → highest of 6 tiers | null
 ├── M6  Scoring Pipeline             — tier → base → boosters → total → coin cash
 ├── M7  Coin Effects (9)             — face / cash / draw-enchant / Echo / merge
 ├── M8  Charms (5)                   — pool, ownership, left-to-right order

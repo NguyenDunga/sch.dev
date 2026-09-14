@@ -1,35 +1,35 @@
 # M5 — Pattern / Tier Matching
 
-**Depends:** M1 · **Files:** `src/core/tiers.ts` (+`.test.ts`); tier data in `balance.ts` `TIER_TABLE` · **Source:** [Balance Baseline](plan_balance-baseline.md) → Pattern Tiers · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M1 · **File:** `src/core/scoring.ts` (export `matchTier`) (+`.test.ts`); tier data in `balance.ts` `TIERS` · **Source of truth:** [SDD Component Design](../../sdd/software_design_component.md) C3; [Balance Baseline](plan_balance-baseline.md) → Pattern Tiers · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: return the single highest-value tier for the tossed faces, or `null`. Pure. Input is only the tossed faces (empty slots aren't passed), so a k-coin play only matches tiers that fit in k.*
+*Goal: return the single highest-value tier for a play, or `null`. Pure. Empty (`null`) slots count as nothing — the pattern is read on the tossed `Slot.face` values only, so a k-coin play only matches tiers that fit in k.*
 
-## Contract
+## Contract (SDD C3)
 
 ```ts
-export function matchTier(faces: boolean[]): Tier | null;   // faces.length 1..5, no placeholders
+export function matchTier(play: Play, boss: BossRule | null): TierId | null
 ```
 
-Tier rules (Heads = true), **priority high→low**:
-1. **Jackpot** — exactly 5, all identical (minCoins 5)
-2. **FourInARow** — a run of ≥4 adjacent equal faces (minCoins 4)
-3. **Alternating** — exactly 5, strictly alternating `HTHTH`/`THTHT` (minCoins 5)
-4. **FourSame** — some face value appears ≥4 times, not necessarily adjacent (minCoins 4)
-5. **TripleRun** — a run of ≥3 adjacent equal faces (minCoins 3)
-6. **ThreeSame** — a face value appears exactly 3 times (minCoins 3)
+Read the faces from non-null slots (`play.filter(Boolean).map(s => s.face)`). Tier rules (`TierId`, priority high→low):
+1. `jackpot` — exactly 5 faces, all identical (min 5)
+2. `fourRow` — a run of ≥4 adjacent equal faces (min 4)
+3. `alternating` — exactly 5 strictly alternating (min 5)
+4. `fourSame` — some face appears ≥4 times, not necessarily adjacent (min 4)
+5. `tripleRun` — a run of ≥3 adjacent equal faces (min 3)
+6. `threeSame` — a face appears exactly 3 times (min 3)
 
-Return the first (highest) that matches, else `null`. `4-same` = a **count**; `4-in-a-row` = a **run** — both can hold (`HHHHT` → FourInARow wins). `HHHTT` → TripleRun (outranks ThreeSame).
+Return the first (highest) match, else `null`. **Boss rules apply here:** `noAlternating` → an alternating match becomes `null` (explicit override, no fall-through); `noJackpots` → a `jackpot` match returns `fourSame` (fixed demotion, **not** a fall-through to `fourRow`).
 
 ## Checkpoints
 
-- [ ] 5.1 `matchTier` skeleton (length 1..5).
-- [ ] 5.2–5.7 Detect each tier: 3-same, 4-same, Jackpot, 4-in-a-row, alternating, triple-run.
-- [ ] 5.8 Priority resolution: highest match wins.
-- [ ] 5.9 ≤2-coin play → `null`.
-- [ ] 5.10 Test: one case per tier at its minimum coin count.
-- [ ] 5.11 Test: any 2-coin play → `null`.
-- [ ] 5.12 Test: `[H,H,H,H,H]` → Jackpot (not 4-in-a-row/4-same/triple-run).
+- [ ] 5.1 `matchTier(play, boss)` reads faces from non-null slots.
+- [ ] 5.2–5.7 Detect each tier: threeSame, fourSame, jackpot, fourRow, alternating, tripleRun.
+- [ ] 5.8 Priority: highest match wins (`HHHHH` → `jackpot`, never fourRow/fourSame/tripleRun).
+- [ ] 5.9 ≤2 non-null slots → `null`.
+- [ ] 5.10 Boss: `noAlternating` → alternating play returns `null`; `noJackpots` → 5-same returns `fourSame` (not `fourRow`).
+- [ ] 5.11 Test: one case per tier at its minimum coin count.
+- [ ] 5.12 Test: any 2-coin play → `null`.
 
 ## Exit gate
 
-`npx vitest run src/core/tiers.test.ts` green; all 6 tiers detected at min coins; priority + ≤2-coin→null proven.
+`npx vitest run src/core/scoring.test.ts` green (tier subset); all 6 tiers at min coins; priority, ≤2→null, and both tier-affecting boss rules proven.

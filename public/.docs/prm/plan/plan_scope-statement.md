@@ -62,9 +62,10 @@ Charm interactions:
 - Shop: 5 offers (charms + special coins + hand-size upgrade) + 1 free reroll + merge/remove actions
 - Seeded runs with shareable short-string seeds
 - Manual save/resume via localStorage
-- UI: minimal flat art, Tailwind + shadcn/ui; screens: menu, run, shop, game over
+- UI: flat art on the **Ceramic Tactile** theme (low-shadow — no blurred drop shadows), Tailwind + shadcn/ui, lucide-react icons; screens: menu, run, shop, game over. Tactile interaction on every element (hover/press/select/disabled/focus). See [UX design](../../sdd/software_design_ux.md).
 - Charm bar with drag-to-reorder (@dnd-kit/sortable)
-- Juice: coin-toss animation, chips×mult ticker, confetti on blind clear, SFX (toss, win/lose stingers) — no music
+- 3D coin: flat-shaded 3D coin flip + toss physics (@react-three/fiber + drei + rapier), landing on the engine-resolved face (juice never decides the outcome)
+- Juice (expanded 2026-09-14): scoring choreography (chips→mult→total count-up), particle bursts, screen shake, confetti on blind clear, and a per-event SFX set (deal, pick, discard, toss, tier hit, chip tick, mult, cash, buttons, win/lose stingers) — **still flat art, still no music**; all juice is presentational and skippable
 - Tests: vitest covering scoring + RNG core logic
 - README: how to run + how to enter/share seeds
 

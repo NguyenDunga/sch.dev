@@ -13,6 +13,7 @@ Entry point of the Software Design Description (SDD). Split into small files —
 | [Architecture](software_design_architechture.md) | system overview, layers, key decisions, tech stack |
 | [Component Design](software_design_component.md) | components, interfaces, state machine, interactions |
 | [Data Design](software_design_data.md) | types, run state, RNG contract, persistence, balance data |
+| [UX / Interaction & Juice](software_design_ux.md) | theme, feel, interaction states, 3D coin, scoring choreography, particles, sound, a11y |
 | [Configuration Management](software_design_management.md) | repo layout, build, version control, change control, traceability |
 
 ## System Overview
@@ -67,8 +68,10 @@ Three layers, strictly one-way dependencies (UI → state → core):
 | State | zustand + immer + persist |
 | RNG | pure-rand |
 | Charm reorder | @dnd-kit/sortable |
-| Animation | @formkit/auto-animate |
-| Juice | canvas-confetti, howler (SFX), react-countup / motion (ticker) |
+| Animation / ticker | motion (framer-motion) — chosen 2026-09-12 over @formkit/auto-animate + react-countup (see [Component Design](software_design_component.md) C10) |
+| 3D coin + physics | @react-three/fiber + @react-three/drei + @react-three/rapier (three.js) — flat-shaded/unlit coin, code-split to the Run screen ([UX §4](software_design_ux.md)) |
+| Icons | lucide-react |
+| Juice | canvas-confetti (confetti), howler (SFX), custom particles + screen shake ([UX §7](software_design_ux.md)) |
 | Tests | vitest |
 
 All MIT/open-source, $0 (charter §7).
@@ -116,3 +119,5 @@ All MIT/open-source, $0 (charter §7).
 | 2026-09-13 | Balatro-style deck (Q&A round 2): persistent 30-coin collection, finite draw pile per blind (hand shrinks, wild empty slots), per-coin permanent effects (v1 core set of 9), unlimited discard with draw-enchant redraws; re-toss + Re-Toss charm removed (charm pool 6 → 5); shop sells coins + merge/remove | BlueCloud (Q&A answers) | Balatro-style deck + coin effects + discard mechanic — scope change |
 | 2026-09-14 | 5-phase hand flow (Q&A round 3): draw 8 (hand size, shop-upgradable) → play up to 5 → toss → buff (existing charms only) → score; all hand coins go to the per-blind discard pile after scoring (no circulation — draw pile stays finite per blind); new store actions drawHand/pickCoin/confirmPlay, new shop offer kind handSize | BlueCloud (Q&A answers) | Phase definition requirement — scope change |
 | 2026-09-14 | Round 4: empty slots count as **nothing** (wilds removed — pattern evaluated on the tossed coins only); player freely tosses 1–5 coins per hand; base deck re-tuned 74 → 80 (no-wilds calculation: all 10 hands full, no dead hands) | BlueCloud (Q&A answers) | Scoring rule change — scope change; deck size — balance change |
+| 2026-09-14 | Doc sync (no design change): tech-stack animation row corrected to motion/framer-motion (records the C10 decision of 2026-09-12); `Coin.param` → `faceParams` so merge can stack Weight + Double-Side; coin-effect count stated consistently (9 effect types, 11 catalog entries); WBS cross-refs updated from the retired M1–M4 numbering to the M0–M15 build milestones; repo layout corrected to `src/pages/` + `src/components/` | Qwen | SDD self-consistency + alignment with the M0–M15 WBS |
+| 2026-09-14 | UX build-out ("Balatro-grade smoothness"): added the [UX / Interaction & Juice](software_design_ux.md) SDD doc; new **Ceramic Tactile** flat/low-shadow theme; added @react-three/fiber + drei + rapier (flat-shaded 3D coin + physics) and lucide-react to the stack; **juice scope expanded** to particles + screen shake + a richer per-event SFX set (still flat art, still no music) | BlueCloud | UX scope + theme + tech amendment (charter §3/§4); see scope plan change log |

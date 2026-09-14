@@ -1,32 +1,34 @@
 # M10 — Blind / Round / Boss Progression
 
-**Depends:** M4, M6 · **Files:** `src/core/progression.ts` (+`.test.ts`); tables in `balance.ts`; transitions in `src/state/runStore.ts` · **Source:** [Balance Baseline](plan_balance-baseline.md) → Targets, Boss Rules · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M4, M6 · **Files:** `src/core/balance.ts` (`BLINDS`, `BOSS_RULES`), transitions in `src/state/runStore.ts` (+`.test.ts`) · **Source of truth:** [SDD Component Design](../../sdd/software_design_component.md) C4 + Run State Machine; [Balance Baseline](plan_balance-baseline.md) → Targets, Boss Rules · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: 4 rounds × 3 blinds (small/big/boss), escalating targets, 4 fixed boss rules.*
+*Goal: the 4-round × 3-blind (small/big/boss) structure, escalating targets, and the 4 fixed boss rules. Blind data is a table; transitions are store actions.*
 
 ## Contract
 
 ```ts
-export function getBlindTarget(round: RoundIndex, blind: BlindIndex): number;   // BLIND_TARGETS
-export function getBossRule(round: RoundIndex): BossRuleId;                      // BOSS_RULES
-export function isBossBlind(blind: BlindIndex): boolean;                         // blind === 2
-export function startBlind(run: RunState, rng: Rng): RunState;
-export function resolveBlindEnd(run: RunState): 'cleared' | 'gameover' | 'continue';
+// balance.ts
+export const BLINDS: Blind[]        // 12 entries indexed by blindIndex 0..11; each { round, kind, target, reward, boss? }
+export const BOSS_RULES: BossRule[] // 4, one per round: noAlternating, shortFuse, noJackpots, heavyTarget
+// runStore.ts (SDD C4)
+score()      // at handsLeft === 0 -> endBlind()
+endBlind()   // target met: cash += reward (+ Payday, + Heavy Target bonus); blind 11 -> runEnd(win); else -> shop.  target missed -> runEnd(lose)
+leaveShop()  // next blind: reset handsLeft (10; SHORT_FUSE_HANDS on Short Fuse; +1 Extra Hand), blindScore=0, hand/play; shuffleCollection; clear discard; phase='run'
 ```
 
-Boss rules by round: 0 `noAlternating`, 1 `shortFuse` (fewer hands), 2 `noJackpots`, 3 `heavyTarget` (target ×1.5 + bonus). Tiering effects act in M6; hand-count/target effects act here. `HANDS_PER_BLIND` from `balance.ts`.
+Boss rules act where they apply: tier effects (`noAlternating`, `noJackpots`) in `matchTier` (M5); hand count (`shortFuse`) and target (`heavyTarget` ×1.5 + bonus) here. A blind's boss is `BLINDS[blindIndex].boss` (set on boss blinds only).
 
 ## Checkpoints
 
-- [ ] 10.1 `getBlindTarget` — per round, `target(0)<target(1)<target(2)`.
-- [ ] 10.2 `getBossRule` — one fixed rule per round; applied only on boss blinds.
-- [ ] 10.3 `startBlind` — reshuffle full deck, clear discard, `handsLeft=HANDS_PER_BLIND` (−2 on shortFuse boss), `blindTotal=0`, `phase=Draw`.
-- [ ] 10.4 `resolveBlindEnd` — `>=target`→cleared; else `handsLeft===0`→gameover; else continue.
-- [ ] 10.5 Clearing round-3 boss (round 3, blind 2) → win.
-- [ ] 10.6 Test: round-N boss rule fires only on that boss blind, not its small/big.
-- [ ] 10.7 Test: miss target after `HANDS_PER_BLIND` hands → gameover (even with money left).
-- [ ] 10.8 Test: full 12-blind walk (mocked clears) reaches win, no undefined transition.
+- [ ] 10.1 `BLINDS[12]` — per round small<big<boss, escalating; targets/rewards from balance-baseline.
+- [ ] 10.2 `BOSS_RULES[4]` — one per round; `BLINDS[i].boss` set only on boss blinds.
+- [ ] 10.3 `leaveShop` — reshuffle, clear discard, reset `handsLeft` (Short Fuse → `SHORT_FUSE_HANDS`; Extra Hand → +1), `blindScore=0`, `phase='run'`.
+- [ ] 10.4 `endBlind` — target met → reward + advance (shop, or runEnd win after blind 11); target missed → runEnd lose.
+- [ ] 10.5 Clearing blind index 11 (round 4 boss) → `won = true`, `phase='runEnd'`.
+- [ ] 10.6 Test: a round's boss rule fires only on its boss blind, not its small/big.
+- [ ] 10.7 Test: miss target after the blind's hand budget → lose (even with cash left).
+- [ ] 10.8 Test: full 12-blind walk (mocked clears) reaches win with no undefined transition.
 
 ## Exit gate
 
-`npx vitest run src/core/progression.test.ts` green; boss rules scoped correctly; win + gameover reached cleanly. (Charter M3: state green.)
+`npx vitest run src/state/runStore.test.ts` green (progression subset); boss rules scoped correctly; win + lose reached cleanly. (Charter M3: state green.)

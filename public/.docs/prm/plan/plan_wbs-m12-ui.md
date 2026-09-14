@@ -1,23 +1,23 @@
-# M12 — UI Screens
+# M12 — UI Screens, Theme & Interaction
 
-**Depends:** M1–M11 · **Files:** `src/pages/` (menu, run, shop, run-end), `src/components/`, `src/state/runStore.ts` · **Source:** [Scope Statement](plan_scope-statement.md) → In Scope (UI) · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M1–M11 · **Files:** `src/index.css` (theme tokens), `src/App.tsx` (phase router), `src/pages/` (menu, run, shop, run-end), `src/components/` (coin, hand, charm bar, buttons, coin3d) · **Source of truth:** [SDD UX / Interaction & Juice](../../sdd/software_design_ux.md) §2–§4, §8; [Component Design](../../sdd/software_design_component.md) C5–C9 · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: wire the engine to screens. UI is a thin layer — screens dispatch engine actions and render `RunState`; no game logic (scores/tiers/draws) in components.*
-
-The store (zustand + immer + persist) holds `RunState` and exposes the M4 `HandAction` dispatchers, M9 shop actions, and M11 save/load.
+*Goal: wire the store to screens on the "Ceramic Tactile" flat theme, with tactile per-element interaction and the flat-shaded 3D coin. UI is a thin layer — components read `RunState` and call store actions; no game logic in components. Build all feel details to the UX doc (it holds the tokens, states, and timings).*
 
 ## Checkpoints
 
-- [ ] 12.1 Menu: New Run (M2 `generateSeed` or custom seed) + Continue (M11 `loadRun`, disabled if no save).
-- [ ] 12.2 Run — Draw/Play: hand face-down, select 1–5, discard, show `handsLeft` + `blindTarget` vs `blindTotal`.
-- [ ] 12.3 Run — Toss/Buff: flip reveal, Echo re-flip (once per Echo coin), charm bar drag-to-reorder (@dnd-kit) → M8.
-- [ ] 12.4 Run — Score: explicit Score button (no auto-timer), tier/base/boosters breakdown, chips×mult — equals M6 result.
-- [ ] 12.5 Shop: 5 slots, reroll (disabled after first use), merge, remove, money.
-- [ ] 12.6 Game Over: final stats + seed; New Run + Menu.
-- [ ] 12.7 Manual Save button (Run screen) → M11 `saveRun`; no autosave.
-- [ ] 12.8 Flat-art styling (Tailwind + shadcn/ui); no illustrative art.
-- [ ] 12.9 Smoke tests: each screen renders from a valid `RunState` without throwing.
+- [ ] 12.1 **Theme tokens** — implement the Ceramic Tactile palette, radii, borders, motion tokens, and the **no-blur-shadow rule** from [UX §2](../../sdd/software_design_ux.md) as CSS vars in `src/index.css`; wire Tailwind + shadcn/ui to them; install **lucide-react** for icons (2px stroke). *Done when:* a token audit shows no blurred `box-shadow` (only hard offset / glow) anywhere.
+- [ ] 12.2 **App router** — `App.tsx` renders by `RunState.phase` (menu/run/shop/runEnd) with the `screen-in/out` transition (UX §5).
+- [ ] 12.3 **Menu (C5)** — title, seed field (6–8 chars) + random-seed button (`generateSeed`), New Run, Resume (only when a save exists).
+- [ ] 12.4 **Coin component + interaction states** — hand coin with hover tilt/lift, press, selected, disabled per [UX §3](../../sdd/software_design_ux.md); face badge (H/T glyph + color, colorblind-safe); `pickCoin`/`unpickCoin` spring into/out of play slots; 6th-pick → shake + `error`.
+- [ ] 12.5 **3D coin (C10 shared)** — a lazy-loaded r3f `<Canvas>` (drei) over the toss area; flat-shaded unlit coin (ambient only, no directional light / no shadow), rapier tumble that **settles on `Slot.face`** per [UX §4](../../sdd/software_design_ux.md); 2D cross-fade fallback under reduced-motion; code-split so Menu/Shop don't load three.
+- [ ] 12.6 **Run screen (C6)** — Draw/Play: face-down hand, pick 1–5, discard (draw-enchant redraw pip), blind header (round, target, blindScore, handsLeft, draw-pile count). Toss/Buff: 3D flip, Echo re-flip (once per Echo coin), charm bar (C7) drag-to-reorder → `moveCharm`. Score: explicit **Score** button (pulses when ready) → `score`; tier/base/boosters breakdown.
+- [ ] 12.7 **Shop screen (C8)** — 5 offer cards (hover raise + tier glow), Reroll (disabled after first use), Merge + Remove, collection view, cash, Leave.
+- [ ] 12.8 **Run-end (C9)** — win/lose, run summary (blinds cleared, runScore, cash), seed shown for sharing, Menu.
+- [ ] 12.9 **Manual Save** button on Run → `save`; no autosave.
+- [ ] 12.10 **Tactile controls pass** — every button/slot/card has default/hover/active/disabled/selected/focus-visible states (UX §3); hit targets ≥44px; keyboard path works.
+- [ ] 12.11 **Smoke tests** — each screen renders from a valid `RunState` without throwing (the r3f canvas is mockable/skipped in jsdom).
 
 ## Exit gate
 
-`npm run test` green incl. smoke tests; every screen renders from a valid `RunState`; a full run is playable end-to-end through the UI. (Charter M3: playtest 5/5.)
+`npm test` green incl. smoke tests; every screen renders from a valid `RunState`; a full run is playable end-to-end; theme audit shows flat/low-shadow; all interactive elements have their full state set. (Charter M3: playtest 5/5.) Juice choreography/particles/SFX land in M13.

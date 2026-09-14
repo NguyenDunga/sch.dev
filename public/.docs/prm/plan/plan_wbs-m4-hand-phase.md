@@ -1,39 +1,37 @@
 # M4 — Hand Phase State Machine
 
-**Depends:** M1, M3 · **Files:** `src/core/handMachine.ts` (+`.test.ts`), wired into `src/state/runStore.ts` later · **Source:** [Scope Statement](plan_scope-statement.md) → Hand Phase Flow · Conventions: [overview](plan_wbs-overview.md).
+**Depends:** M1, M3 · **File:** `src/state/runStore.ts` (+`.test.ts`) · **Source of truth:** [SDD Component Design](../../sdd/software_design_component.md) C4 + Run State Machine; [Scope Statement](plan_scope-statement.md) → Hand Phase Flow · Conventions: [overview](plan_wbs-overview.md).
 
-*Goal: enforce `Draw → Play → Toss → Buff → Score → (next) Draw` with no skipping. Pure reducer, no UI.*
+*Goal: the 5-phase per-hand flow `draw → play → toss → buff → score → (next) draw`, driven by `handPhase` in the zustand store (immer). No separate reducer module — the machine lives in the store, per the SDD.*
 
-## Contract
+## Store actions (SDD C4)
 
 ```ts
-export type HandAction =
-  | { type: 'selectCoinsToPlay'; ids: CoinId[] }   // Play; 1..5
-  | { type: 'discardFromHand'; ids: CoinId[] }      // Play
-  | { type: 'confirmPlay' }                          // Play -> Toss
-  | { type: 'reflipEcho'; coinId: CoinId }           // Buff; once per Echo coin
-  | { type: 'confirmBuff' }                          // Buff -> Score
-  | { type: 'confirmScore' };                        // Score -> Draw
-export function advancePhase(state: RunState, action: HandAction, rng: Rng): RunState;  // pure
+drawHand()               // draw phase (auto): pop up to handSize via deck.drawFromDeck -> hand (null when short); handPhase = 'play'
+pickCoin(handIndex)      // play: move a hand coin into the next free play slot (max 5); re-pick unpicks first
+unpickCoin(slotIndex)    // play: return a play coin to the hand
+discard(handIndex)       // play (unlimited): plain coin -> discardToPile; draw-enchant coin -> drawFromDeck ×N into hand
+confirmPlay()            // play -> toss (requires ≥1 picked): resolveFace per picked coin in play order; handPhase = 'buff'
+echoReflip(slotIndex)    // buff: if Echo and !echoUsed -> resolveFace again; echoUsed = true
+score()                  // score: scoreHand -> blindScore += total, cash += cash; returnHandToPile (all hand coins); handsLeft -= 1; handPhase = 'draw' (or endBlind at 0)
 ```
 
-Draw & Toss are automatic (do their work on entry, then auto-advance). An action in the wrong phase returns state **unchanged** (no throw). `PLAY_MIN=1`, `PLAY_MAX=5`, `handSize` from state/`balance.ts`.
+Toss/Buff/Score call M6/M7 (`scoreHand`, `resolveFace`); stub those until then. An action fired in the wrong `handPhase` is a no-op.
 
 ## Checkpoints
 
-- [ ] 4.1 Reducer covers exactly the 5-phase cycle.
-- [ ] 4.2 Draw (auto): draw `handSize` face-down (`isHeads:null`) → Play.
-- [ ] 4.3 Play `selectCoinsToPlay`: reject (unchanged) if count 0 or >5.
-- [ ] 4.4 Play `discardFromHand`: plain → discard (gone for blind); `draw:n` coin → redraw n instead.
-- [ ] 4.5 Play `confirmPlay`: lock 1–5 → Toss; unselected set aside (not yet discarded).
-- [ ] 4.6 Toss (auto): resolve each face via M7 `resolveFace` (stub = plain 50/50 until M7); set `isHeads` → Buff.
-- [ ] 4.7 Buff `reflipEcho`: once per Echo coin; second reflip on same id is a no-op.
-- [ ] 4.8 Buff `confirmBuff`: apply charms (M6 stub) → Score.
-- [ ] 4.9 Score `confirmScore`: run M6 (stub), add to `blindTotal`, move ALL hand coins (tossed+unpicked) to discard, `handsLeft-=1` → Draw.
-- [ ] 4.10 Test: out-of-phase action is a no-op.
-- [ ] 4.11 Test: full cycle runs; `handsLeft` −1; back to Draw.
-- [ ] 4.12 Test: after Score, `hand` empty and both tossed + unpicked coins are in discard.
+- [ ] 4.1 `handPhase` only ever moves along `draw→play→toss→buff→score→draw`.
+- [ ] 4.2 `drawHand` (auto): up to `handSize` coins face-down into `hand` (fewer if the pile is short); → `play`.
+- [ ] 4.3 `pickCoin` / `unpickCoin`: play slots hold 1–5; picking a 6th is a no-op; re-picking a played coin unpicks it first.
+- [ ] 4.4 `discard`: plain coin → discard (gone for the blind); `draw1/2/3` coin → redraw N into the hand.
+- [ ] 4.5 `confirmPlay`: requires ≥1 picked; → `toss`; unpicked hand coins stay in `hand` (not discarded yet).
+- [ ] 4.6 Toss (auto on `confirmPlay`): `resolveFace` per picked coin sets each `Slot.face`; → `buff`.
+- [ ] 4.7 `echoReflip`: once per Echo coin (`echoUsed`); a second call on the same slot is a no-op.
+- [ ] 4.8 `score`: run pipeline; `returnHandToPile` moves ALL hand coins (tossed + unpicked) to discard; `handsLeft -= 1`; → `draw`.
+- [ ] 4.9 Test: any action out of its phase is a no-op.
+- [ ] 4.10 Test: a full cycle runs; `handsLeft` −1; back to `draw`.
+- [ ] 4.11 Test: after `score`, `hand` and `play` are empty and those coins are in `discardPile`.
 
 ## Exit gate
 
-`npx vitest run src/core/handMachine.test.ts` green; illegal actions no-op; a cycle empties the hand and decrements `handsLeft`. (Toss/Buff/Score use stubs; M6/M7 fill them and re-run these tests.)
+`npx vitest run src/state/runStore.test.ts` green (hand-phase subset); illegal-phase actions no-op; a cycle empties hand+play and decrements `handsLeft`. (Toss/Buff/Score use M6/M7 stubs until those land.)
