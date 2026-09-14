@@ -4,7 +4,7 @@
 // The test records every handPhase transition the store emits and asserts each
 // observed transition is the next step of the cycle.
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
@@ -1525,5 +1525,60 @@ describe('M10.8 — full 12-blind walk (mocked clears) reaches win', () => {
       }
     }
     expect(store.getState().won).toBe(true)
+  })
+})
+
+// M11: the node test env has no localStorage — stub it for the save/resume suites.
+function makeLocalStorage() {
+  const m = new Map<string, string>()
+  return {
+    getItem: (k: string) => (m.has(k) ? m.get(k) : null),
+    setItem: (k: string, v: string) => {
+      m.set(k, v)
+    },
+    removeItem: (k: string) => {
+      m.delete(k)
+    },
+    clear: () => m.clear(),
+  }
+}
+
+describe('M11.1 — save()', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('writes { version: 2, state } to the fifty-fifty-run key (incl. rngState + collection)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m11-1')
+    store.getState().drawHand()
+    store.getState().save()
+
+    const raw = localStorage.getItem('fifty-fifty-run')
+    expect(raw).not.toBeNull()
+    const saved = JSON.parse(raw as string)
+    expect(saved.version).toBe(2)
+    expect(saved.state.seed).toBe('m11-1')
+    expect(saved.state.phase).toBe('run')
+    expect(saved.state.rngState).toEqual(store.getState().rngState)
+    expect(saved.state.deck).toEqual(store.getState().deck)
+    expect(saved.state.charms).toEqual(store.getState().charms)
+  })
+
+  it('is explicit-only: no save on startRun or hand flow', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem')
+    const store = createRunStore()
+    store.getState().startRun('m11-1b')
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('no-op in the menu (nothing to save)', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem')
+    const store = createRunStore()
+    store.getState().save()
+    expect(setItem).not.toHaveBeenCalled()
   })
 })

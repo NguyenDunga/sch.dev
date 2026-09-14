@@ -75,6 +75,10 @@ export interface RunActions {
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
   reroll: () => void
+  /** run/shop: manual save — serialize { version: 2, state } to localStorage (explicit only, no autosave). */
+  save: () => void
+  /** Restore the saved run; no-op when absent / unparseable / not version 2. */
+  resume: () => void
   /**
    * shop → run: next blind — blindIndex +1; reset handsLeft (10; SHORT_FUSE_HANDS on
    * the Short Fuse boss; +1 with Extra Hand), blindScore, hand/play; reshuffle the
@@ -92,6 +96,9 @@ export interface RunActions {
 }
 
 export type RunStore = RunState & RunActions
+
+const SAVE_KEY = 'fifty-fifty-run'
+const SAVE_VERSION = 2
 
 /**
  * M9.1: draw SHOP_SLOTS offers from the combined pool — unowned charms + all
@@ -449,6 +456,12 @@ export function createRunStore() {
           st.phase = 'run'
           st.handPhase = 'draw'
         }),
+
+      save: () => {
+        const st = get()
+        if (st.phase !== 'run' && st.phase !== 'shop') return // nothing to save outside a run
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, state: st }))
+      },
 
       toMenu: () =>
         set((st) => {
