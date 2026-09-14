@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PLAY_SIZE, SHOP_SLOTS } from '@/core/balance'
+import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -1290,6 +1290,72 @@ describe('M9.7 — hand-size upgrade', () => {
     const store = shopStore('m9-7b', HAND_SIZE_CAP, 20)
     const before = store.getState()
     store.getState().buy({ kind: 'handSize' })
+    expect(store.getState()).toEqual(before)
+  })
+})
+
+describe('M10.3 — leaveShop (next blind)', () => {
+  it('advances the blind: reshuffle, discard cleared, blindScore/hand/play reset, phase run', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-3')
+    store.setState({
+      phase: 'shop',
+      blindScore: 123,
+      deck: {
+        drawPile: [{ id: 500, effects: [] }],
+        discardPile: [
+          { id: 501, effects: [] },
+          { id: 502, effects: [] },
+        ],
+      },
+    })
+
+    store.getState().leaveShop()
+    const st = store.getState()
+    expect(st.phase).toBe('run')
+    expect(st.handPhase).toBe('draw')
+    expect(st.blindIndex).toBe(1)
+    expect(st.round).toBe(1)
+    expect(st.blindScore).toBe(0)
+    expect(st.handsLeft).toBe(HANDS_PER_BLIND)
+    expect(st.hand).toHaveLength(HAND_SIZE)
+    expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
+    expect(st.play).toHaveLength(PLAY_SIZE)
+    // discard merged into the (shuffled) draw pile and cleared
+    expect(st.deck.discardPile).toHaveLength(0)
+    expect(st.deck.drawPile).toHaveLength(3)
+    expect(st.deck.drawPile.map((c) => c.id).sort((a, b) => a - b)).toEqual([500, 501, 502])
+    expect(st.shop.offers).toHaveLength(0)
+  })
+
+  it('into a Short Fuse boss: handsLeft = SHORT_FUSE_HANDS', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-3b')
+    store.setState({ phase: 'shop', blindIndex: 4, round: 2 }) // next: blind 5 = round 2 boss (shortFuse)
+
+    store.getState().leaveShop()
+    expect(store.getState().blindIndex).toBe(5)
+    expect(store.getState().handsLeft).toBe(SHORT_FUSE_HANDS)
+  })
+
+  it('Extra Hand charm: +1 hand (both normal and Short Fuse)', () => {
+    for (const [from, base] of [
+      [0, HANDS_PER_BLIND],
+      [4, SHORT_FUSE_HANDS],
+    ] as const) {
+      const store = createRunStore()
+      store.getState().startRun(`m10-3c-${from}`)
+      store.setState({ phase: 'shop', blindIndex: from, charms: ['extraHand'] })
+      store.getState().leaveShop()
+      expect(store.getState().handsLeft).toBe(base + 1)
+    }
+  })
+
+  it('no-op out of the shop phase', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-3d')
+    const before = store.getState()
+    store.getState().leaveShop()
     expect(store.getState()).toEqual(before)
   })
 })

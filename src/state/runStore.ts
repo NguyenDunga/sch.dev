@@ -27,6 +27,7 @@ import {
   PLAY_SIZE,
   REMOVE_COIN_COST,
   SHOP_SLOTS,
+  SHORT_FUSE_HANDS,
   START_CASH,
 } from '@/core/balance'
 import {
@@ -71,6 +72,12 @@ export interface RunActions {
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
   reroll: () => void
+  /**
+   * shop → run: next blind — blindIndex +1; reset handsLeft (10; SHORT_FUSE_HANDS on
+   * the Short Fuse boss; +1 with Extra Hand), blindScore, hand/play; reshuffle the
+   * whole collection into the draw pile (rng), discard cleared.
+   */
+  leaveShop: () => void
   /**
    * shop: buy an offer — cash -= price; charm → charms (M9.3), coin → collection
    * with rolled favoured face (M9.4), handSize → handSize + 1 (M9.7); the offer
@@ -412,6 +419,26 @@ export function createRunStore() {
           st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== id)
           st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== id)
           st.cash -= REMOVE_COIN_COST
+        }),
+
+      leaveShop: () =>
+        set((st) => {
+          if (st.phase !== 'shop') return
+          st.blindIndex += 1
+          const next = BLINDS[st.blindIndex]
+          st.round = next.round
+          const baseHands =
+            next.kind === 'boss' && next.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
+          st.handsLeft = baseHands + (st.charms.includes('extraHand') ? 1 : 0)
+          st.blindScore = 0
+          st.hand = emptyHand(st.handSize)
+          st.play = emptyHand(PLAY_SIZE)
+          // Whole collection (draw + discard) → shuffled draw pile; discard cleared.
+          st.deck = shuffleCollection(rng, st.deck)
+          st.shop = { offers: [], rerollUsed: false }
+          st.rngState = rng.state()
+          st.phase = 'run'
+          st.handPhase = 'draw'
         }),
 
       toMenu: () =>
