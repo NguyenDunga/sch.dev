@@ -79,6 +79,8 @@ export const SHOP_SLOTS = 5
 export const FREE_REROLLS = 1
 export const PAYDAY_BONUS = 5
 export const HEAVY_TARGET_BONUS = 5
+/** Heavy Target boss: the blind's table target is multiplied by this at runtime (3500 → 5250). */
+export const HEAVY_TARGET_MULT = 1.5
 /**
  * Base collection size. Re-tuned 2026-09-14 (Q&A round 4, no-wilds
  * calculation — see plan_balance-baseline.md): 10 hands × 5 = 50 coins per

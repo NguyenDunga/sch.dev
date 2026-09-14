@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS } from '@/core/balance'
+import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -1357,5 +1357,55 @@ describe('M10.3 — leaveShop (next blind)', () => {
     const before = store.getState()
     store.getState().leaveShop()
     expect(store.getState()).toEqual(before)
+  })
+})
+
+describe('M10.4 — endBlind rewards', () => {
+  /** Clears (or misses) the given blind with one 0-score hand. */
+  function endBlindStore(
+    seed: string,
+    blindIndex: number,
+    blindScore: number,
+    charms: RunStore['charms'] = [],
+  ) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      blindIndex,
+      round: BLINDS[blindIndex].round,
+      blindScore,
+      handsLeft: 1,
+      charms,
+    })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    return store
+  }
+
+  it('target met: cash += reward, phase shop', () => {
+    const store = endBlindStore('m10-4', 0, 300)
+    const st = store.getState()
+    expect(st.phase).toBe('shop')
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward) // 4 + 4
+  })
+
+  it('Payday charm adds +$5 to the reward', () => {
+    const store = endBlindStore('m10-4b', 0, 300, ['payday'])
+    expect(store.getState().cash).toBe(START_CASH + BLINDS[0].reward + PAYDAY_BONUS)
+  })
+
+  it('Heavy Target boss: the effective target is ×1.5 (3500 → 5250)', () => {
+    const missed = endBlindStore('m10-4c', 11, 5249)
+    expect(missed.getState().won).toBe(false)
+    expect(missed.getState().phase).toBe('runEnd')
+  })
+
+  it('target missed: runEnd lose, no reward paid', () => {
+    const store = endBlindStore('m10-4d', 0, 299)
+    expect(store.getState().phase).toBe('runEnd')
+    expect(store.getState().won).toBe(false)
+    expect(store.getState().cash).toBe(START_CASH) // no reward on a miss
   })
 })

@@ -24,6 +24,9 @@ import {
   HAND_SIZE,
   HAND_SIZE_CAP,
   HAND_SIZE_PRICE,
+  HEAVY_TARGET_BONUS,
+  HEAVY_TARGET_MULT,
+  PAYDAY_BONUS,
   PLAY_SIZE,
   REMOVE_COIN_COST,
   SHOP_SLOTS,
@@ -147,7 +150,13 @@ function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
  *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
 function endBlind(st: WritableDraft<RunState>, rng: Rng) {
   const blind = BLINDS[st.blindIndex]
-  if (st.blindScore >= blind.target) {
+  // Heavy Target: the table target is ×1.5 at runtime (SDD data — 3500 → 5250).
+  const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'
+  const target = isHeavy ? blind.target * HEAVY_TARGET_MULT : blind.target
+  if (st.blindScore >= target) {
+    // Reward: base + Payday charm + Heavy Target bonus.
+    st.cash +=
+      blind.reward + (st.charms.includes('payday') ? PAYDAY_BONUS : 0) + (isHeavy ? HEAVY_TARGET_BONUS : 0)
     if (st.blindIndex >= BLINDS.length - 1) {
       st.phase = 'runEnd'
       st.won = true
