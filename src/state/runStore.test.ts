@@ -1036,3 +1036,49 @@ describe('M9.1 — shop offer generation', () => {
     ).toBe(false)
   })
 })
+
+describe('M9.2 — reroll (one free per shop)', () => {
+  function shopStore(seed: string) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({ blindScore: 10_000, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    return store
+  }
+
+  it('reroll regenerates all 5 offers and sets rerollUsed', () => {
+    const store = shopStore('m9-2')
+    const before = store.getState().shop
+    expect(before.rerollUsed).toBe(false)
+
+    store.getState().reroll()
+    const after = store.getState().shop
+    expect(after.rerollUsed).toBe(true)
+    expect(after.offers).toHaveLength(SHOP_SLOTS)
+    expect(after.offers).not.toEqual(before.offers) // regenerated, not kept
+  })
+
+  it('9.8 the second reroll is a no-op (offers and rng state unchanged)', () => {
+    const store = shopStore('m9-2b')
+    store.getState().reroll()
+    const once = store.getState()
+    const rngOnce = [...once.rngState]
+    const offersOnce = [...once.shop.offers]
+
+    store.getState().reroll()
+    const twice = store.getState()
+    expect(twice.shop.offers).toEqual(offersOnce)
+    expect(twice.rngState).toEqual(rngOnce) // no rng consumed
+  })
+
+  it('reroll out of the shop phase is a no-op', () => {
+    const store = shopStore('m9-2c')
+    store.setState({ phase: 'run' })
+    const before = store.getState()
+    store.getState().reroll()
+    expect(store.getState().shop).toEqual(before.shop)
+  })
+})

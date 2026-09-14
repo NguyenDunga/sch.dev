@@ -65,6 +65,8 @@ export interface RunActions {
   mergeCoin: (fromId: number, toId: number) => void
   /** run/shop: reorder the charms — array order is the charm-bar (scoring) order. */
   moveCharm: (from: number, to: number) => void
+  /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
+  reroll: () => void
   /** UI convenience (C9 Menu button): back to the menu. */
   toMenu: () => void
 }
@@ -320,6 +322,14 @@ export function createRunStore() {
           const [moved] = charms.splice(from, 1)
           charms.splice(to, 0, moved)
           st.charms = charms
+        }),
+
+      reroll: () =>
+        set((st) => {
+          if (st.phase !== 'shop' || st.shop.rerollUsed) return
+          st.shop.offers = generateOffers(rng, st.charms, st.handSize)
+          st.shop.rerollUsed = true
+          st.rngState = rng.state()
         }),
 
       toMenu: () =>
