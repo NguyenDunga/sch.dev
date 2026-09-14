@@ -1626,9 +1626,65 @@ describe('M11.2 — resume() restore + no-op guards', () => {
     expect(st.phase).toBe('run')
     expect(st.cash).toBe(21)
     expect(st.charms).toEqual(['plusChips', 'payday'])
-    expect(st.deck).toEqual(saved.deck)
-    expect(st.rngState).toEqual(saved.rngState)
+    // the collection is preserved (same coins); the piles are re-reshuffled at blind start (M11.3)
+    const ids = (d: { drawPile: { id: number }[]; discardPile: { id: number }[] }) =>
+      [...d.drawPile, ...d.discardPile].map((c) => c.id).sort((x, y) => x - y)
+    expect(ids(st.deck)).toEqual(ids(saved.deck))
+    // rngState continues from the saved state (the blind-start shuffle advances it — mirrored afterwards)
     expect(st.handSize).toBe(saved.handSize)
     expect(st.runScore).toBe(saved.runScore)
+  })
+})
+
+describe('M11.3 — resume in run: blind-start reset', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  function savedMidBlind(seed: string, mutate?: (s: Record<string, unknown>) => void) {
+    const a = createRunStore()
+    a.getState().startRun(seed)
+    a.getState().drawHand()
+    a.getState().pickCoin(0)
+    a.getState().confirmPlay()
+    a.getState().score() // one hand played: coins in the discard pile, handsLeft 9
+    if (mutate) a.setState(mutate)
+    a.getState().save()
+    return a
+  }
+
+  it('resets handsLeft/blindScore to blind start, re-reshuffles (discard cleared), preserves the rest', () => {
+    savedMidBlind('m11-3', () => ({ blindScore: 150, cash: 17 }))
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+
+    // blind-start resets
+    expect(st.phase).toBe('run')
+    expect(st.handPhase).toBe('draw')
+    expect(st.blindScore).toBe(0)
+    expect(st.handsLeft).toBe(HANDS_PER_BLIND) // reset to the blind's initial budget
+    expect(st.lastScore).toEqual(none)
+    expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
+    // re-reshuffle: discard cleared, whole collection back in the draw pile
+    expect(st.deck.discardPile).toHaveLength(0)
+    expect(st.deck.drawPile).toHaveLength(BASE_DECK_SIZE)
+    // preserved
+    expect(st.seed).toBe('m11-3')
+    expect(st.cash).toBe(17)
+    expect(st.blindIndex).toBe(0)
+  })
+
+  it('resuming mid-Short-Fuse blind: handsLeft resets to SHORT_FUSE_HANDS', () => {
+    savedMidBlind('m11-3b', () => ({ blindIndex: 5, round: 2 }))
+    const b = createRunStore()
+    b.getState().resume()
+    expect(b.getState().handsLeft).toBe(SHORT_FUSE_HANDS)
+  })
+
+  it('Extra Hand charm: the reset budget is +1', () => {
+    savedMidBlind('m11-3c', () => ({ charms: ['extraHand'] }))
+    const b = createRunStore()
+    b.getState().resume()
+    expect(b.getState().handsLeft).toBe(HANDS_PER_BLIND + 1)
   })
 })

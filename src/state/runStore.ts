@@ -489,15 +489,26 @@ export function createRunStore() {
           st.handSize = s.handSize
           st.runScore = s.runScore
           st.rngState = s.rngState
-          // Reset: hand, play, handPhase, lastScore.
+          // Reset: hand, play, handPhase, lastScore, current-blind progress.
           st.hand = emptyHand(st.handSize)
           st.play = emptyHand(PLAY_SIZE)
           st.handPhase = 'draw'
           st.lastScore = none
-          // M11.3: run — blind-start reset (handsLeft, blindScore, re-reshuffle).
-          // M11.4: shop — offers regenerated from the restored rngState.
+          st.blindScore = 0
           st.phase = s.phase
-          st.shop = { offers: [], rerollUsed: false }
+          if (s.phase === 'run') {
+            // Blind start: reset the hand budget and re-reshuffle the whole collection
+            // from the restored rngState (discard cleared) — SDD resume semantics.
+            const blind = BLINDS[s.blindIndex]
+            const baseHands =
+              blind.kind === 'boss' && blind.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
+            st.handsLeft = baseHands + (s.charms.includes('extraHand') ? 1 : 0)
+            st.deck = shuffleCollection(rng, st.deck)
+            st.shop = { offers: [], rerollUsed: false }
+          } else {
+            // M11.4: shop — offers regenerated identically from the restored rngState.
+            st.shop = { offers: [], rerollUsed: false }
+          }
           st.rngState = rng.state()
         })
       },
