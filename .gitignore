@@ -27,3 +27,4 @@ dist-ssr
 .qwen
 .pi
 .env
+coverage/
