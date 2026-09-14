@@ -1582,3 +1582,53 @@ describe('M11.1 — save()', () => {
     expect(setItem).not.toHaveBeenCalled()
   })
 })
+
+describe('M11.2 — resume() restore + no-op guards', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('no save present: no-op (state unchanged)', () => {
+    localStorage.clear()
+    const store = createRunStore()
+    const before = store.getState()
+    store.getState().resume()
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('unparseable save: no-op', () => {
+    localStorage.setItem('fifty-fifty-run', '{not json')
+    const store = createRunStore()
+    const before = store.getState()
+    store.getState().resume()
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('v1 save: discarded (not migratable), no-op', () => {
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 1, state: { seed: 'old' } }))
+    const store = createRunStore()
+    const before = store.getState()
+    store.getState().resume()
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('valid v2 save: restores the preserved fields (seed, cash, charms, collection, rngState, phase)', () => {
+    const a = createRunStore()
+    a.getState().startRun('m11-2')
+    a.getState().drawHand()
+    a.setState({ cash: 21, charms: ['plusChips', 'payday'] })
+    a.getState().save()
+
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+    const saved = a.getState()
+    expect(st.seed).toBe('m11-2')
+    expect(st.phase).toBe('run')
+    expect(st.cash).toBe(21)
+    expect(st.charms).toEqual(['plusChips', 'payday'])
+    expect(st.deck).toEqual(saved.deck)
+    expect(st.rngState).toEqual(saved.rngState)
+    expect(st.handSize).toBe(saved.handSize)
+    expect(st.runScore).toBe(saved.runScore)
+  })
+})

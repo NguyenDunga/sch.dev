@@ -463,6 +463,45 @@ export function createRunStore() {
         localStorage.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, state: st }))
       },
 
+      resume: () => {
+        const raw = localStorage.getItem(SAVE_KEY)
+        if (raw === null) return // no save — no-op (the menu hides the Resume button)
+        let saved: { version?: unknown; state?: RunState }
+        try {
+          saved = JSON.parse(raw)
+        } catch {
+          return // parse-fail — no-op
+        }
+        // v1 saves predate the coin collection: not migratable, discarded.
+        if (saved.version !== SAVE_VERSION || saved.state === undefined) return
+        const s = saved.state
+        if (s.phase !== 'run' && s.phase !== 'shop') return // nothing resumable
+        // The run continues the same sequence: restore the RNG before any draw.
+        rng.restore(s.rngState)
+        set((st) => {
+          // Preserved: seed, round/blind, cash, charms + order, collection, rngState, runScore.
+          st.seed = s.seed
+          st.round = s.round
+          st.blindIndex = s.blindIndex
+          st.cash = s.cash
+          st.charms = s.charms
+          st.deck = s.deck
+          st.handSize = s.handSize
+          st.runScore = s.runScore
+          st.rngState = s.rngState
+          // Reset: hand, play, handPhase, lastScore.
+          st.hand = emptyHand(st.handSize)
+          st.play = emptyHand(PLAY_SIZE)
+          st.handPhase = 'draw'
+          st.lastScore = none
+          // M11.3: run — blind-start reset (handsLeft, blindScore, re-reshuffle).
+          // M11.4: shop — offers regenerated from the restored rngState.
+          st.phase = s.phase
+          st.shop = { offers: [], rerollUsed: false }
+          st.rngState = rng.state()
+        })
+      },
+
       toMenu: () =>
         set((st) => {
           st.phase = 'menu'
