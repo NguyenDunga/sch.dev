@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { buildCollection, discardToPile, drawFromDeck, returnHandToPile, shuffleCollection } from './deck'
 import { BASE_DECK_SIZE } from './balance'
 import { createRng, type Rng } from './rng'
-import { filledSlot, none, some } from './helpers'
-import type { Deck, Hand } from './types'
+import { filledSlot, isSome, none, some } from './helpers'
+import type { Coin, Deck, Hand } from './types'
 
 /** Small test deck of n plain coins (ids 0..n-1) — a test fixture, not a balance value. */
 const smallDeck = (n: number): Deck => ({
@@ -79,6 +79,29 @@ describe('shuffleCollection', () => {
     const before = JSON.parse(JSON.stringify(split))
     shuffleCollection(createRng('abc'), split)
     expect(split).toEqual(before)
+  })
+})
+
+describe('finite pile within a blind (no mid-blind reshuffle)', () => {
+  it('draining the draw pile leaves it empty; discards grow; nothing returns to the draw pile', () => {
+    let deck = smallDeck(5)
+    // Draw every coin (peek + pop, as the store does)
+    const drawn: Coin[] = []
+    for (;;) {
+      const o = drawFromDeck(deck)
+      if (!isSome(o)) break
+      drawn.push(o.value)
+      deck = { ...deck, drawPile: deck.drawPile.slice(1) }
+    }
+    expect(drawn).toHaveLength(5)
+    // After scoring: hand coins → discard; the rest discarded individually
+    const hand: Hand = drawn.slice(0, 3).map((c) => filledSlot(c, 'H'))
+    deck = returnHandToPile(deck, hand)
+    for (const c of drawn.slice(3)) deck = discardToPile(deck, c)
+    expect(deck.drawPile).toHaveLength(0)
+    expect(deck.discardPile).toHaveLength(5)
+    // Drawing again still yields none — the hand shrinks, no mid-blind reshuffle
+    expect(drawFromDeck(deck)).toEqual(none)
   })
 })
 
