@@ -164,14 +164,14 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 10.1 `BLINDS[12]` table | Not started | | |
-| 10.2 `BOSS_RULES[4]` (boss only) | Not started | | |
-| 10.3 `leaveShop` blind-start setup | Not started | | |
-| 10.4 `endBlind` met/missed | Not started | | |
-| 10.5 Blind 11 cleared → win | Not started | | |
-| 10.6 Boss-rule-scope test | Not started | | |
-| 10.7 Game-over test | Not started | | |
-| 10.8 Full-progression test | Not started | | |
+| 10.1 `BLINDS[12]` table | Done | 2026-09-14 | Already in place from M1: 12 entries, per-round small<big<boss escalating (300→3500), rewards $4/$6/$10 — pinned by balance.test.ts against the balance-baseline table |
+| 10.2 `BOSS_RULES[4]` (boss only) | Done | 2026-09-14 | Already in place from M1: 4 rules, one per round; the `Blind` type puts `rule` only on the `boss` variant (no optional field on small/big); balance.test.ts asserts rules appear only on boss blinds |
+| 10.3 `leaveShop` blind-start setup | Done | 2026-09-14 | Store action: blindIndex +1, round synced, handsLeft = 10 (SHORT_FUSE_HANDS 8 into the Short Fuse boss; +1 with Extra Hand), blindScore/hand/play reset, whole collection reshuffled into the draw pile (discard cleared), shop cleared, phase run. 4 tests |
+| 10.4 `endBlind` met/missed | Done | 2026-09-14 | Target met → cash += reward (+$5 Payday, +$5 Heavy Target) → shop (or runEnd win after blind 11); missed → runEnd lose. Heavy Target: table target ×1.5 at runtime via HEAVY_TARGET_MULT (3500 → 5250, per SDD data). 4 tests |
+| 10.5 Blind 11 cleared → win | Done | 2026-09-14 | 5250 on blind 11 → phase runEnd, won = true, $10 + $5 bonus paid; 5249 → lose. 2 tests |
+| 10.6 Boss-rule-scope test | Done | 2026-09-14 | Store-level: HTHTH scores 105 on round-1 small/big but 0 on the noAlternating boss; HHHHH scores 200 on round-3 small/big but 60 (4-same) on the noJackpots boss |
+| 10.7 Game-over test | Done | 2026-09-14 | Last hand ends the blind below target with $50 cash → runEnd, won = false, cash untouched (cash is not a substitute for the target) |
+| 10.8 Full-progression test | Done | 2026-09-14 | Mocked-clears walk of all 12 blinds: each clear → shop with 5 offers → leaveShop → next blind (round synced, blindScore reset, handsLeft > 0); blind 11 → runEnd win; no undefined transition |
 
 ### M11 — Save / Load (`src/state/runStore.ts`) → [wbs](../plan/plan_wbs-m11-save-load.md)
 
