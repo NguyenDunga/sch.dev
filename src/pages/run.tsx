@@ -85,7 +85,6 @@ export function RunScreen() {
             slot={slot}
             index={i}
             revealed={revealed}
-            enabled={canPick}
             onUnpick={() => unpickCoin(i)}
           />
         ))}
