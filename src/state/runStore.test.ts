@@ -725,3 +725,65 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
     expect(store.getState()).toEqual(before)
   })
 })
+
+describe('M4.10 — full cycle repeated', () => {
+  it('runs a full blind: 10 cycles of draw → play → buff → score, consuming the whole deck', () => {
+    const store = createRunStore()
+    store.getState().startRun('m4-10')
+
+    for (let cycle = 1; cycle <= HANDS_PER_BLIND; cycle++) {
+      store.getState().drawHand()
+      expect(store.getState().handPhase).toBe('play')
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      expect(store.getState().handPhase).toBe('buff')
+      store.getState().score()
+      const st = store.getState()
+
+      // Coin conservation: every coin is in exactly one place.
+      const inHand = st.hand.filter((s) => s.kind === 'filled').length
+      const inPlay = st.play.filter((s) => s.kind === 'filled').length
+      expect(st.deck.drawPile.length + st.deck.discardPile.length + inHand + inPlay).toBe(
+        BASE_DECK_SIZE,
+      )
+      // 8 coins leave the draw pile and land in the discard pile each cycle.
+      expect(st.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE * cycle)
+      expect(st.deck.discardPile).toHaveLength(HAND_SIZE * cycle)
+
+      if (cycle < HANDS_PER_BLIND) {
+        expect(st.handPhase).toBe('draw') // the machine loops back
+      }
+    }
+
+    // The blind ends after the 10th hand.
+    const final = store.getState()
+    expect(final.handsLeft).toBe(0)
+    expect(final.deck.drawPile).toHaveLength(0)
+    expect(final.deck.discardPile).toHaveLength(BASE_DECK_SIZE)
+    expect(final.phase).toBe('runEnd') // the stub scores 0 → target missed
+    expect(final.won).toBe(false)
+  })
+
+  it('same seed + same choices → identical blind (reproducibility)', () => {
+    const runBlind = (seed: string) => {
+      const store = createRunStore()
+      store.getState().startRun(seed)
+      for (let i = 0; i < HANDS_PER_BLIND; i++) {
+        store.getState().drawHand()
+        store.getState().pickCoin(0)
+        store.getState().pickCoin(3)
+        store.getState().confirmPlay()
+        store.getState().score()
+      }
+      const s = store.getState()
+      return {
+        discardPile: s.deck.discardPile.map((c) => c.id),
+        blindScore: s.blindScore,
+        cash: s.cash,
+        rngState: s.rngState,
+        phase: s.phase,
+      }
+    }
+    expect(runBlind('m4-10b')).toEqual(runBlind('m4-10b'))
+  })
+})
