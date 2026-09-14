@@ -184,6 +184,13 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | 11.5 Round-trip deep-equal test | Done | 2026-09-14 | save → resume in a fresh store: every persisted field deep-equals the saved state; the collection's coins and their effect payloads survive (piles compared as a set — re-reshuffled at blind start) |
 | 11.6 No-autosave test | Done | 2026-09-14 | Spy on localStorage.setItem across a full walk (3 hands → clear → shop: buy/reroll/merge/remove/moveCharm → leaveShop → next-blind hand → toMenu): never called |
 
+### Quality Gate — NASA Coding Practices (pre-M12, user-directed 2026-09-14)
+
+| Checkpoint | Status | Completed | Notes |
+| --- | --- | --- | --- |
+| QG.1 No function > 60 lines | Done | 2026-09-14 | Refactored `createRunStore` (344 → module-level action functions, store only wires them up) and `Coin` (94 → `CoinBadges` + `SpinningCoin` subcomponents). `debug.tsx` (dev-only) excluded. Enforced by ESLint `max-lines-per-function: 60` (tests + debug page excluded) |
+| QG.2 100% test coverage (logic layer) | Done | 2026-09-14 | `src/core` + `src/state` at 100% statements/branches/functions (497/497, 298/298, 117/117). 8 new edge tests close the last branches (generated seed, draw1/draw3 variants, both favoured faces, drawHand skip, full-hand unpick, empty-slot discard, non-resumable resume). Enforced by vitest `thresholds: {100: true}` on `src/core/**` + `src/state/**`; UI files join the gate when M12 lands component tests |
+
 ### M12 — UI Screens, Theme & Interaction → [wbs](../plan/plan_wbs-m12-ui.md)
 
 | Checkpoint | Status | Completed | Notes |

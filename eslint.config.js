@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -24,6 +24,15 @@ export default defineConfig([
     files: ['src/components/ui/**/*.{ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    // NASA practice: no function longer than 60 lines.
+    // Excluded: test files (describe blocks) and the dev-only debug page.
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.test.ts', '**/*.test.tsx', 'src/pages/debug.tsx'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 60 }],
     },
   },
 ])
