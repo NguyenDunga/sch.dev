@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, PLAY_SIZE, SHOP_SLOTS } from '@/core/balance'
+import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PLAY_SIZE, SHOP_SLOTS } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -1261,5 +1261,35 @@ describe('M9.6 — removeCoin ($1 delete, no refund)', () => {
     store.setState({ phase: 'run' })
     store.getState().removeCoin(900)
     expect(store.getState().cash).toBe(5)
+  })
+})
+
+describe('M9.7 — hand-size upgrade', () => {
+  function shopStore(seed: string, handSize: number, cash: number) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      handSize,
+      cash,
+      shop: { offers: [{ kind: 'handSize' }], rerollUsed: false },
+    })
+    return store
+  }
+
+  it('buy: handSize +1, cash -= HAND_SIZE_PRICE, offer removed', () => {
+    const store = shopStore('m9-7', 8, 20)
+    store.getState().buy({ kind: 'handSize' })
+    const st = store.getState()
+    expect(st.handSize).toBe(9)
+    expect(st.cash).toBe(20 - HAND_SIZE_PRICE)
+    expect(st.shop.offers).toHaveLength(0)
+  })
+
+  it('past the cap: rejected, state unchanged', () => {
+    const store = shopStore('m9-7b', HAND_SIZE_CAP, 20)
+    const before = store.getState()
+    store.getState().buy({ kind: 'handSize' })
+    expect(store.getState()).toEqual(before)
   })
 })

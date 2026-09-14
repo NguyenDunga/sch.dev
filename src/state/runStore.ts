@@ -384,17 +384,19 @@ export function createRunStore() {
                 : HAND_SIZE_PRICE
           if (price === undefined || st.cash < price) return // broke — reject
           if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)
-          // M9.7: hand-size purchase (cap check) — no-op until then.
-          if (offer.kind === 'handSize') return
+          if (offer.kind === 'handSize' && st.handSize >= HAND_SIZE_CAP) return // cap — reject (9.7)
           st.cash -= price
           if (offer.kind === 'charm') {
             st.charms.push(offer.charm)
-          } else {
+          } else if (offer.kind === 'coin') {
             // M9.4: new coin joins the collection (draw pile) with its effect variant;
             // Weight/Double-Side roll their favoured face now, fixed for the run.
             const coin: Coin = { id: nextCoinId(st.deck), effects: [purchasedEffect(offer.effect, rng)] }
             st.deck.drawPile = [...st.deck.drawPile, coin]
             st.rngState = rng.state()
+          } else {
+            // M9.7: hand-size upgrade — +1 slot, up to HAND_SIZE_CAP.
+            st.handSize += 1
           }
           // Remove the bought offer (structurally — the draft wraps the passed object).
           st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
