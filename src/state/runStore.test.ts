@@ -11,7 +11,7 @@ import { none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace } from '@/core/scoring'
 import type { Coin, Face, HandPhase, HandSlot, Option } from '@/core/types'
-import { createRunStore } from './runStore'
+import { createRunStore, type RunStore } from './runStore'
 
 /** The coin id in a slot, or -1 when the slot is empty. */
 const coinId = (slot: HandSlot): number => (slot.kind === 'filled' ? slot.coin.id : -1)
@@ -663,6 +663,65 @@ describe('M4.8 — score', () => {
     const before = store.getState()
 
     store.getState().score()
+    expect(store.getState()).toEqual(before)
+  })
+})
+
+describe('M4.9 — out-of-phase actions are no-ops', () => {
+  /** A store resting in the given phase (toss/score are transient and cannot be rested in). */
+  function atPhase(seed: string, phase: HandPhase) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    if (phase === 'play') store.getState().drawHand()
+    if (phase === 'buff') {
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+    }
+    return store
+  }
+
+  const ACTIONS: Record<string, (s: RunStore) => void> = {
+    drawHand: (s) => s.drawHand(),
+    pickCoin: (s) => s.pickCoin(0),
+    unpickCoin: (s) => s.unpickCoin(0),
+    discard: (s) => s.discard(0),
+    confirmPlay: (s) => s.confirmPlay(),
+    echoReflip: (s) => s.echoReflip(0),
+    score: (s) => s.score(),
+  }
+
+  const VALID_IN: Record<string, HandPhase> = {
+    drawHand: 'draw',
+    pickCoin: 'play',
+    unpickCoin: 'play',
+    discard: 'play',
+    confirmPlay: 'play',
+    echoReflip: 'buff',
+    score: 'buff',
+  }
+
+  const RESTING: HandPhase[] = ['draw', 'play', 'buff']
+
+  it.each(
+    Object.entries(VALID_IN).flatMap(([action, valid]) =>
+      RESTING.filter((p) => p !== valid).map((phase) => [action, phase] as const),
+    ),
+  )('%s is a no-op when fired in the %s phase', (action, phase) => {
+    const store = atPhase(`m4-9-${action}-${phase}`, phase)
+    const before = store.getState()
+
+    ACTIONS[action](store.getState())
+
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('every action is a no-op in the menu phase (no run in progress)', () => {
+    const store = createRunStore()
+    const before = store.getState()
+
+    for (const act of Object.values(ACTIONS)) act(store.getState())
+
     expect(store.getState()).toEqual(before)
   })
 })
