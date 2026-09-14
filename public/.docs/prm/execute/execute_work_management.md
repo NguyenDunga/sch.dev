@@ -150,15 +150,15 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 9.1 Offer generation (5, no owned charm) | Not started | | |
-| 9.2 `reroll` (once) | Not started | | |
-| 9.3 `buy` (deduct/add, reject) | Not started | | |
-| 9.4 `buy` coin rolls faceParams | Not started | | |
-| 9.5 `mergeCoin` (free) | Not started | | |
-| 9.6 `removeCoin` ($1 delete) | Not started | | |
-| 9.7 Hand-size upgrade (cap) | Not started | | |
-| 9.8 Reroll-once / owned-charm-rejected tests | Not started | | |
-| 9.9 Remove-$1 / no-sell tests | Not started | | |
+| 9.1 Offer generation (5, no owned charm) | Done | 2026-09-14 | generateOffers (runStore): pool = unowned charms + all 11 coin effects + hand-size (while under cap); Fisher–Yates sample of 5 (no in-shop duplicates); wired into endBlind (shop entry). 5 tests: exactly 5, no owned charm, pool membership, seed determinism, no hand-size at cap |
+| 9.2 `reroll` (once) | Done | 2026-09-14 | Store action: shop phase + !rerollUsed → regenerate all 5 offers (rng), rerollUsed = true; second call no-op (offers and rng state unchanged). 3 tests |
+| 9.3 `buy` (deduct/add, reject) | Done | 2026-09-14 | Store action: price from CHARMS/COIN_EFFECTS/HAND_SIZE_PRICE; reject (state unchanged) when broke, charm owned, or wrong phase; charm → cash −= price, charms +, offer removed (structural match — immer drafts break reference equality). 4 tests |
+| 9.4 `buy` coin rolls faceParams | Done | 2026-09-14 | purchasedEffect: Weight/Double-Side roll favoured face via rng on purchase (fixed for the run); Draw-N → { kind: 'draw', count: N }; plain → unit variant; new coin (unique id max+1) appended to the draw pile. 5 tests incl. same-seed → same rolled face |
+| 9.5 `mergeCoin` (free) | Done | 2026-09-14 | Already implemented in M7 (mergeCoin store action: effects stack, source removed, cash unchanged) with 4 tests — nothing new to build |
+| 9.6 `removeCoin` ($1 delete) | Done | 2026-09-14 | Store action: shop phase, cash ≥ 1, coin in either pile → delete, cash −= REMOVE_COIN_COST; no-ops when broke/unknown/wrong phase. 4 tests |
+| 9.7 Hand-size upgrade (cap) | Done | 2026-09-14 | buy handSize: handSize +1 (cash −= HAND_SIZE_PRICE $10), rejected at HAND_SIZE_CAP (10); offer generation omits it at cap (9.1). 2 tests |
+| 9.8 Reroll-once / owned-charm-rejected tests | Done | 2026-09-14 | Covered by the 9.2 tests (second reroll no-op, rng state unchanged) and the 9.3 test (owned charm → state unchanged) |
+| 9.9 Remove-$1 / no-sell tests | Done | 2026-09-14 | Covered by the 9.6 tests: $1 from either pile, cash only goes down, and an explicit assertion that no sellCharm/removeCharm action exists on the store |
 
 ### M10 — Blind / Round / Boss Progression (`balance.ts` + store) → [wbs](../plan/plan_wbs-m10-progression.md)
 
