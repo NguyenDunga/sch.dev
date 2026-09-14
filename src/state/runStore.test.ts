@@ -1437,3 +1437,37 @@ describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
     expect(store.getState().won).toBe(false)
   })
 })
+
+describe('M10.6 — a round’s boss rule fires only on its boss blind', () => {
+  /** Score a deterministic pre-resolved play on the given blind; returns the blind score. */
+  function scorePlayOnBlind(seed: string, blindIndex: number, faces: Face[]): number {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      blindIndex,
+      round: BLINDS[blindIndex].round,
+      handPhase: 'buff',
+      handsLeft: 1,
+      play: [
+        ...faces.map((face, i) => filledSlot({ id: i + 1, effects: [] }, face)),
+        ...Array.from({ length: PLAY_SIZE - faces.length }, () => ({ kind: 'empty' as const })),
+      ],
+    })
+    store.getState().score()
+    return store.getState().blindScore
+  }
+
+  it('No Alternating (round 1 boss): HTHTH scores 105 on small/big, 0 on the boss blind', () => {
+    const faces: Face[] = ['H', 'T', 'H', 'T', 'H']
+    expect(scorePlayOnBlind('m10-6', 0, faces)).toBe(105) // round 1 small — no rule
+    expect(scorePlayOnBlind('m10-6b', 1, faces)).toBe(105) // round 1 big — no rule
+    expect(scorePlayOnBlind('m10-6c', 2, faces)).toBe(0) // round 1 boss — noAlternating
+  })
+
+  it('No Jackpots (round 3 boss): HHHHH scores 200 on small/big, 60 (4-same) on the boss blind', () => {
+    const faces: Face[] = ['H', 'H', 'H', 'H', 'H']
+    expect(scorePlayOnBlind('m10-6d', 6, faces)).toBe(200) // round 3 small — no rule
+    expect(scorePlayOnBlind('m10-6e', 7, faces)).toBe(200) // round 3 big — no rule
+    expect(scorePlayOnBlind('m10-6f', 8, faces)).toBe(60) // round 3 boss — noJackpots
+  })
+})
