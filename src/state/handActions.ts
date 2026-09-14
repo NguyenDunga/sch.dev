@@ -190,6 +190,7 @@ function scoreDraft(st: Draft, rng: Rng): void {
     if (slot.kind === 'filled') st.deck = discardToPile(st.deck, slot.coin)
   })
   st.blindScore += scoreTotal(result)
+  st.runScore += scoreTotal(result)
   st.cash += result.cash
   st.handsLeft -= 1
   st.lastScore = some(result)

@@ -1,38 +1,65 @@
-import { Button } from '@/components/ui/button'
+// C9 — Run-end screen: win/lose, the run summary (blinds cleared, total run
+// score, final cash), the seed (for sharing/replay), and the Menu / New Run
+// buttons. Reads RunState; the summary numbers come straight from the store.
+
 import { BLINDS } from '@/core/balance'
 import { useRunStore } from '@/state/runStore'
+import { Button } from '@/components/ui/button'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const
 
-/** C9 — run-end screen. M3.1: the run ends at blind 12 (win) or on a missed blind (lose). */
 export function RunEndScreen() {
   const seed = useRunStore((s) => s.seed)
   const won = useRunStore((s) => s.won)
   const blindIndex = useRunStore((s) => s.blindIndex)
   const blindScore = useRunStore((s) => s.blindScore)
+  const runScore = useRunStore((s) => s.runScore)
+  const cash = useRunStore((s) => s.cash)
   const toMenu = useRunStore((s) => s.toMenu)
   const startRun = useRunStore((s) => s.startRun)
 
   const blind = BLINDS[blindIndex]
+  // Blinds cleared: all 12 on a win, otherwise the index of the blind lost
+  // (blinds 0..blindIndex-1 are cleared).
+  const blindsCleared = won ? BLINDS.length : blindIndex
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-8 p-6">
-      <div className="text-center">
-        <h1 className="font-heading text-4xl font-bold">
-          {won ? 'Run complete!' : 'Game over'}
-        </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
+    <main className="run-end">
+      <div className="run-end-head">
+        <h1 className="run-end-title">{won ? 'Run complete!' : 'Game over'}</h1>
+        <p className="run-end-sub">
           {won
-            ? `All 12 blinds cleared · final ${blindScore} / ${blind.target}`
+            ? `All ${BLINDS.length} blinds cleared · final ${blindScore} / ${blind.target}`
             : `Round ${blind.round} · ${BLIND_NAMES[blind.kind]} blind · ${blindScore} / ${blind.target}`}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">seed: {seed}</p>
       </div>
-      <div className="flex gap-3">
+
+      <dl className="run-summary">
+        <div className="run-summary-row">
+          <dt>Blinds cleared</dt>
+          <dd>
+            {blindsCleared} / {BLINDS.length}
+          </dd>
+        </div>
+        <div className="run-summary-row">
+          <dt>Run score</dt>
+          <dd>{runScore}</dd>
+        </div>
+        <div className="run-summary-row">
+          <dt>Cash</dt>
+          <dd>${cash}</dd>
+        </div>
+      </dl>
+
+      <p className="run-end-seed">
+        seed: <code>{seed}</code>
+      </p>
+
+      <div className="run-end-actions">
         <Button size="lg" pulse onClick={() => startRun()}>
           New Run
         </Button>
-        <Button variant="ghost" size="lg" onClick={toMenu}>
+        <Button variant="outline" size="lg" onClick={toMenu}>
           Menu
         </Button>
       </div>

@@ -647,6 +647,27 @@ describe('M4.8 — score', () => {
     store.getState().score()
     expect(store.getState()).toEqual(before)
   })
+
+  it('runScore accumulates the hand total (the total across the run)', () => {
+    const store = drawnStore('m4-8f')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(1)
+    store.getState().confirmPlay()
+
+    store.getState().score()
+    const after = store.getState()
+
+    // First hand: runScore and blindScore both start at 0 and add the same
+    // total, so they are equal. Score a second hand to prove it accumulates.
+    expect(after.runScore).toBe(after.blindScore)
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    const after2 = store.getState()
+    expect(after2.runScore).toBe(after2.blindScore)
+    expect(after2.runScore).toBeGreaterThanOrEqual(after.runScore)
+  })
 })
 
 describe('M4.9 — out-of-phase actions are no-ops', () => {
