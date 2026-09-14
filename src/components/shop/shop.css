@@ -1,0 +1,178 @@
+/*
+ * Shop screen (C8) — layout + offer cards + collection. Ceramic Tactile
+ * (SDD UX §2–§3): flat panels, 1px --line borders, chunky radii, no blurred
+ * shadows. Offer cards raise 2px on hover (a hard offset, not a blur).
+ */
+
+.shop-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.shop-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shop-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.shop-cash {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cash);
+  font-variant-numeric: tabular-nums;
+  padding: 0.3rem 0.7rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+}
+
+/* -- offer cards ------------------------------------------------------------ */
+
+.offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.offer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-hard-sm);
+  box-sizing: border-box;
+  transition:
+    translate var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out);
+}
+
+.offer-card:hover {
+  translate: 0 -2px;
+  box-shadow: var(--shadow-hard);
+}
+
+/* a tier glow ring on hover (a bloom, not a drop shadow — UX §2). */
+.offer-card--charm:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-four-row) 40%, transparent);
+}
+.offer-card--coin:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-alternating) 40%, transparent);
+}
+.offer-card--handSize:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-jackpot) 45%, transparent);
+}
+
+.offer-card-name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.offer-card-desc {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  flex: 1;
+}
+
+.offer-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.offer-card-price {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cash);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- collection ------------------------------------------------------------- */
+
+.collection {
+  width: 100%;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-sizing: border-box;
+}
+
+.collection--empty {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+.collection-hint {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.5rem;
+}
+
+.collection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.5rem;
+}
+
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  background: var(--surface-sunk);
+  border: 2px solid var(--line);
+  border-radius: var(--r-sm);
+  box-sizing: border-box;
+}
+
+.collection-item--source {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+.collection-item-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+/* -- leave ------------------------------------------------------------------ */
+
+.shop-footer {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+}

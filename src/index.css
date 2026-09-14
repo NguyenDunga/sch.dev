@@ -8,6 +8,7 @@
 @import "./components/hand/toss-coin.css";
 @import "./components/hand/score-ticker.css";
 @import "./components/run/run.css";
+@import "./components/shop/shop.css";
 
 /*
  * 50/50 — "Ceramic Tactile" theme (SDD UX §2).
