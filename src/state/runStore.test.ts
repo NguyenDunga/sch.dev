@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { BASE_DECK_SIZE, BLINDS, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, HAND_SIZE_PRICE, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH, HEAVY_TARGET_BONUS } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -1407,5 +1407,33 @@ describe('M10.4 — endBlind rewards', () => {
     expect(store.getState().phase).toBe('runEnd')
     expect(store.getState().won).toBe(false)
     expect(store.getState().cash).toBe(START_CASH) // no reward on a miss
+  })
+})
+
+describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
+  it('blindScore ≥ 5250 on the last blind → phase runEnd, won = true, boss reward + Heavy Target bonus paid', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-5')
+    store.setState({ blindIndex: 11, round: 4, blindScore: 5250, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    const st = store.getState()
+
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(true)
+    expect(st.cash).toBe(START_CASH + BLINDS[11].reward + HEAVY_TARGET_BONUS) // 4 + 10 + 5
+  })
+
+  it('one point short (5249) → lose, not win', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-5b')
+    store.setState({ blindIndex: 11, round: 4, blindScore: 5249, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    expect(store.getState().won).toBe(false)
   })
 })
