@@ -1733,3 +1733,38 @@ describe('M11.4 — resume in shop: offers regenerated from rngState', () => {
     expect(b.getState().shop.offers).toEqual(offers)
   })
 })
+
+describe('M11.5 — save → resume (fresh store) round-trip', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('every persisted field deep-equals the saved state', () => {
+    const a = createRunStore()
+    a.getState().startRun('m11-5')
+    a.getState().drawHand()
+    a.getState().pickCoin(0)
+    a.getState().confirmPlay()
+    a.getState().score()
+    a.setState({ cash: 33, charms: ['plusMult', 'payday'], runScore: 42, handSize: 9 })
+    a.getState().save()
+    const saved = JSON.parse(localStorage.getItem('fifty-fifty-run') as string)
+
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+
+    for (const field of ['seed', 'round', 'blindIndex', 'cash', 'charms', 'handSize', 'runScore'] as const) {
+      expect(st[field]).toEqual(saved.state[field])
+    }
+    // collection: the same coins (the piles are re-reshuffled at blind start, so compare as a set)
+    const coinIds = (d: { drawPile: { id: number }[]; discardPile: { id: number }[] }) =>
+      [...d.drawPile, ...d.discardPile].map((c) => c.id).sort((x, y) => x - y)
+    expect(coinIds(st.deck)).toEqual(coinIds(saved.state.deck))
+    // and the effect payloads travel with the coins
+    const byId = (d: { drawPile: { id: number; effects: unknown[] }[]; discardPile: { id: number; effects: unknown[] }[] }) =>
+      new Map([...d.drawPile, ...d.discardPile].map((c) => [c.id, c.effects]))
+    for (const [id, effects] of byId(saved.state.deck)) {
+      expect(byId(st.deck).get(id)).toEqual(effects)
+    }
+  })
+})
