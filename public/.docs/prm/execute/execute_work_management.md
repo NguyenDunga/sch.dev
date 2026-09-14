@@ -76,17 +76,17 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 4.1 `handPhase` 5-phase cycle | Not started | | |
-| 4.2 `drawHand` (auto) | Not started | | |
-| 4.3 `pickCoin` / `unpickCoin` (1–5) | Not started | | |
-| 4.4 `discard` (+ draw-enchant redraw) | Not started | | |
-| 4.5 `confirmPlay` | Not started | | |
-| 4.6 Toss auto (resolveFace per coin) | Not started | | |
-| 4.7 `echoReflip` (once per Echo) | Not started | | |
-| 4.8 `score` (return hand, handsLeft−1) | Not started | | |
-| 4.9 Out-of-phase no-op test | Not started | | |
-| 4.10 Full-cycle test | Not started | | |
-| 4.11 Hand/play empty after score test | Not started | | |
+| 4.1 `handPhase` 5-phase cycle | Done | 2026-09-14 | Fresh 5-phase store replaces v1.0 legacy runStore (all C4 actions shipped, phase-guarded); transient `toss`/`score` are observable separate sets; 2 tests: cycle invariant via recorded phase transitions + out-of-phase no-ops. C3 stubs (`resolveFace`/`matchTier`/`scoreHand`) ship with final signatures; `HAND_SIZE`/`PLAY_SIZE` added to balance.ts; run screen placeholder until M12 |
+| 4.2 `drawHand` (auto) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.3 `pickCoin` / `unpickCoin` (1–5) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.4 `discard` (+ draw-enchant redraw) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.5 `confirmPlay` | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.6 Toss auto (resolveFace per coin) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.7 `echoReflip` (once per Echo) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.8 `score` (return hand, handsLeft−1) | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.9 Out-of-phase no-op test | In progress | | | Partial: 4.1 ships a no-op test; full per-action matrix pending |
+| 4.10 Full-cycle test | In progress | | | Partial: 4.1 runs two full cycles; handsLeft−1 assertion pending |
+| 4.11 Hand/play empty after score test | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
 
 ### M5 — Pattern / Tier Matching (`src/core/scoring.ts`) → [wbs](../plan/plan_wbs-m5-tier-matching.md)
 

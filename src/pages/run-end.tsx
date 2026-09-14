@@ -11,7 +11,7 @@ export function RunEndScreen() {
   const blindIndex = useRunStore((s) => s.blindIndex)
   const blindScore = useRunStore((s) => s.blindScore)
   const toMenu = useRunStore((s) => s.toMenu)
-  const newRun = useRunStore((s) => s.newRun)
+  const startRun = useRunStore((s) => s.startRun)
 
   const blind = BLINDS[blindIndex]
 
@@ -29,7 +29,7 @@ export function RunEndScreen() {
         <p className="mt-1 text-xs text-muted-foreground">seed: {seed}</p>
       </div>
       <div className="flex gap-3">
-        <Button size="lg" pulse onClick={() => newRun()}>
+        <Button size="lg" pulse onClick={() => startRun()}>
           New Run
         </Button>
         <Button variant="ghost" size="lg" onClick={toMenu}>

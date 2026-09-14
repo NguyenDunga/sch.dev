@@ -20,7 +20,7 @@ Toss/Buff/Score call M6/M7 (`scoreHand`, `resolveFace`); stub those until then. 
 
 ## Checkpoints
 
-- [ ] 4.1 `handPhase` only ever moves along `draw→play→toss→buff→score→draw`.
+- [x] 4.1 `handPhase` only ever moves along `draw→play→toss→buff→score→draw`.
 - [ ] 4.2 `drawHand` (auto): up to `handSize` coins face-down into `hand` (fewer if the pile is short); → `play`.
 - [ ] 4.3 `pickCoin` / `unpickCoin`: play slots hold 1–5; picking a 6th is a no-op; re-picking a played coin unpicks it first.
 - [ ] 4.4 `discard`: plain coin → discard (gone for the blind); `draw1/2/3` coin → redraw N into the hand.

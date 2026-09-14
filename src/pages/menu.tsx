@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useRunStore } from '@/state/runStore'
 
 export function MenuScreen() {
-  const newRun = useRunStore((s) => s.newRun)
+  const startRun = useRunStore((s) => s.startRun)
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-8 p-6">
@@ -12,7 +12,7 @@ export function MenuScreen() {
           Toss 5 coins. Score the pattern. Clear the blind.
         </p>
       </div>
-      <Button size="lg" pulse onClick={() => newRun()}>
+      <Button size="lg" pulse onClick={() => startRun()}>
         New Run
       </Button>
     </main>

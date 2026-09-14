@@ -1,260 +1,260 @@
+// C4 — Run store: the 5-phase hand state machine (M4).
+//
+// Per-hand flow (SDD C4 + Run State Machine; Q&A 2026-09-14, round 3):
+//   draw → play → toss → buff → score → (draw | endBlind)
+// - draw:  drawHand() — pop up to handSize face-down coins (auto)
+// - play:  pickCoin / unpickCoin / discard — play 1–5, unlimited discard
+// - toss:  confirmPlay() — resolveFace per picked coin in play order (transient)
+// - buff:  echoReflip() — one re-flip per Echo coin (boosters apply at score)
+// - score: score() — C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1
+//
+// An action fired in the wrong handPhase is a no-op.
+//
+// The RNG lives in a closure (not serializable); `rngState` mirrors it for
+// save/resume (M11). C3 calls are stubs until M5/M6 land.
+
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { createRng, generateSeed, type Rng } from '@/core/rng'
+import type { WritableDraft } from 'immer'
+import { BLINDS, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE, START_CASH } from '@/core/balance'
 import {
   buildCollection,
-  drawFromDeck,
   discardToPile,
+  drawFromDeck,
   returnHandToPile,
   shuffleCollection,
 } from '@/core/deck'
+import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/helpers'
+import { createRng, generateSeed } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import { BLINDS, HANDS_PER_BLIND } from '@/core/balance'
-import { emptyHand, filledSlot, isFilled, isSome, none, scoreTotal, some } from '@/core/helpers'
-import type { Deck, Face, Hand, Option, Phase, Score } from '@/core/types'
+import type { BossRuleId, Face, Option, RunState } from '@/core/types'
 
-/**
- * Legacy vertical-slice hand state (old WBS): 'ready' = the toss window is
- * open, 'tossed' = the window is closed. Replaced by the 5-phase `handPhase`
- * machine (M4, SDD C4) — kept local to the store until then, not a shared type.
- */
-type HandState = 'ready' | 'tossed'
+/** Placeholder face for face-down coins (hand and pre-toss play slots).
+ *  Meaningless until the toss phase resolves the face (SDD C4). */
+const FACE_DOWN: Face = 'H'
 
-const ZERO_TOSSES = [0, 0, 0, 0, 0]
-
-/** The left neighbour's face, or `none` at the left edge / next to an empty slot. */
-function leftFace(hand: Hand, slot: number): Option<Face> {
-  if (slot <= 0) return none
-  const left = hand[slot - 1]
-  return isFilled(left) ? some(left.face) : none
-}
-
-export interface RunStoreState {
-  seed: string
-  phase: Phase
-  /** 5 slots; empty slots are `{ kind: 'empty' }` until tossed (drawn from the draw pile). */
-  hand: Hand
-  /** Toss count per slot (initial toss + re-flips + redraws) — drives the coin spin. */
-  tosses: number[]
-  handState: HandState
-  /** Coin collection — finite draw pile within the blind (M2: blind 0 only). */
-  deck: Deck
-  blindIndex: number
-  handsLeft: number
-  blindScore: number
-  /** Last hand's score for the UI ticker; `none` before the first hand is scored. */
-  lastScore: Option<Score>
-  /** Set when the run ends (M2: the single blind is cleared or missed). */
-  won: boolean
-  /** Start a fresh run (random 8-char seed when omitted). */
-  newRun: (seed?: string) => void
-  /** Toss one slot: draw a coin from the draw pile and resolve its face. */
-  tossSlot: (slot: number) => void
-  /**
-   * Free 1–5 toss (Q&A round 4, 2026-09-14): open the toss window with 1–5
-   * coins already tossed, instead of waiting for all 5 slots / deck-out.
-   * No-op with 0 coins tossed or outside the ready state.
-   */
-  openTossWindow: () => void
-  /** Echo re-flip: re-resolve the slot's face once (Echo coins only). */
-  echoReflip: (slot: number) => void
-  /**
-   * Discard the slot's coin (unlimited, toss window): plain coins go to the
-   * discard pile (gone for the blind); draw-enchant coins redraw into empty
-   * slots starting at the discarded slot (wrapping left-to-right).
-   */
-  discard: (slot: number) => void
-  /** Run the scoring pipeline on the current hand; ends the blind at 0 hands. */
+export interface RunActions {
+  /** New run: seed (or generated); fresh rng + shuffled collection; phase 'run', handPhase 'draw'. */
+  startRun: (seed?: string) => void
+  /** draw → play: pop up to handSize face-down coins into the hand (fewer if the pile is short). */
+  drawHand: () => void
+  /** play: move a hand coin into the next free play slot (no-op when the play is full). */
+  pickCoin: (handIndex: number) => void
+  /** play: return a play coin to the first empty hand slot. */
+  unpickCoin: (slotIndex: number) => void
+  /** play (unlimited): hand coin → discard pile (gone for the blind); draw-enchant coins redraw N face-down. */
+  discard: (handIndex: number) => void
+  /** play → toss → buff: resolveFace per picked coin in play order (requires ≥1 picked). */
+  confirmPlay: () => void
+  /** buff: re-run face resolution once for an unused Echo coin in the play. */
+  echoReflip: (slotIndex: number) => void
+  /** buff → score → draw: C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1 (endBlind at 0). */
   score: () => void
-  /** Back to the menu; discards the run. */
+  /** UI convenience (C9 Menu button): back to the menu. */
   toMenu: () => void
 }
 
-/**
- * Run store (WBS 2.3, extended for M3.1 run structure) on the Balatro-style
- * coin deck (2026-09-13 Q&A round 2): 12 blinds (4 rounds × small/big/boss,
- * escalating targets), win/lose → run end. Boss rules (M3.2), charms (M3.3),
- * shop/cash (M3.4), and save/resume (M4) land later.
- *
- * The Rng lives in the closure (it is not serializable). It always holds a
- * valid generator — seeded on `newRun` — and every run action is guarded by
- * `phase === 'run'`, which is only reached after `newRun` seeds it, so there is
- * no null-rng state to check for.
- */
-export const createRunStore = () => {
-  let rng: Rng = createRng('')
+export type RunStore = RunState & RunActions
 
-  return create<RunStoreState>()(
-    immer((set, get) => {
-      /**
-       * Start a blind: reset hand/score/hands, reshuffle the whole collection
-       * into the draw pile (discard pile cleared). M3.1: 10 hands on every
-       * blind (Short Fuse lands with boss rules in M3.2).
-       */
-      const startBlind = (blindIndex: number) => {
-        set({
-          phase: 'run',
-          hand: emptyHand(5),
-          tosses: [...ZERO_TOSSES],
-          handState: 'ready',
-          deck: shuffleCollection(rng, get().deck),
-          blindIndex,
-          handsLeft: HANDS_PER_BLIND,
-          blindScore: 0,
-          lastScore: none,
+/** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
+ *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
+function endBlind(st: WritableDraft<RunState>) {
+  const blind = BLINDS[st.blindIndex]
+  if (st.blindScore >= blind.target) {
+    if (st.blindIndex >= BLINDS.length - 1) {
+      st.phase = 'runEnd'
+      st.won = true
+    } else {
+      st.phase = 'shop' // M9: draw shop offers from the rng
+    }
+  } else {
+    st.phase = 'runEnd'
+    st.won = false
+  }
+}
+
+export function createRunStore() {
+  let rng = createRng('')
+  return create<RunStore>()(
+    immer((set, get) => ({
+      // -- initial state: menu, no run in progress --
+      seed: '',
+      phase: 'menu',
+      round: 1,
+      blindIndex: 0,
+      hand: emptyHand(HAND_SIZE),
+      play: emptyHand(PLAY_SIZE),
+      handPhase: 'draw',
+      handSize: HAND_SIZE,
+      handsLeft: HANDS_PER_BLIND,
+      blindScore: 0,
+      cash: 0,
+      charms: [],
+      deck: { drawPile: [], discardPile: [] },
+      shop: { offers: [], rerollUsed: false },
+      lastScore: none,
+      runScore: 0,
+      won: false,
+      rngState: [],
+
+      startRun: (seedArg) => {
+        const seed = seedArg ?? generateSeed()
+        rng = createRng(seed)
+        set((st) => {
+          st.seed = seed
+          st.phase = 'run'
+          st.round = 1
+          st.blindIndex = 0
+          st.hand = emptyHand(HAND_SIZE)
+          st.play = emptyHand(PLAY_SIZE)
+          st.handPhase = 'draw'
+          st.handSize = HAND_SIZE
+          st.handsLeft = HANDS_PER_BLIND
+          st.blindScore = 0
+          st.cash = START_CASH
+          st.charms = []
+          st.deck = shuffleCollection(rng, buildCollection())
+          st.shop = { offers: [], rerollUsed: false }
+          st.lastScore = none
+          st.runScore = 0
+          st.won = false
+          st.rngState = rng.state()
         })
-      }
+      },
 
-      return {
-        seed: '',
-        phase: 'menu',
-        hand: emptyHand(5),
-        tosses: [...ZERO_TOSSES],
-        handState: 'ready',
-        deck: { drawPile: [], discardPile: [] },
-        blindIndex: 0,
-        handsLeft: HANDS_PER_BLIND,
-        blindScore: 0,
-        lastScore: none,
-        won: false,
-
-        newRun: (seed) => {
-          const s = seed ?? generateSeed()
-          rng = createRng(s)
-          set({ seed: s, deck: buildCollection(), won: false })
-          startBlind(0)
-        },
-
-        tossSlot: (slot) => {
-          const s = get()
-          if (s.phase !== 'run' || s.handState !== 'ready' || isFilled(s.hand[slot])) return
-          const drawn = drawFromDeck(s.deck)
-          if (!isSome(drawn)) {
-            // Draw pile empty — the hand shrinks to nothing; open the toss window.
-            set({ handState: 'tossed' })
-            return
+      drawHand: () =>
+        set((st) => {
+          if (st.phase !== 'run' || st.handPhase !== 'draw') return
+          for (let i = 0; i < st.hand.length; i++) {
+            if (st.hand[i].kind !== 'empty') continue
+            const d = drawFromDeck(st.deck)
+            if (!d.some) break
+            st.hand[i] = filledSlot(d.value, FACE_DOWN)
+            st.deck.drawPile = st.deck.drawPile.slice(1)
           }
-          const coin = drawn.value
-          const face = resolveFace(rng, coin, leftFace(s.hand, slot))
-          const hand = [...s.hand]
-          hand[slot] = filledSlot(coin, face)
-          const drawPile = s.deck.drawPile.slice(1)
-          const allTossed = hand.every(isFilled) || drawPile.length === 0
-          set({
-            hand,
-            tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
-            deck: { ...s.deck, drawPile },
-            handState: allTossed ? 'tossed' : 'ready',
-          })
-        },
+          st.handPhase = 'play'
+        }),
 
-        openTossWindow: () => {
-          const s = get()
-          if (s.phase !== 'run' || s.handState !== 'ready') return
-          if (!s.hand.some(isFilled)) return
-          set({ handState: 'tossed' })
-        },
+      pickCoin: (handIndex) =>
+        set((st) => {
+          if (st.phase !== 'run' || st.handPhase !== 'play') return
+          const slot = st.hand[handIndex]
+          if (!slot || slot.kind !== 'filled') return
+          const target = st.play.findIndex((p) => p.kind === 'empty')
+          if (target === -1) return // play full (5) — no-op
+          st.play[target] = slot
+          st.hand[handIndex] = { kind: 'empty' }
+        }),
 
-        echoReflip: (slot) => {
-          const s = get()
-          if (s.phase !== 'run' || s.handState !== 'tossed') return
-          const current = s.hand[slot]
-          if (
-            !isFilled(current) ||
-            !current.coin.effects.some((e) => e.kind === 'echo') ||
-            current.echoUsed
-          )
-            return
-          const face = resolveFace(rng, current.coin, leftFace(s.hand, slot))
-          const hand = [...s.hand]
-          hand[slot] = { ...current, face, echoUsed: true }
-          set({
-            hand,
-            tosses: s.tosses.map((t, i) => (i === slot ? t + 1 : t)),
-          })
-        },
+      unpickCoin: (slotIndex) =>
+        set((st) => {
+          if (st.phase !== 'run' || st.handPhase !== 'play') return
+          const slot = st.play[slotIndex]
+          if (!slot || slot.kind !== 'filled') return
+          const target = st.hand.findIndex((h) => h.kind === 'empty')
+          if (target === -1) return // hand full — no-op
+          st.hand[target] = slot
+          st.play[slotIndex] = { kind: 'empty' }
+        }),
 
-        discard: (slot) => {
-          const s = get()
-          if (s.phase !== 'run' || s.handState !== 'tossed') return
-          const current = s.hand[slot]
-          if (!isFilled(current)) return
-          let deck = discardToPile(s.deck, current.coin)
-          const hand = [...s.hand]
-          hand[slot] = { kind: 'empty' }
-          const tosses = [...s.tosses]
-          const drawEffect = current.coin.effects.find((e) => e.kind === 'draw')
-          if (drawEffect) {
-            // Redraw into empty slots: the discarded slot first, then left-to-right.
-            const order = [...new Set([slot, 0, 1, 2, 3, 4])].filter((i) => !isFilled(hand[i]))
-            let drawn = 0
-            for (const target of order) {
-              if (drawn >= drawEffect.count) break
-              const next = drawFromDeck(deck)
-              if (!isSome(next)) break
-              const coin = next.value
-              hand[target] = filledSlot(coin, resolveFace(rng, coin, leftFace(hand, target)))
-              tosses[target] += 1
-              deck = { ...deck, drawPile: deck.drawPile.slice(1) }
-              drawn += 1
+      discard: (handIndex) =>
+        set((st) => {
+          if (st.phase !== 'run' || st.handPhase !== 'play') return
+          const slot = st.hand[handIndex]
+          if (!slot || slot.kind !== 'filled') return
+          const coin = slot.coin
+          st.hand[handIndex] = { kind: 'empty' }
+          st.deck = discardToPile(st.deck, coin)
+          // Draw-enchant coin: redraw N face-down into empty hand slots (discarded slot first).
+          const draw = coin.effects.find((e) => e.kind === 'draw')
+          if (draw && draw.kind === 'draw') {
+            const order = [
+              handIndex,
+              ...st.hand.map((_, i) => i).filter((i) => i !== handIndex && st.hand[i].kind === 'empty'),
+            ]
+            let n = draw.count
+            for (const i of order) {
+              if (n <= 0) break
+              const d = drawFromDeck(st.deck)
+              if (!d.some) break
+              st.hand[i] = filledSlot(d.value, FACE_DOWN)
+              st.deck.drawPile = st.deck.drawPile.slice(1)
+              n--
             }
           }
-          set({ hand, tosses, deck })
-        },
+        }),
 
-        score: () => {
-          const s = get()
-          if (s.phase !== 'run' || s.handState !== 'tossed') return
-          const result = scoreHand(s.hand, rng)
-          // All hand coins → discard pile (gone for the rest of the blind;
-          // recycled into the draw pile at the next blind start).
-          const deck = returnHandToPile(s.deck, s.hand)
-          const blindScore = s.blindScore + scoreTotal(result)
-          const handsLeft = s.handsLeft - 1
-          set({
-            lastScore: some(result),
-            hand: emptyHand(5),
-            tosses: [...ZERO_TOSSES],
-            // An empty draw pile opens the toss window immediately (empty hand).
-            handState: s.deck.drawPile.length === 0 ? 'tossed' : 'ready',
-            deck,
-            blindScore,
-            handsLeft,
+      confirmPlay: () => {
+        const st = get()
+        if (st.phase !== 'run' || st.handPhase !== 'play') return
+        if (!st.play.some(isFilled)) return // requires ≥1 coin in the play
+        // Step 1: play → toss (observable — the UI plays the toss animation here).
+        set((s) => {
+          s.handPhase = 'toss'
+        })
+        // Step 2: toss → buff — resolve each picked coin's face in play order
+        // (left → right); the left neighbour's face is already resolved (SDD C4).
+        set((s) => {
+          s.play.forEach((slot, i) => {
+            if (slot.kind !== 'filled') return
+            const prev = i > 0 ? s.play[i - 1] : undefined
+            const left: Option<Face> = prev && prev.kind === 'filled' ? some(prev.face) : none
+            slot.face = resolveFace(rng, slot.coin, left)
           })
-          if (handsLeft === 0) {
-            const blind = BLINDS[s.blindIndex]
-            if (blindScore < blind.target) {
-              // Miss → run end (lose).
-              set({ phase: 'runEnd', won: false })
-            } else if (s.blindIndex === BLINDS.length - 1) {
-              // Blind 12 cleared → run end (win).
-              set({ phase: 'runEnd', won: true })
-            } else {
-              // Blind cleared → auto-advance to the next blind.
-              // (The shop interstitial replaces this in M9/M10.)
-              startBlind(s.blindIndex + 1)
-            }
-          }
-        },
+          s.handPhase = 'buff'
+          s.rngState = rng.state()
+        })
+      },
 
-        toMenu: () => {
-          set({
-            seed: '',
-            phase: 'menu',
-            hand: emptyHand(5),
-            tosses: [...ZERO_TOSSES],
-            handState: 'ready',
-            deck: { drawPile: [], discardPile: [] },
-            blindIndex: 0,
-            handsLeft: HANDS_PER_BLIND,
-            blindScore: 0,
-            lastScore: none,
-            won: false,
+      echoReflip: (slotIndex) =>
+        set((st) => {
+          if (st.phase !== 'run' || st.handPhase !== 'buff') return
+          const slot = st.play[slotIndex]
+          if (!slot || slot.kind !== 'filled' || slot.echoUsed) return
+          if (!slot.coin.effects.some((e) => e.kind === 'echo')) return
+          const prev = slotIndex > 0 ? st.play[slotIndex - 1] : undefined
+          const left: Option<Face> = prev && prev.kind === 'filled' ? some(prev.face) : none
+          slot.face = resolveFace(rng, slot.coin, left)
+          slot.echoUsed = true
+          st.rngState = rng.state()
+        }),
+
+      score: () => {
+        const st = get()
+        if (st.phase !== 'run' || st.handPhase !== 'buff') return
+        // Step 1: buff → score (observable — the UI runs the chips×mult ticker here).
+        set((s) => {
+          s.handPhase = 'score'
+        })
+        // Step 2: score → draw — C3 pipeline, then all coins to the discard pile.
+        set((s) => {
+          const blind = BLINDS[s.blindIndex]
+          const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
+          const result = scoreHand(s.play, boss, s.charms, rng)
+          // ALL hand coins (tossed + unpicked) → discard pile (gone for the blind).
+          s.deck = returnHandToPile(s.deck, s.hand)
+          s.play.forEach((slot) => {
+            if (slot.kind === 'filled') s.deck = discardToPile(s.deck, slot.coin)
           })
-        },
-      }
-    })
+          s.blindScore += scoreTotal(result)
+          s.cash += result.cash
+          s.handsLeft -= 1
+          s.lastScore = some(result)
+          s.hand = emptyHand(s.handSize)
+          s.play = emptyHand(PLAY_SIZE)
+          s.rngState = rng.state()
+          s.handPhase = 'draw'
+          if (s.handsLeft <= 0) endBlind(s)
+        })
+      },
+
+      toMenu: () =>
+        set((st) => {
+          st.phase = 'menu'
+        }),
+    })),
   )
 }
 
+/** The app-wide store instance. */
 export const useRunStore = createRunStore()
