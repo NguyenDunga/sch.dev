@@ -22,13 +22,13 @@ Return the first (highest) match, else `null`. **Boss rules apply here:** `noAlt
 
 ## Checkpoints
 
-- [ ] 5.1 `matchTier(play, boss)` reads faces from non-null slots.
-- [ ] 5.2–5.7 Detect each tier: threeSame, fourSame, jackpot, fourRow, alternating, tripleRun.
-- [ ] 5.8 Priority: highest match wins (`HHHHH` → `jackpot`, never fourRow/fourSame/tripleRun).
-- [ ] 5.9 ≤2 non-null slots → `null`.
-- [ ] 5.10 Boss: `noAlternating` → alternating play returns `null`; `noJackpots` → 5-same returns `fourSame` (not `fourRow`).
-- [ ] 5.11 Test: one case per tier at its minimum coin count.
-- [ ] 5.12 Test: any 2-coin play → `null`.
+- [x] 5.1 `matchTier(play, boss)` reads faces from non-null slots.
+- [x] 5.2–5.7 Detect each tier: threeSame, fourSame, jackpot, fourRow, alternating, tripleRun.
+- [x] 5.8 Priority: highest match wins (`HHHHH` → `jackpot`, never fourRow/fourSame/tripleRun).
+- [x] 5.9 ≤2 non-null slots → `null`.
+- [x] 5.10 Boss: `noAlternating` → alternating play returns `null`; `noJackpots` → 5-same returns `fourSame` (not `fourRow`).
+- [x] 5.11 Test: one case per tier at its minimum coin count.
+- [x] 5.12 Test: any 2-coin play → `null`.
 
 ## Exit gate
 

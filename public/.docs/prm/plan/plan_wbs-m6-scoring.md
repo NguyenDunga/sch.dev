@@ -20,16 +20,16 @@ Steps, in order:
 
 ## Checkpoints
 
-- [ ] 6.1 Tier step via `matchTier`.
-- [ ] 6.2 Base step (null → 0/0).
-- [ ] 6.3 Boosters step, left→right, only the 3.
-- [ ] 6.4 `total = chips × mult`.
-- [ ] 6.5 Coin cash: Tax deterministic, Jackpot via `rng`.
-- [ ] 6.6 Test: charms `[plusChips, jackpotFever]` → `(C+10)*2` chips vs `[jackpotFever, plusChips]` → `C*2+10` — totals differ.
-- [ ] 6.7 Test: no charms → total = baseChips × baseMult.
-- [ ] 6.8 Test: Tax cash calls no rng (spy).
-- [ ] 6.9 Test: same seed → identical Jackpot cash.
-- [ ] 6.10 Test: null tier → total 0 and $0 tier cash, but per-coin Tax/Jackpot still pays.
+- [x] 6.1 Tier step via `matchTier`.
+- [x] 6.2 Base step (null → 0/0).
+- [x] 6.3 Boosters step, left→right, only the 3.
+- [x] 6.4 `total = chips × mult`.
+- [x] 6.5 Coin cash: Tax deterministic, Jackpot via `rng`.
+- [x] 6.6 Test: charms `[plusChips, jackpotFever]` → `(C+10)*2` chips vs `[jackpotFever, plusChips]` → `C*2+10` — totals differ.
+- [x] 6.7 Test: no charms → total = baseChips × baseMult.
+- [x] 6.8 Test: Tax cash calls no rng (spy).
+- [x] 6.9 Test: same seed → identical Jackpot cash.
+- [x] 6.10 Test: null tier → total 0 and $0 tier cash, but per-coin Tax/Jackpot still pays.
 
 *Keep the existing exhaustive 32-hand EV test; compute the expected EV from `TIERS`, don't hardcode.*
 

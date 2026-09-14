@@ -18,12 +18,12 @@ moveCharm(from: number, to: number)                            // reorder RunSta
 
 ## Checkpoints
 
-- [ ] 8.1 `CHARMS` = the 5 defs (id/name/category/price); `CHARMS.length === 5`; categories are `flip|scoring|pattern|economy`.
-- [ ] 8.2 `RunState.charms: CharmId[]` array order is the only ordering source.
-- [ ] 8.3 `moveCharm(from, to)` reorders `charms` (pure array move within the store).
-- [ ] 8.4 No-duplicates enforced at the shop (M9) via `charms.includes(id)`.
-- [ ] 8.5 Grep: Weighted Coin / Double-Sided / Always Heads / Re-Toss absent from charms + types.
-- [ ] 8.6 Test: reordering changes scoring only for `plusChips`+`jackpotFever` on a Jackpot hand (ties to M6.6).
+- [x] 8.1 `CHARMS` = the 5 defs (id/name/category/price); `CHARMS.length === 5`; categories are `flip|scoring|pattern|economy`.
+- [x] 8.2 `RunState.charms: CharmId[]` array order is the only ordering source.
+- [x] 8.3 `moveCharm(from, to)` reorders `charms` (pure array move within the store).
+- [x] 8.4 No-duplicates enforced at the shop (M9) via `charms.includes(id)`.
+- [x] 8.5 Grep: Weighted Coin / Double-Sided / Always Heads / Re-Toss absent from charms + types.
+- [x] 8.6 Test: reordering changes scoring only for `plusChips`+`jackpotFever` on a Jackpot hand (ties to M6.6).
 
 ## Exit gate
 

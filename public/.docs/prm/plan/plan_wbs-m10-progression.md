@@ -20,14 +20,14 @@ Boss rules act where they apply: tier effects (`noAlternating`, `noJackpots`) in
 
 ## Checkpoints
 
-- [ ] 10.1 `BLINDS[12]` — per round small<big<boss, escalating; targets/rewards from balance-baseline.
-- [ ] 10.2 `BOSS_RULES[4]` — one per round; `BLINDS[i].boss` set only on boss blinds.
-- [ ] 10.3 `leaveShop` — reshuffle, clear discard, reset `handsLeft` (Short Fuse → `SHORT_FUSE_HANDS`; Extra Hand → +1), `blindScore=0`, `phase='run'`.
-- [ ] 10.4 `endBlind` — target met → reward + advance (shop, or runEnd win after blind 11); target missed → runEnd lose.
-- [ ] 10.5 Clearing blind index 11 (round 4 boss) → `won = true`, `phase='runEnd'`.
-- [ ] 10.6 Test: a round's boss rule fires only on its boss blind, not its small/big.
-- [ ] 10.7 Test: miss target after the blind's hand budget → lose (even with cash left).
-- [ ] 10.8 Test: full 12-blind walk (mocked clears) reaches win with no undefined transition.
+- [x] 10.1 `BLINDS[12]` — per round small<big<boss, escalating; targets/rewards from balance-baseline.
+- [x] 10.2 `BOSS_RULES[4]` — one per round; `BLINDS[i].boss` set only on boss blinds.
+- [x] 10.3 `leaveShop` — reshuffle, clear discard, reset `handsLeft` (Short Fuse → `SHORT_FUSE_HANDS`; Extra Hand → +1), `blindScore=0`, `phase='run'`.
+- [x] 10.4 `endBlind` — target met → reward + advance (shop, or runEnd win after blind 11); target missed → runEnd lose.
+- [x] 10.5 Clearing blind index 11 (round 4 boss) → `won = true`, `phase='runEnd'`.
+- [x] 10.6 Test: a round's boss rule fires only on its boss blind, not its small/big.
+- [x] 10.7 Test: miss target after the blind's hand budget → lose (even with cash left).
+- [x] 10.8 Test: full 12-blind walk (mocked clears) reaches win with no undefined transition.
 
 ## Exit gate
 

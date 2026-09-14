@@ -15,12 +15,12 @@ Persisted shape `{ version: 2, state: RunState }`; v1 saves are discarded (not m
 
 ## Checkpoints
 
-- [ ] 11.1 `save()` — write `{version:2, state}` to `fifty-fifty-run`; explicit calls only.
-- [ ] 11.2 `resume()` — restore; `null`/absent/parse-fail → no-op (Resume button hidden when no save).
-- [ ] 11.3 Resume in `run`: reset `handsLeft`/`blindScore` to blind-start, reshuffle (clear discard); preserve seed, round/blind, cash, charms+order, collection, rngState, runScore.
-- [ ] 11.4 Resume in `shop`: land at the shop with offers regenerated identically from `rngState`.
-- [ ] 11.5 Test: `save` → `resume` (fresh store) deep-equals the persisted fields.
-- [ ] 11.6 Test: no phase transition calls `save` (spy `not.toHaveBeenCalled`).
+- [x] 11.1 `save()` — write `{version:2, state}` to `fifty-fifty-run`; explicit calls only.
+- [x] 11.2 `resume()` — restore; `null`/absent/parse-fail → no-op (Resume button hidden when no save).
+- [x] 11.3 Resume in `run`: reset `handsLeft`/`blindScore` to blind-start, reshuffle (clear discard); preserve seed, round/blind, cash, charms+order, collection, rngState, runScore.
+- [x] 11.4 Resume in `shop`: land at the shop with offers regenerated identically from `rngState`.
+- [x] 11.5 Test: `save` → `resume` (fresh store) deep-equals the persisted fields.
+- [x] 11.6 Test: no phase transition calls `save` (spy `not.toHaveBeenCalled`).
 
 ## Exit gate
 

@@ -19,15 +19,15 @@ Offers are drawn from: charms not yet owned + coin effects (COIN_EFFECTS) + a ha
 
 ## Checkpoints
 
-- [ ] 9.1 Offer generation → 5 offers from {unowned charms, coins, hand-size upgrade}; no owned charm offered.
-- [ ] 9.2 `reroll` — usable once (`rerollUsed`); regenerates all 5; second call is a no-op.
-- [ ] 9.3 `buy` — deduct price, add item; reject (state unchanged) if `cash < price` or charm already owned.
-- [ ] 9.4 `buy` a coin rolls its `faceParams` (Weight/Double-Side) via rng and adds it to the collection.
-- [ ] 9.5 `mergeCoin` — effects stack onto target, source removed, free (`cash` unchanged).
-- [ ] 9.6 `removeCoin` — `cash -= REMOVE_COIN_COST`; delete only, never a refund.
-- [ ] 9.7 Hand-size upgrade — `handSize += 1` up to `HAND_SIZE_CAP`; past cap rejected.
-- [ ] 9.8 Test: reroll once per shop; buying an owned charm rejected.
-- [ ] 9.9 Test: remove costs $1, no refund; no "sell charm" action exists.
+- [x] 9.1 Offer generation → 5 offers from {unowned charms, coins, hand-size upgrade}; no owned charm offered.
+- [x] 9.2 `reroll` — usable once (`rerollUsed`); regenerates all 5; second call is a no-op.
+- [x] 9.3 `buy` — deduct price, add item; reject (state unchanged) if `cash < price` or charm already owned.
+- [x] 9.4 `buy` a coin rolls its `faceParams` (Weight/Double-Side) via rng and adds it to the collection.
+- [x] 9.5 `mergeCoin` — effects stack onto target, source removed, free (`cash` unchanged).
+- [x] 9.6 `removeCoin` — `cash -= REMOVE_COIN_COST`; delete only, never a refund.
+- [x] 9.7 Hand-size upgrade — `handSize += 1` up to `HAND_SIZE_CAP`; past cap rejected.
+- [x] 9.8 Test: reroll once per shop; buying an owned charm rejected.
+- [x] 9.9 Test: remove costs $1, no refund; no "sell charm" action exists.
 
 ## Exit gate
 
