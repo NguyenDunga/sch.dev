@@ -1,29 +1,54 @@
 /*
  * 2D coin (hand / play slots) — Ceramic Tactile (SDD UX §2–§3).
  *
- * Flat, not realistic: the faces are flat color blocking (no radial
- * gradients) with a 2px --ink sticker border. H/T carry a glyph + color
- * (colorblind-safe — never color alone, UX §8). No blurred shadows: the
- * only "depth" is the focus glow ring.
+ * Flat, not realistic: flat color blocking (no gradients), 2px --ink
+ * sticker border. H/T carry a glyph + color (colorblind-safe — never
+ * color alone, UX §8). No blurred shadows: depth is the hard offset /
+ * glow ring only (UX §2).
+ *
+ * Transform layers (they compose, never fight):
+ *   - motion.button  → framer `transform` (shared layoutId pick/unpick)
+ *   - .hand-coin-tilt → CSS `translate` (hover lift / press) + `rotate`
+ *                       (pointer tilt) + shake animation
  */
 
-.coin {
+/* -- coin disc ---------------------------------------------------------------- */
+
+.coin-disc {
   width: 3.5rem;
   height: 3.5rem;
-  perspective: 8rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.coin-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
+.coin-disc--back {
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
 }
+
+.coin-disc--heads {
+  background: var(--heads);
+}
+
+.coin-disc--tails {
+  background: var(--tails);
+}
+
+/* -- badges ------------------------------------------------------------------- */
 
 .coin-badges {
   display: flex;
   gap: 0.15rem;
   min-height: 1rem;
+  align-items: center;
 }
 
 .coin-badge {
@@ -37,69 +62,179 @@
   color: var(--ink-soft);
   -webkit-user-select: none;
   user-select: none;
-}
-
-.coin--tappable {
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
   transition:
-    translate var(--dur-micro) var(--ease-out),
-    scale var(--dur-micro) var(--ease-out);
+    background var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
 }
 
-.coin--tappable:hover {
-  translate: 0 -4px;
-  scale: 1.04;
-}
-
-.coin--tappable:active {
-  translate: 0 0;
-  scale: 0.98;
-}
-
-.coin--tappable:focus-visible {
-  outline: 3px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.coin-idle {
-  border-radius: 9999px;
-  background: var(--surface-sunk);
-  border: 2px solid var(--ink);
-}
-
-.coin-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-}
-
-.coin-face {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 9999px;
-  backface-visibility: hidden;
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
+/* face badge (12.4): H/T pill in the face color — glyph primary, color
+   secondary (colorblind-safe). */
+.face-badge {
+  font-size: 0.625rem;
   font-weight: 700;
+  line-height: 1rem;
+  padding: 0 0.3rem;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--ink);
+  color: var(--ink);
   -webkit-user-select: none;
   user-select: none;
 }
 
-.coin-face--heads {
+.face-badge--heads {
   background: var(--heads);
-  border: 2px solid var(--ink);
-  color: var(--ink);
 }
 
-.coin-face--tails {
-  transform: rotateY(180deg);
+.face-badge--tails {
   background: var(--tails);
-  border: 2px solid var(--ink);
-  color: var(--ink);
+}
+
+/* -- hand coin ---------------------------------------------------------------- */
+
+.hand-coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+
+/* the tilt layer: hover lift 4px / press 2px (CSS `translate`), pointer
+   tilt (CSS `rotate`, written from JS), 120ms spring-snappy feel. */
+.hand-coin-tilt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  transition:
+    translate 120ms var(--ease-out),
+    rotate 120ms var(--ease-out);
+}
+
+.hand-coin:hover:not(:disabled) .hand-coin-tilt {
+  translate: 0 -4px;
+}
+
+.hand-coin:hover:not(:disabled) .coin-badge {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.hand-coin:active:not(:disabled) .hand-coin-tilt {
+  translate: 0 2px;
+}
+
+.hand-coin--disabled,
+.hand-coin:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.6;
+}
+
+.hand-coin:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* 6th-pick shake (3px, UX §3) — runs once per shakeKey remount. */
+.hand-coin-tilt--shake {
+  animation: coin-shake 300ms var(--ease-out);
+}
+
+@keyframes coin-shake {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20% {
+    translate: -3px 0;
+  }
+  40% {
+    translate: 3px 0;
+  }
+  60% {
+    translate: -3px 0;
+  }
+  80% {
+    translate: 3px 0;
+  }
+}
+
+/* empty hand slot placeholder (keeps the row layout stable). */
+.hand-slot--empty {
+  width: 4rem;
+  height: 5.2rem;
+  border-radius: 9999px;
+  border: 2px dashed var(--line);
+}
+
+/* -- play slot ---------------------------------------------------------------- */
+
+.play-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 4rem;
+  min-height: 5.2rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-md);
+}
+
+/* empty = a sunk well (dashed, sunken fill). */
+.play-slot--empty {
+  justify-content: center;
+  background: var(--surface-sunk);
+  border: 2px dashed var(--line);
+  border-radius: 9999px;
+}
+
+.play-slot-index {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+.play-slot--filled {
+  cursor: pointer;
+}
+
+.play-slot--filled:hover .coin-badge {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.play-slot--disabled,
+.play-slot:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.75;
+}
+
+.play-slot:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* -- rows --------------------------------------------------------------------- */
+
+.play-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.hand-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
