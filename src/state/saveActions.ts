@@ -22,6 +22,12 @@ export function save(get: GetFn): void {
   localStorage.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, state: st }))
 }
 
+/** Query (C5): a resumable save exists — the Resume button is visible only
+ *  then. False for absent / unparseable / not version 2 / non-resumable. */
+export function hasSave(): boolean {
+  return parseSave(localStorage.getItem(SAVE_KEY)).some
+}
+
 /** Parse + validate a save string; `none` when absent / unparseable / not
  *  version 2 / not resumable (v1 saves predate the coin collection). */
 function parseSave(raw: string | null): Option<RunState> {

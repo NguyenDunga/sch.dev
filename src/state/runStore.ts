@@ -37,7 +37,7 @@ import {
   removeCoinDraft,
   rerollDraft,
 } from './shopActions'
-import { resume, save } from './saveActions'
+import { hasSave, resume, save } from './saveActions'
 
 export interface RunActions {
   /** New run: seed (or generated); fresh rng + shuffled collection; phase 'run', handPhase 'draw'. */
@@ -66,6 +66,8 @@ export interface RunActions {
   reroll: () => void
   /** run/shop: manual save — serialize { version: 2, state } to localStorage (explicit only, no autosave). */
   save: () => void
+  /** C5: a resumable save exists (the menu shows Resume only then). */
+  hasSave: () => boolean
   /** Restore the saved run; no-op when absent / unparseable / not version 2. */
   resume: () => void
   /**
@@ -131,6 +133,7 @@ export function createRunStore() {
       buy: (offer) => set((st) => buyDraft(st, offer, rng)),
       leaveShop: () => set((st) => leaveShopDraft(st, rng)),
       save: () => save(get),
+      hasSave: () => hasSave(),
       resume: () => resume(set, rng),
       toMenu: () => set((st) => {
         st.phase = 'menu'

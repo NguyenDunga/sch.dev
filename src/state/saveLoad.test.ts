@@ -383,3 +383,49 @@ describe('Coverage — remaining edges (100% gate)', () => {
     expect(store.getState()).toEqual(before)
   })
 })
+
+describe('M11.7 — hasSave (C5: Resume visible only when a resumable save exists)', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  function writeSave(state: unknown): void {
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 2, state }))
+  }
+
+  it('false when no save exists', () => {
+    expect(createRunStore().getState().hasSave()).toBe(false)
+  })
+
+  it('true for a valid v2 save in a resumable phase (seen by a fresh store)', () => {
+    const store = createRunStore()
+    store.getState().startRun('has-save')
+    store.getState().drawHand()
+    store.getState().save()
+    expect(createRunStore().getState().hasSave()).toBe(true)
+  })
+
+  it('false for an unparseable save', () => {
+    localStorage.setItem('fifty-fifty-run', 'not-json')
+    expect(createRunStore().getState().hasSave()).toBe(false)
+  })
+
+  it('false for a v1 (non-migratable) save', () => {
+    const store = createRunStore()
+    store.getState().startRun('has-v1')
+    store.getState().drawHand()
+    store.getState().save()
+    const state = JSON.parse(localStorage.getItem('fifty-fifty-run')!)
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 1, state }))
+    expect(createRunStore().getState().hasSave()).toBe(false)
+  })
+
+  it('false for a saved non-resumable phase (menu) — resume would be a no-op', () => {
+    const store = createRunStore()
+    store.getState().startRun('has-menu')
+    store.getState().drawHand()
+    store.getState().save()
+    const state = JSON.parse(localStorage.getItem('fifty-fifty-run')!)
+    writeSave({ ...state, phase: 'menu' })
+    expect(createRunStore().getState().hasSave()).toBe(false)
+  })
+})
