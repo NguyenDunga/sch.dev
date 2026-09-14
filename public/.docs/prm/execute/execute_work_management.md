@@ -188,7 +188,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| QG.1 No function > 60 lines | Done | 2026-09-14 | Refactored `createRunStore` (344 → module-level action functions, store only wires them up) and `Coin` (94 → `CoinBadges` + `SpinningCoin` subcomponents). `debug.tsx` (dev-only) excluded. Enforced by ESLint `max-lines-per-function: 60` (tests + debug page excluded) |
+| QG.1 No function > 60 lines | Done | 2026-09-14 | Refactored `createRunStore` (344 → module-level action functions) and `Coin` (94 → `CoinBadges` + `SpinningCoin` subcomponents). Then split the store into action modules — `handActions.ts` (hand machine), `shopActions.ts` (shop + progression), `saveActions.ts` (save/resume), `storeTypes.ts` (plumbing types); `runStore.ts` is now state shape + wiring only (567 → 143). `runStore.test.ts` (1918) split into per-milestone suites: `handFlow` / `charms` / `shop` / `progression` / `saveLoad` + shared `testHelpers.ts`. `debug.tsx` (dev-only) excluded. Enforced by ESLint `max-lines-per-function: 60` (tests + debug page excluded) |
 | QG.2 100% test coverage (logic layer) | Done | 2026-09-14 | `src/core` + `src/state` at 100% statements/branches/functions (497/497, 298/298, 117/117). 8 new edge tests close the last branches (generated seed, draw1/draw3 variants, both favoured faces, drawHand skip, full-hand unpick, empty-slot discard, non-resumable resume). Enforced by vitest `thresholds: {100: true}` on `src/core/**` + `src/state/**`; UI files join the gate when M12 lands component tests |
 
 ### M12 — UI Screens, Theme & Interaction → [wbs](../plan/plan_wbs-m12-ui.md)
