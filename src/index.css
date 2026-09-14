@@ -2,132 +2,159 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/fredoka";
 @import "./components/ui/button/button.css";
 @import "./components/hand/coin.css";
 @import "./components/hand/score-ticker.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * 50/50 — "Ceramic Tactile" theme (SDD UX §2).
+ *
+ * Warm paper ground, matte ceramic coins, one bold coral accent, chunky
+ * rounded panels. Flat, not realistic: depth comes from flat color blocking,
+ * thick borders, and a single hard offset — NOT blurred drop shadows.
+ *
+ * Shadow rule (explicit): no blurred drop shadows anywhere. Depth = a single
+ * hard offset block (zero blur) on raised sticker elements only, plus a glow
+ * ring (0 0 0 3px / soft bloom) on hit/selection.
+ */
+:root {
+  /* -- palette ------------------------------------------------------------- */
+  --bg: #f4efe6; /* app background (warm paper) */
+  --surface: #fbf8f2; /* cards, panels */
+  --surface-sunk: #eae3d6; /* wells, empty slots */
+  --ink: #2b2724; /* primary text + bold borders */
+  --ink-soft: #6b635a; /* secondary text */
+  --line: #ded5c5; /* soft panel borders */
+  --primary: #f0654a; /* coral — primary actions */
+  --primary-press: #e24e34;
+  --secondary: #2fa79b; /* teal — secondary/info */
+  --heads: #e8b04b; /* coin face H (gold) */
+  --tails: #6c8cb5; /* coin face T (slate-blue) */
+  --cash: #3e9c6b; /* money */
+  --danger: #d9534f; /* loss / invalid */
+
+  /* tier colors (tier banners / highlights) */
+  --tier-jackpot: #e8b04b;
+  --tier-four-row: #8b6fc7;
+  --tier-alternating: #2fa79b;
+  --tier-four-same: #4a82c4;
+  --tier-triple-run: #5aa469;
+  --tier-three-same: #9a9086;
+
+  /* -- radii (chunky) -------------------------------------------------------- */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+
+  /* -- borders ----------------------------------------------------------------
+   * interactive "sticker" elements: 2px --ink · panels: 1px --line */
+
+  /* -- shadow rule (no blurred drop shadows) ----------------------------------
+   * hard offset (zero blur) on raised sticker elements; glow ring on
+   * hit/selection. */
+  --shadow-hard: 3px 3px 0 var(--ink);
+  --shadow-hard-sm: 2px 2px 0 var(--ink);
+  --shadow-hard-lg: 5px 5px 0 var(--ink);
+  --glow-ring: 0 0 0 3px;
+
+  /* -- motion (CSS side; springs live in src/lib/motion.ts for framer-motion) -
+   * durations: micro 90 · quick 160 · base 240 · slow 400 (ms) */
+  --dur-micro: 90ms;
+  --dur-quick: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 400ms;
+
+  /* -- shadcn semantic tokens → Ceramic Tactile --------------------------------- */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted: var(--surface-sunk);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--surface-sunk);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--primary);
+  --radius: var(--r-md);
+}
+
+/*
+ * Static theme values (fonts + motion easings). Emits the CSS vars to :root
+ * and the font-* / ease-* utilities.
+ *
+ * Type (UX §2): display/score numerals in a bold rounded face (Fredoka),
+ * tabular-nums; UI text in system sans (Geist).
+ */
+@theme {
+  --font-heading: 'Fredoka Variable', system-ui, sans-serif;
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
-}
+  /* game palette → utilities (bg-surface, text-ink-soft, bg-heads, ...) */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-press: var(--primary-press);
+  --color-secondary: var(--secondary);
+  --color-heads: var(--heads);
+  --color-tails: var(--tails);
+  --color-cash: var(--cash);
+  --color-danger: var(--danger);
+  --color-tier-jackpot: var(--tier-jackpot);
+  --color-tier-four-row: var(--tier-four-row);
+  --color-tier-alternating: var(--tier-alternating);
+  --color-tier-four-same: var(--tier-four-same);
+  --color-tier-triple-run: var(--tier-triple-run);
+  --color-tier-three-same: var(--tier-three-same);
 
-:root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
+  /* shadcn semantic tokens → utilities (bg-background, text-foreground, ...) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  /* radii (chunky) */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: calc(var(--r-lg) * 1.27);
+  --radius-2xl: calc(var(--r-lg) * 1.45);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

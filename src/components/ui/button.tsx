@@ -15,7 +15,7 @@ function Button({
   children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & {
-    /** Ambient bob + gold glow for key CTAs. */
+    /** Ambient bob + coral glow for key CTAs. */
     pulse?: boolean
     /** Spinner + locked pressed-down look while the action is in flight. */
     loading?: boolean

@@ -4,6 +4,9 @@
 import type { HandPhase, HandSlot } from '@/core/types'
 import { createRunStore } from './runStore'
 
+/** Narrows a hand/play slot to its filled form (the test asserts the slot is filled). */
+export const filled = (s: HandSlot): HandSlot & { kind: 'filled' } => s as HandSlot & { kind: 'filled' }
+
 /** The coin id in a slot, or -1 when the slot is empty. */
 export const coinId = (slot: HandSlot): number => (slot.kind === 'filled' ? slot.coin.id : -1)
 

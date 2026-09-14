@@ -1,3 +1,6 @@
+/* chips × mult = total ticker — Ceramic Tactile (SDD UX §2).
+ * Scores are big and dominate the hierarchy: bold rounded display face
+ * (Fredoka), tabular-nums. */
 .score-ticker {
   display: flex;
   flex-direction: column;
@@ -11,25 +14,27 @@
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-muted-foreground);
+  color: var(--ink-soft);
 }
 
 .score-ticker-math {
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 .score-ticker--idle {
-  color: var(--color-muted-foreground);
+  color: var(--ink-soft);
 }
 
 .score-ticker-total {
-  color: var(--color-coin-gold-deep);
+  color: var(--ink);
 }
 
 .score-ticker-cash {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-coin-gold-deep);
+  color: var(--cash);
 }

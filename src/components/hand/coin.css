@@ -1,11 +1,11 @@
-@theme {
-  --color-coin-gold: oklch(0.84 0.15 85);
-  --color-coin-gold-deep: oklch(0.67 0.13 70);
-  --color-coin-gold-ink: oklch(0.45 0.11 60);
-  --color-coin-silver: oklch(0.84 0.01 250);
-  --color-coin-silver-deep: oklch(0.64 0.015 250);
-  --color-coin-silver-ink: oklch(0.35 0.02 250);
-}
+/*
+ * 2D coin (hand / play slots) — Ceramic Tactile (SDD UX §2–§3).
+ *
+ * Flat, not realistic: the faces are flat color blocking (no radial
+ * gradients) with a 2px --ink sticker border. H/T carry a glyph + color
+ * (colorblind-safe — never color alone, UX §8). No blurred shadows: the
+ * only "depth" is the focus glow ring.
+ */
 
 .coin {
   width: 3.5rem;
@@ -31,10 +31,10 @@
   font-weight: 700;
   line-height: 1rem;
   padding: 0 0.3rem;
-  border-radius: 0.3rem;
-  background: var(--color-muted);
-  border: 1px solid var(--color-border);
-  color: var(--color-muted-foreground);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -44,22 +44,30 @@
   background: transparent;
   border: 0;
   cursor: pointer;
-  transition: transform 120ms ease;
+  transition:
+    translate var(--dur-micro) var(--ease-out),
+    scale var(--dur-micro) var(--ease-out);
 }
 
 .coin--tappable:hover {
-  transform: scale(1.06);
+  translate: 0 -4px;
+  scale: 1.04;
+}
+
+.coin--tappable:active {
+  translate: 0 0;
+  scale: 0.98;
 }
 
 .coin--tappable:focus-visible {
-  outline: 2px solid var(--color-ring);
+  outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
 
-.coin--idle {
+.coin-idle {
   border-radius: 9999px;
-  background: var(--color-muted);
-  border: 2px solid var(--color-border);
+  background: var(--surface-sunk);
+  border: 2px solid var(--ink);
 }
 
 .coin-inner {
@@ -84,22 +92,14 @@
 }
 
 .coin-face--heads {
-  background: radial-gradient(
-    circle at 35% 30%,
-    var(--color-coin-gold),
-    var(--color-coin-gold-deep)
-  );
-  border: 2px solid var(--color-coin-gold-deep);
-  color: var(--color-coin-gold-ink);
+  background: var(--heads);
+  border: 2px solid var(--ink);
+  color: var(--ink);
 }
 
 .coin-face--tails {
   transform: rotateY(180deg);
-  background: radial-gradient(
-    circle at 35% 30%,
-    var(--color-coin-silver),
-    var(--color-coin-silver-deep)
-  );
-  border: 2px solid var(--color-coin-silver-deep);
-  color: var(--color-coin-silver-ink);
+  background: var(--tails);
+  border: 2px solid var(--ink);
+  color: var(--ink);
 }

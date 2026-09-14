@@ -12,7 +12,7 @@ import { createRng } from '@/core/rng'
 import { resolveFace } from '@/core/scoring'
 import type { Coin, Face, HandPhase, Option } from '@/core/types'
 import { createRunStore, type RunStore } from './runStore'
-import { coinId, drawnStore, NEXT } from './testHelpers'
+import { coinId, drawnStore, filled, NEXT } from './testHelpers'
 
 describe('M4.1 — handPhase machine', () => {
   it('only ever moves along draw → play → toss → buff → score → draw', () => {
@@ -438,8 +438,8 @@ describe('M4.6 — toss (auto on confirmPlay)', () => {
 
     expect(st.play[0].kind).toBe('filled')
     expect(st.play[1].kind).toBe('filled')
-    expect(['H', 'T']).toContain(st.play[0].face)
-    expect(['H', 'T']).toContain(st.play[1].face)
+    expect(['H', 'T']).toContain(filled(st.play[0]).face)
+    expect(['H', 'T']).toContain(filled(st.play[1]).face)
     expect(st.play.slice(2).every((s) => s.kind === 'empty')).toBe(true)
   })
 
@@ -503,15 +503,15 @@ describe('M4.7 — echoReflip', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     const before = store.getState()
-    expect(before.play[0].echoUsed).toBe(false)
+    expect(filled(before.play[0]).echoUsed).toBe(false)
     const rngBefore = before.rngState
 
     store.getState().echoReflip(0)
     const after = store.getState()
 
-    expect(after.play[0].echoUsed).toBe(true)
+    expect(filled(after.play[0]).echoUsed).toBe(true)
     expect(after.rngState).not.toEqual(rngBefore) // the re-flip rolled the rng
-    expect(['H', 'T']).toContain(after.play[0].face)
+    expect(['H', 'T']).toContain(filled(after.play[0]).face)
   })
 
   it('a second call on the same slot is a no-op', () => {
@@ -525,9 +525,9 @@ describe('M4.7 — echoReflip', () => {
     store.getState().echoReflip(0)
     const after = store.getState()
 
-    expect(after.play[0].face).toBe(mid.play[0].face)
+    expect(filled(after.play[0]).face).toBe(filled(mid.play[0]).face)
     expect(after.rngState).toEqual(mid.rngState)
-    expect(after.play[0].echoUsed).toBe(true)
+    expect(filled(after.play[0]).echoUsed).toBe(true)
   })
 
   it('a non-Echo coin cannot be re-flipped', () => {
@@ -539,9 +539,9 @@ describe('M4.7 — echoReflip', () => {
     store.getState().echoReflip(0)
     const after = store.getState()
 
-    expect(after.play[0].face).toBe(before.play[0].face)
+    expect(filled(after.play[0]).face).toBe(filled(before.play[0]).face)
     expect(after.rngState).toEqual(before.rngState)
-    expect(after.play[0].echoUsed).toBe(false)
+    expect(filled(after.play[0]).echoUsed).toBe(false)
   })
 
   it('each Echo coin gets its own single re-flip (independent echoUsed flags)', () => {
@@ -554,15 +554,15 @@ describe('M4.7 — echoReflip', () => {
 
     store.getState().echoReflip(0)
     const mid = store.getState()
-    expect(mid.play[0].echoUsed).toBe(true)
-    expect(mid.play[1].echoUsed).toBe(false) // the other coin is untouched
+    expect(filled(mid.play[0]).echoUsed).toBe(true)
+    expect(filled(mid.play[1]).echoUsed).toBe(false) // the other coin is untouched
 
     store.getState().echoReflip(1)
     const after = store.getState()
-    expect(after.play[1].echoUsed).toBe(true)
+    expect(filled(after.play[1]).echoUsed).toBe(true)
     // …and the first one stays used (no second re-flip on it).
     after.echoReflip(0)
-    expect(store.getState().play[0].face).toBe(after.play[0].face)
+    expect(filled(store.getState().play[0]).face).toBe(filled(after.play[0]).face)
   })
 
   it('echoReflip out of the buff phase is a no-op', () => {
@@ -575,7 +575,7 @@ describe('M4.7 — echoReflip', () => {
     const after = store.getState()
 
     expect(after.handPhase).toBe('play')
-    expect(after.play[0].echoUsed).toBe(false)
+    expect(filled(after.play[0]).echoUsed).toBe(false)
     expect(after.rngState).toEqual(before.rngState)
   })
 })
