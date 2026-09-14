@@ -20,12 +20,12 @@ Derive helpers from `next()` as needed (int in a range, boolean at probability p
 
 ## Checkpoints
 
-- [ ] 2.1 `createRng(seed)` → `{ next, state, restore }`, seeded via the vendored `xmur3` hash → `xoroshiro128plus`.
-- [ ] 2.2 `generateSeed()` matches `/^[A-Za-z0-9]{6,8}$/`.
-- [ ] 2.3 Determinism test: two `Rng`s from the same seed → deep-equal sequences (100 `next()` calls).
-- [ ] 2.4 Different seeds → sequences differ.
-- [ ] 2.5 `state()` / `restore()` round-trip: capture `state()` mid-sequence, `restore()` into a new `Rng`, and the continuations match (this backs save/resume).
-- [ ] 2.6 A boolean helper at p=0.25 over 10,000 draws lands within ±3% of 0.25 (sanity for Jackpot cash).
+- [x] 2.1 `createRng(seed)` → `{ next, state, restore }`, seeded via the vendored `xmur3` hash → `xoroshiro128plus`.
+- [x] 2.2 `generateSeed()` matches `/^[A-Za-z0-9]{6,8}$/`.
+- [x] 2.3 Determinism test: two `Rng`s from the same seed → deep-equal sequences (100 `next()` calls).
+- [x] 2.4 Different seeds → sequences differ.
+- [x] 2.5 `state()` / `restore()` round-trip: capture `state()` mid-sequence, `restore()` into a new `Rng`, and the continuations match (this backs save/resume).
+- [x] 2.6 A boolean helper at p=0.25 over 10,000 draws lands within ±3% of 0.25 (sanity for Jackpot cash).
 
 ## Exit gate
 

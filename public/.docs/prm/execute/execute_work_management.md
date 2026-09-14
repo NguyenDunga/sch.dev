@@ -53,12 +53,12 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 2.1 `createRng(seed)` → next/state/restore | Not started | | |
-| 2.2 `generateSeed()` | Not started | | |
-| 2.3 Determinism test | Not started | | |
-| 2.4 Different-seed test | Not started | | |
-| 2.5 `state()`/`restore()` round-trip | Not started | | |
-| 2.6 Boolean helper 0.25 band test | Not started | | |
+| 2.1 `createRng(seed)` → next/state/restore | Done | 2026-09-14 | `restore` via pure-rand `xoroshiro128plusFromState` (4 × int32 state) |
+| 2.2 `generateSeed()` | Done | 2026-09-14 | 6–8 char [A-Za-z0-9] via `crypto.getRandomValues` (global random banned in core/state) |
+| 2.3 Determinism test | Done | 2026-09-14 | 100-draw deep-equal sequences |
+| 2.4 Different-seed test | Done | 2026-09-14 | 100-draw sequences differ |
+| 2.5 `state()`/`restore()` round-trip | Done | 2026-09-14 | mid-sequence snapshot restored into a fresh Rng; continuations exact |
+| 2.6 Boolean helper 0.25 band test | Done | 2026-09-14 | `chance(rng, p)` + `intBetween(rng, min, max)` derived from `next()`; 10,000 draws in [0.22, 0.28] |
 
 ### M3 — Deck & Draw Pile (`src/core/deck.ts`) → [wbs](../plan/plan_wbs-m3-deck.md)
 

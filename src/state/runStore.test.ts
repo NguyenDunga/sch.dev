@@ -46,10 +46,10 @@ describe('runStore', () => {
     expect(s.won).toBe(false)
   })
 
-  it('newRun without a seed generates an 8-char seed', () => {
+  it('newRun without a seed generates a 6–8 char [A-Za-z0-9] seed (generateSeed)', () => {
     const store = createRunStore()
     store.getState().newRun()
-    expect(store.getState().seed).toMatch(/^[a-z0-9]{8}$/)
+    expect(store.getState().seed).toMatch(/^[A-Za-z0-9]{6,8}$/)
   })
 
   it('tossSlot draws a coin from the draw pile and resolves its face', () => {

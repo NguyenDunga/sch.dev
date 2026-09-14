@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { createRng, type Rng } from '@/core/rng'
+import { createRng, generateSeed, type Rng } from '@/core/rng'
 import {
   buildCollection,
   drawFromDeck,
@@ -19,15 +19,6 @@ import type { Deck, Face, Hand, Option, Phase, Score } from '@/core/types'
  * machine (M4, SDD C4) — kept local to the store until then, not a shared type.
  */
 type HandState = 'ready' | 'tossed'
-
-const SEED_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
-
-function randomSeed(): string {
-  return Array.from(
-    { length: 8 },
-    () => SEED_CHARS[Math.floor(Math.random() * SEED_CHARS.length)],
-  ).join('')
-}
 
 const ZERO_TOSSES = [0, 0, 0, 0, 0]
 
@@ -128,7 +119,7 @@ export const createRunStore = () => {
         won: false,
 
         newRun: (seed) => {
-          const s = seed ?? randomSeed()
+          const s = seed ?? generateSeed()
           rng = createRng(s)
           set({ seed: s, deck: buildCollection(BASE_DECK_SIZE), won: false })
           startBlind(0)
