@@ -1,58 +1,43 @@
-// C4 — Run store: the 5-phase hand state machine (M4).
+// C4 — Run store: the app-wide zustand store for a 50/50 run.
 //
-// Per-hand flow (SDD C4 + Run State Machine; Q&A 2026-09-14, round 3):
-//   draw → play → toss → buff → score → (draw | endBlind)
-// - draw:  drawHand() — pop up to handSize face-down coins (auto)
-// - play:  pickCoin / unpickCoin / discard — play 1–5, unlimited discard
-// - toss:  confirmPlay() — resolveFace per picked coin in play order (transient)
-// - buff:  echoReflip() — one re-flip per Echo coin (boosters apply at score)
-// - score: score() — C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1
+// The hand state machine (draw → play → toss → buff → score), the shop, and
+// save/resume live in the action modules:
+//   - handActions.ts  — startRun / drawHand / pickCoin / unpickCoin / discard /
+//     confirmPlay / echoReflip / score (+ blind end)
+//   - shopActions.ts  — buy / reroll / mergeCoin / removeCoin / moveCharm /
+//     leaveShop (+ offer generation)
+//   - saveActions.ts  — save / resume
 //
-// An action fired in the wrong handPhase is a no-op.
-//
-// The RNG lives in a closure (not serializable); `rngState` mirrors it for
-// save/resume (M11). C3: resolveFace (M7), matchTier (M5) + scoreHand (M6) are all real.
-//
-// Action bodies live in module-level functions (≤60 lines each, NASA practice);
-// the store wires them up. Draft actions take the immer draft + (optionally) rng;
-// get/set actions take the store's get and set.
+// This file owns the state shape (RunState & RunActions), the initial state,
+// and the wiring. The RNG lives in a closure (not serializable); `rngState`
+// mirrors it for save/resume (M11).
 
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { WritableDraft } from 'immer'
-import {
-  BLINDS,
-  CHARMS,
-  COIN_EFFECTS,
-  HANDS_PER_BLIND,
-  HAND_SIZE,
-  HAND_SIZE_CAP,
-  HAND_SIZE_PRICE,
-  HEAVY_TARGET_BONUS,
-  HEAVY_TARGET_MULT,
-  PAYDAY_BONUS,
-  PLAY_SIZE,
-  REMOVE_COIN_COST,
-  SHOP_SLOTS,
-  SHORT_FUSE_HANDS,
-  START_CASH,
-} from '@/core/balance'
-import {
-  buildCollection,
-  discardToPile,
-  drawFromDeck,
-  returnHandToPile,
-  shuffleCollection,
-} from '@/core/deck'
-import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/helpers'
-import { createRng, generateSeed } from '@/core/rng'
+import { HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { emptyHand, none } from '@/core/helpers'
+import { createRng } from '@/core/rng'
 import type { Rng } from '@/core/rng'
-import { resolveFace, scoreHand } from '@/core/scoring'
-import type { BossRuleId, Coin, CoinEffect, CoinEffectId, Face, Option, RunState, ShopOffer } from '@/core/types'
-
-/** Placeholder face for face-down coins (hand and pre-toss play slots).
- *  Meaningless until the toss phase resolves the face (SDD C4). */
-const FACE_DOWN: Face = 'H'
+import type { RunState, ShopOffer } from '@/core/types'
+import {
+  confirmPlay,
+  discardDraft,
+  drawHandDraft,
+  echoReflipDraft,
+  pickCoinDraft,
+  score,
+  startRun,
+  unpickCoinDraft,
+} from './handActions'
+import {
+  buyDraft,
+  leaveShopDraft,
+  mergeCoinDraft,
+  moveCharmDraft,
+  removeCoinDraft,
+  rerollDraft,
+} from './shopActions'
+import { resume, save } from './saveActions'
 
 export interface RunActions {
   /** New run: seed (or generated); fresh rng + shuffled collection; phase 'run', handPhase 'draw'. */
@@ -101,415 +86,6 @@ export interface RunActions {
 
 export type RunStore = RunState & RunActions
 
-const SAVE_KEY = 'fifty-fifty-run'
-const SAVE_VERSION = 2
-
-// -- store plumbing types -----------------------------------------------------
-
-type Draft = WritableDraft<RunState>
-type SetFn = (mutate: (st: Draft) => void) => void
-type GetFn = () => RunState
-
-// -- pure helpers --------------------------------------------------------------
-
-/**
- * M9.1: draw SHOP_SLOTS offers from the combined pool — unowned charms + all
- * coin effects (coins may be offered repeatedly across shops) + the hand-size
- * upgrade (while under the cap). Sampled without replacement (Fisher–Yates),
- * so no offer duplicates within one shop and no owned charm is ever offered.
- * The pool is always ≥ 5 (11 coin entries alone), so the shop always fills.
- */
-function generateOffers(rng: Rng, charms: RunState['charms'], handSize: number): ShopOffer[] {
-  const pool: ShopOffer[] = [
-    ...CHARMS.filter((c) => !charms.includes(c.id)).map(
-      (c): ShopOffer => ({ kind: 'charm', charm: c.id }),
-    ),
-    ...COIN_EFFECTS.map((c): ShopOffer => ({ kind: 'coin', effect: c.effect })),
-  ]
-  if (handSize < HAND_SIZE_CAP) pool.push({ kind: 'handSize' })
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.next() * (i + 1))
-    ;[pool[i], pool[j]] = [pool[j], pool[i]]
-  }
-  return pool.slice(0, SHOP_SLOTS)
-}
-
-/** Two offers are the same item (structural — the immer draft wraps references). */
-function sameOffer(a: ShopOffer, b: ShopOffer): boolean {
-  if (a.kind !== b.kind) return false
-  if (a.kind === 'handSize' || b.kind === 'handSize') return a.kind === b.kind
-  if (a.kind === 'charm' && b.kind === 'charm') return a.charm === b.charm
-  return a.kind === 'coin' && b.kind === 'coin' && a.effect === b.effect
-}
-
-/** The next free coin id (collection ids are unique: base 0..size-1, purchases append). */
-function nextCoinId(deck: RunState['deck']): number {
-  return Math.max(...[...deck.drawPile, ...deck.discardPile].map((c) => c.id)) + 1
-}
-
-/** A catalog id → the purchased coin's effect variant (M9.4): Weight/Double-Side
- *  roll their favoured face via the rng; Draw-N → { kind: 'draw', count: N }. */
-function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
-  switch (effectId) {
-    case 'weight':
-    case 'doubleSide':
-      return { kind: effectId, favored: rng.next() < 0.5 ? 'H' : 'T' }
-    case 'draw1':
-      return { kind: 'draw', count: 1 }
-    case 'draw2':
-      return { kind: 'draw', count: 2 }
-    case 'draw3':
-      return { kind: 'draw', count: 3 }
-    default:
-      return { kind: effectId }
-  }
-}
-
-/** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
- *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
-function endBlind(st: Draft, rng: Rng): void {
-  const blind = BLINDS[st.blindIndex]
-  // Heavy Target: the table target is ×1.5 at runtime (SDD data — 3500 → 5250).
-  const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'
-  const target = isHeavy ? blind.target * HEAVY_TARGET_MULT : blind.target
-  if (st.blindScore >= target) {
-    // Reward: base + Payday charm + Heavy Target bonus.
-    st.cash +=
-      blind.reward + (st.charms.includes('payday') ? PAYDAY_BONUS : 0) + (isHeavy ? HEAVY_TARGET_BONUS : 0)
-    if (st.blindIndex >= BLINDS.length - 1) {
-      st.phase = 'runEnd'
-      st.won = true
-    } else {
-      st.phase = 'shop'
-      st.shop = {
-        offers: generateOffers(rng, st.charms, st.handSize),
-        rerollUsed: false,
-      }
-    }
-  } else {
-    st.phase = 'runEnd'
-    st.won = false
-  }
-}
-
-// -- action implementations ----------------------------------------------------
-
-function startRunDraft(st: Draft, rng: Rng, seed: string): void {
-  st.seed = seed
-  st.phase = 'run'
-  st.round = 1
-  st.blindIndex = 0
-  st.hand = emptyHand(HAND_SIZE)
-  st.play = emptyHand(PLAY_SIZE)
-  st.handPhase = 'draw'
-  st.handSize = HAND_SIZE
-  st.handsLeft = HANDS_PER_BLIND
-  st.blindScore = 0
-  st.cash = START_CASH
-  st.charms = []
-  st.deck = shuffleCollection(rng, buildCollection())
-  st.shop = { offers: [], rerollUsed: false }
-  st.lastScore = none
-  st.runScore = 0
-  st.won = false
-  st.rngState = rng.state()
-}
-
-function startRun(set: SetFn, seedArg?: string): Rng {
-  const seed = seedArg ?? generateSeed()
-  const next = createRng(seed)
-  set((st) => startRunDraft(st, next, seed))
-  return next
-}
-
-function drawHandDraft(st: Draft, rng: Rng): void {
-  if (st.phase !== 'run' || st.handPhase !== 'draw') return
-  for (let i = 0; i < st.hand.length; i++) {
-    if (st.hand[i].kind !== 'empty') continue
-    const d = drawFromDeck(st.deck)
-    if (!d.some) break
-    st.hand[i] = filledSlot(d.value, FACE_DOWN)
-    st.deck.drawPile = st.deck.drawPile.slice(1)
-  }
-  if (!st.hand.some(isFilled)) {
-    // Empty pile at hand start: auto-skip the hand (no score), handsLeft −1,
-    // back to draw (design decision 2026-09-14 — the SDD was silent here).
-    st.handsLeft -= 1
-    if (st.handsLeft <= 0) endBlind(st, rng)
-    return
-  }
-  st.handPhase = 'play'
-}
-
-function pickCoinDraft(st: Draft, handIndex: number): void {
-  if (st.phase !== 'run' || st.handPhase !== 'play') return
-  const slot = st.hand[handIndex]
-  if (!slot || slot.kind !== 'filled') return
-  const target = st.play.findIndex((p) => p.kind === 'empty')
-  if (target === -1) return // play full (5) — no-op
-  st.play[target] = slot
-  st.hand[handIndex] = { kind: 'empty' }
-}
-
-function unpickCoinDraft(st: Draft, slotIndex: number): void {
-  if (st.phase !== 'run' || st.handPhase !== 'play') return
-  const slot = st.play[slotIndex]
-  if (!slot || slot.kind !== 'filled') return
-  const target = st.hand.findIndex((h) => h.kind === 'empty')
-  if (target === -1) return // hand full — no-op
-  st.hand[target] = slot
-  st.play[slotIndex] = { kind: 'empty' }
-}
-
-function discardDraft(st: Draft, handIndex: number): void {
-  if (st.phase !== 'run' || st.handPhase !== 'play') return
-  const slot = st.hand[handIndex]
-  if (!slot || slot.kind !== 'filled') return
-  const coin = slot.coin
-  st.hand[handIndex] = { kind: 'empty' }
-  st.deck = discardToPile(st.deck, coin)
-  // Draw-enchant coin: redraw N face-down into empty hand slots (discarded slot first).
-  const draw = coin.effects.find((e) => e.kind === 'draw')
-  if (draw && draw.kind === 'draw') {
-    const order = [
-      handIndex,
-      ...st.hand.map((_, i) => i).filter((i) => i !== handIndex && st.hand[i].kind === 'empty'),
-    ]
-    let n = draw.count
-    for (const i of order) {
-      if (n <= 0) break
-      const d = drawFromDeck(st.deck)
-      if (!d.some) break
-      st.hand[i] = filledSlot(d.value, FACE_DOWN)
-      st.deck.drawPile = st.deck.drawPile.slice(1)
-      n--
-    }
-  }
-}
-
-function confirmPlay(get: GetFn, set: SetFn, rng: Rng): void {
-  const st = get()
-  if (st.phase !== 'run' || st.handPhase !== 'play') return
-  if (!st.play.some(isFilled)) return // requires ≥1 coin in the play
-  // Step 1: play → toss (observable — the UI plays the toss animation here).
-  set((s) => {
-    s.handPhase = 'toss'
-  })
-  // Step 2: toss → buff — resolve each picked coin's face in play order
-  // (left → right); the left neighbour's face is already resolved (SDD C4).
-  set((s) => {
-    s.play.forEach((slot, i) => {
-      if (slot.kind !== 'filled') return
-      const prev = i > 0 ? s.play[i - 1] : undefined
-      const left: Option<Face> = prev && prev.kind === 'filled' ? some(prev.face) : none
-      slot.face = resolveFace(rng, slot.coin, left)
-    })
-    s.handPhase = 'buff'
-    s.rngState = rng.state()
-  })
-}
-
-function echoReflipDraft(st: Draft, slotIndex: number, rng: Rng): void {
-  if (st.phase !== 'run' || st.handPhase !== 'buff') return
-  const slot = st.play[slotIndex]
-  if (!slot || slot.kind !== 'filled' || slot.echoUsed) return
-  if (!slot.coin.effects.some((e) => e.kind === 'echo')) return
-  const prev = slotIndex > 0 ? st.play[slotIndex - 1] : undefined
-  const left: Option<Face> = prev && prev.kind === 'filled' ? some(prev.face) : none
-  slot.face = resolveFace(rng, slot.coin, left)
-  slot.echoUsed = true
-  st.rngState = rng.state()
-}
-
-function scoreDraft(st: Draft, rng: Rng): void {
-  const blind = BLINDS[st.blindIndex]
-  const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
-  const result = scoreHand(st.play, boss, st.charms, rng)
-  // ALL hand coins (tossed + unpicked) → discard pile (gone for the blind).
-  st.deck = returnHandToPile(st.deck, st.hand)
-  st.play.forEach((slot) => {
-    if (slot.kind === 'filled') st.deck = discardToPile(st.deck, slot.coin)
-  })
-  st.blindScore += scoreTotal(result)
-  st.cash += result.cash
-  st.handsLeft -= 1
-  st.lastScore = some(result)
-  st.hand = emptyHand(st.handSize)
-  st.play = emptyHand(PLAY_SIZE)
-  st.rngState = rng.state()
-  st.handPhase = 'draw'
-  if (st.handsLeft <= 0) endBlind(st, rng)
-}
-
-function score(get: GetFn, set: SetFn, rng: Rng): void {
-  const st = get()
-  if (st.phase !== 'run' || st.handPhase !== 'buff') return
-  // Step 1: buff → score (observable — the UI runs the chips×mult ticker here).
-  set((s) => {
-    s.handPhase = 'score'
-  })
-  // Step 2: score → draw — C3 pipeline, then all coins to the discard pile.
-  set((s) => scoreDraft(s, rng))
-}
-
-function mergeCoinDraft(st: Draft, fromId: number, toId: number): void {
-  if (st.phase !== 'shop') return
-  if (fromId === toId) return
-  const collection = [...st.deck.drawPile, ...st.deck.discardPile]
-  const from = collection.find((c) => c.id === fromId)
-  const to = collection.find((c) => c.id === toId)
-  if (!from || !to) return
-  // Target gains all of the source's effects (stack freely, no cap);
-  // the source is removed from the collection. Free.
-  to.effects = [...to.effects, ...from.effects]
-  st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== fromId)
-  st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== fromId)
-}
-
-function moveCharmDraft(st: Draft, from: number, to: number): void {
-  if (st.phase !== 'run' && st.phase !== 'shop') return
-  if (from === to || from < 0 || to < 0 || from >= st.charms.length || to >= st.charms.length)
-    return
-  const charms = [...st.charms]
-  const [moved] = charms.splice(from, 1)
-  charms.splice(to, 0, moved)
-  st.charms = charms
-}
-
-function rerollDraft(st: Draft, rng: Rng): void {
-  if (st.phase !== 'shop' || st.shop.rerollUsed) return
-  st.shop.offers = generateOffers(rng, st.charms, st.handSize)
-  st.shop.rerollUsed = true
-  st.rngState = rng.state()
-}
-
-function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
-  if (st.phase !== 'shop') return
-  const price =
-    offer.kind === 'charm'
-      ? CHARMS.find((c) => c.id === offer.charm)?.price
-      : offer.kind === 'coin'
-        ? COIN_EFFECTS.find((c) => c.effect === offer.effect)?.price
-        : HAND_SIZE_PRICE
-  if (price === undefined || st.cash < price) return // broke — reject
-  if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)
-  if (offer.kind === 'handSize' && st.handSize >= HAND_SIZE_CAP) return // cap — reject (9.7)
-  st.cash -= price
-  if (offer.kind === 'charm') {
-    st.charms.push(offer.charm)
-  } else if (offer.kind === 'coin') {
-    // M9.4: new coin joins the collection (draw pile) with its effect variant;
-    // Weight/Double-Side roll their favoured face now, fixed for the run.
-    const coin: Coin = { id: nextCoinId(st.deck), effects: [purchasedEffect(offer.effect, rng)] }
-    st.deck.drawPile = [...st.deck.drawPile, coin]
-    st.rngState = rng.state()
-  } else {
-    // M9.7: hand-size upgrade — +1 slot, up to HAND_SIZE_CAP.
-    st.handSize += 1
-  }
-  // Remove the bought offer (structurally — the draft wraps the passed object).
-  st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
-}
-
-function removeCoinDraft(st: Draft, id: number): void {
-  if (st.phase !== 'shop') return
-  if (st.cash < REMOVE_COIN_COST) return // broke — reject
-  const inDraw = st.deck.drawPile.some((c) => c.id === id)
-  const inDiscard = st.deck.discardPile.some((c) => c.id === id)
-  if (!inDraw && !inDiscard) return // unknown coin — no-op
-  st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== id)
-  st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== id)
-  st.cash -= REMOVE_COIN_COST
-}
-
-function leaveShopDraft(st: Draft, rng: Rng): void {
-  if (st.phase !== 'shop') return
-  st.blindIndex += 1
-  const next = BLINDS[st.blindIndex]
-  st.round = next.round
-  const baseHands =
-    next.kind === 'boss' && next.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
-  st.handsLeft = baseHands + (st.charms.includes('extraHand') ? 1 : 0)
-  st.blindScore = 0
-  st.hand = emptyHand(st.handSize)
-  st.play = emptyHand(PLAY_SIZE)
-  // Whole collection (draw + discard) → shuffled draw pile; discard cleared.
-  st.deck = shuffleCollection(rng, st.deck)
-  st.shop = { offers: [], rerollUsed: false }
-  st.rngState = rng.state()
-  st.phase = 'run'
-  st.handPhase = 'draw'
-}
-
-function save(get: GetFn): void {
-  const st = get()
-  if (st.phase !== 'run' && st.phase !== 'shop') return // nothing to save outside a run
-  localStorage.setItem(SAVE_KEY, JSON.stringify({ version: SAVE_VERSION, state: st }))
-}
-
-/** Parse + validate a save string; `none` when absent / unparseable / not
- *  version 2 / not resumable (v1 saves predate the coin collection). */
-function parseSave(raw: string | null): Option<RunState> {
-  if (raw === null) return none
-  let saved: { version?: unknown; state?: RunState }
-  try {
-    saved = JSON.parse(raw)
-  } catch {
-    return none
-  }
-  if (saved.version !== SAVE_VERSION || saved.state === undefined) return none
-  const s = saved.state
-  if (s.phase !== 'run' && s.phase !== 'shop') return none
-  return some(s)
-}
-
-function resume(set: SetFn, rng: Rng): void {
-  const saved = parseSave(localStorage.getItem(SAVE_KEY))
-  if (!saved.some) return
-  const s = saved.value
-  // The run continues the same sequence: restore the RNG before any draw.
-  rng.restore(s.rngState)
-  set((st) => {
-    // Preserved: seed, round/blind, cash, charms + order, collection, rngState, runScore.
-    st.seed = s.seed
-    st.round = s.round
-    st.blindIndex = s.blindIndex
-    st.cash = s.cash
-    st.charms = s.charms
-    st.deck = s.deck
-    st.handSize = s.handSize
-    st.runScore = s.runScore
-    st.rngState = s.rngState
-    // Reset: hand, play, handPhase, lastScore, current-blind progress.
-    st.hand = emptyHand(st.handSize)
-    st.play = emptyHand(PLAY_SIZE)
-    st.handPhase = 'draw'
-    st.lastScore = none
-    st.blindScore = 0
-    st.phase = s.phase
-    if (s.phase === 'run') {
-      // Blind start: reset the hand budget and re-reshuffle the whole collection
-      // from the restored rngState (discard cleared) — SDD resume semantics.
-      const blind = BLINDS[s.blindIndex]
-      const baseHands =
-        blind.kind === 'boss' && blind.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
-      st.handsLeft = baseHands + (s.charms.includes('extraHand') ? 1 : 0)
-      st.deck = shuffleCollection(rng, st.deck)
-      st.shop = { offers: [], rerollUsed: false }
-    } else {
-      // Shop: offers regenerated identically from the restored rngState
-      // (deterministic in rngState + charms + handSize); rerollUsed preserved.
-      st.shop = {
-        offers: generateOffers(rng, s.charms, s.handSize),
-        rerollUsed: s.shop.rerollUsed,
-      }
-    }
-    st.rngState = rng.state()
-  })
-}
-
-// -- store ---------------------------------------------------------------------
-
 function initialState(): RunState {
   return {
     seed: '',
@@ -534,7 +110,7 @@ function initialState(): RunState {
 }
 
 export function createRunStore() {
-  let rng = createRng('')
+  let rng: Rng = createRng('')
   return create<RunStore>()(
     immer((set, get) => ({
       ...initialState(),
