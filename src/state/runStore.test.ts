@@ -1688,3 +1688,48 @@ describe('M11.3 — resume in run: blind-start reset', () => {
     expect(b.getState().handsLeft).toBe(HANDS_PER_BLIND + 1)
   })
 })
+
+describe('M11.4 — resume in shop: offers regenerated from rngState', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  /** Clears blind 1 (real flow) → shop, optionally rerolls, saves. */
+  function saveInShop(seed: string, reroll: boolean) {
+    const a = createRunStore()
+    a.getState().startRun(seed)
+    a.setState({ blindScore: 10_000, handsLeft: 1 })
+    a.getState().drawHand()
+    a.getState().pickCoin(0)
+    a.getState().confirmPlay()
+    a.getState().score()
+    if (reroll) a.getState().reroll()
+    a.getState().save()
+    return a
+  }
+
+  it('lands at the shop with 5 offers, regenerated identically from the saved rngState', () => {
+    saveInShop('m11-4', false)
+
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+    expect(st.phase).toBe('shop')
+    expect(st.shop.offers).toHaveLength(SHOP_SLOTS)
+
+    // identical regeneration: a second fresh resume of the same save → same offers
+    const c = createRunStore()
+    c.getState().resume()
+    expect(c.getState().shop.offers).toEqual(st.shop.offers)
+  })
+
+  it('preserves rerollUsed across resume', () => {
+    saveInShop('m11-4b', true)
+    const b = createRunStore()
+    b.getState().resume()
+    expect(b.getState().shop.rerollUsed).toBe(true)
+    // and the (now spent) reroll stays spent after resume
+    const offers = b.getState().shop.offers
+    b.getState().reroll()
+    expect(b.getState().shop.offers).toEqual(offers)
+  })
+})

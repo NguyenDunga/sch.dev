@@ -506,8 +506,12 @@ export function createRunStore() {
             st.deck = shuffleCollection(rng, st.deck)
             st.shop = { offers: [], rerollUsed: false }
           } else {
-            // M11.4: shop — offers regenerated identically from the restored rngState.
-            st.shop = { offers: [], rerollUsed: false }
+            // Shop: offers regenerated identically from the restored rngState
+            // (deterministic in rngState + charms + handSize); rerollUsed preserved.
+            st.shop = {
+              offers: generateOffers(rng, s.charms, s.handSize),
+              rerollUsed: s.shop.rerollUsed,
+            }
           }
           st.rngState = rng.state()
         })
