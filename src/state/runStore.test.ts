@@ -1471,3 +1471,21 @@ describe('M10.6 — a round’s boss rule fires only on its boss blind', () => {
     expect(scorePlayOnBlind('m10-6f', 8, faces)).toBe(60) // round 3 boss — noJackpots
   })
 })
+
+describe('M10.7 — miss the target after the hand budget → lose (even with cash left)', () => {
+  it('last hand scores below the target: runEnd lose, cash untouched (no reward)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m10-7')
+    store.setState({ blindScore: 299, handsLeft: 1, cash: 50 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0) // a lone coin scores no tier → 0
+    store.getState().confirmPlay()
+    store.getState().score()
+    const st = store.getState()
+
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
+    expect(st.cash).toBe(50) // cash is not a substitute for the target
+    expect(st.handsLeft).toBe(0)
+  })
+})
