@@ -787,3 +787,27 @@ describe('M4.10 — full cycle repeated', () => {
     expect(runBlind('m4-10b')).toEqual(runBlind('m4-10b'))
   })
 })
+
+describe('M4.11 — post-score state', () => {
+  it('after score: hand and play are empty, and their coins are in discardPile', () => {
+    const store = drawnStore('m4-11')
+    const handIds = store.getState().hand.map(coinId) // the 8 drawn coins
+    store.getState().pickCoin(1)
+    store.getState().pickCoin(4)
+    store.getState().confirmPlay()
+
+    store.getState().score()
+    const after = store.getState()
+
+    // Hand and play are completely empty.
+    expect(after.hand.every((s) => s.kind === 'empty')).toBe(true)
+    expect(after.play.every((s) => s.kind === 'empty')).toBe(true)
+    // The 8 coins that were in the hand are in the discard pile
+    // (2 tossed + 6 unpicked).
+    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(
+      [...handIds].sort((a, b) => a - b),
+    )
+    // Nothing else moved: the draw pile is untouched.
+    expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE)
+  })
+})

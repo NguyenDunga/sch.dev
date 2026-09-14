@@ -86,7 +86,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | 4.8 `score` (return hand, handsLeft−1) | Done | 2026-09-14 | 5 tests: ALL 8 hand coins (3 tossed + 5 unpicked) end in the discard pile (draw pile untouched); handsLeft −1 + → draw + hand/play emptied; C3 result applied (blindScore += total, cash += cash, lastScore = result — stub: none/0); last-hand score ends the blind (target missed → runEnd); out-of-buff-phase score is a no-op |
 | 4.9 Out-of-phase no-op test | Done | 2026-09-14 | Full matrix: each of the 7 actions fired in every resting phase except its own (14 combinations, parameterized) — state unchanged; plus all 7 actions no-op in the menu phase (no run in progress) |
 | 4.10 Full-cycle test | Done | 2026-09-14 | 2 tests: a full blind (10 cycles) runs without getting stuck — per-cycle coin conservation (every coin in exactly one place), draw pile −8 / discard pile +8 per cycle, machine loops back to draw, handsLeft −1 per hand; after hand 10 the deck is fully consumed and the blind ends (target missed → runEnd); same seed + same choices → identical blind (discard order, blindScore, cash, rngState, phase) |
-| 4.11 Hand/play empty after score test | In progress | | | Action implemented in the M4.1 store skeleton; verification tests pending |
+| 4.11 Hand/play empty after score test | Done | 2026-09-14 | Focused conservation test: after score, hand and play are completely empty, the 8 coins that were in the hand (2 tossed + 6 unpicked) are exactly the discard pile's contents, and the draw pile is untouched |
 
 ### M5 — Pattern / Tier Matching (`src/core/scoring.ts`) → [wbs](../plan/plan_wbs-m5-tier-matching.md)
 
