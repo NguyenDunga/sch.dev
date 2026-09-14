@@ -123,6 +123,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
+  min-height: 2.75rem; /* ≥44px hit target (SDD UX §3) */
   padding: 0.4rem 0.6rem;
   border-radius: var(--r-sm);
   background: var(--surface);
