@@ -1142,3 +1142,70 @@ describe('M9.3 — buy (charm) + rejections', () => {
     expect(store.getState()).toEqual(before)
   })
 })
+
+describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
+  function shopStore(seed: string, effect: 'weight' | 'doubleSide' | 'draw2' | 'tax') {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      cash: 20,
+      shop: { offers: [{ kind: 'coin', effect }], rerollUsed: false },
+    })
+    return store
+  }
+
+  it('buy a Weight coin: rolls its favoured face via the rng and adds it to the collection', () => {
+    const buyWeight = (seed: string) => {
+      const store = shopStore(seed, 'weight')
+      const sizeBefore = store.getState().deck.drawPile.length
+      store.getState().buy({ kind: 'coin', effect: 'weight' })
+      const st = store.getState()
+      const bought = st.deck.drawPile[sizeBefore]
+      return { cash: st.cash, bought, ids: st.deck.drawPile.map((c) => c.id) }
+    }
+
+    const a = buyWeight('m9-4')
+    expect(a.cash).toBe(20 - 5) // Weight price
+    expect(a.bought.effects).toHaveLength(1)
+    expect(a.bought.effects[0].kind).toBe('weight')
+    if (a.bought.effects[0].kind === 'weight') {
+      expect(['H', 'T']).toContain(a.bought.effects[0].favored)
+    }
+    // unique id (max + 1), no duplicates
+    expect(new Set(a.ids).size).toBe(a.ids.length)
+
+    // same seed → same rolled face (deterministic)
+    expect(buyWeight('m9-4').bought).toEqual(a.bought)
+  })
+
+  it('buy a Double-Side coin: favoured face rolled on purchase', () => {
+    const store = shopStore('m9-4b', 'doubleSide')
+    store.getState().buy({ kind: 'coin', effect: 'doubleSide' })
+    const bought = store.getState().deck.drawPile.at(-1)
+    expect(bought?.effects[0].kind).toBe('doubleSide')
+    if (bought?.effects[0].kind === 'doubleSide') {
+      expect(['H', 'T']).toContain(bought.effects[0].favored)
+    }
+  })
+
+  it('buy a Draw-2 coin: the effect variant carries count 2', () => {
+    const store = shopStore('m9-4c', 'draw2')
+    store.getState().buy({ kind: 'coin', effect: 'draw2' })
+    expect(store.getState().deck.drawPile.at(-1)?.effects).toEqual([{ kind: 'draw', count: 2 }])
+  })
+
+  it('buy a plain-effect coin (Tax): the unit variant, no params', () => {
+    const store = shopStore('m9-4d', 'tax')
+    store.getState().buy({ kind: 'coin', effect: 'tax' })
+    expect(store.getState().deck.drawPile.at(-1)?.effects).toEqual([{ kind: 'tax' }])
+  })
+
+  it('the bought offer is removed and cash deducted', () => {
+    const store = shopStore('m9-4e', 'tax')
+    store.getState().buy({ kind: 'coin', effect: 'tax' })
+    const st = store.getState()
+    expect(st.shop.offers).toHaveLength(0)
+    expect(st.cash).toBe(20 - 5)
+  })
+})

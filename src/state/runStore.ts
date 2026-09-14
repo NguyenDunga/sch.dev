@@ -39,7 +39,7 @@ import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/
 import { createRng, generateSeed } from '@/core/rng'
 import type { Rng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import type { BossRuleId, Face, Option, RunState, ShopOffer } from '@/core/types'
+import type { BossRuleId, Coin, CoinEffect, CoinEffectId, Face, Option, RunState, ShopOffer } from '@/core/types'
 
 /** Placeholder face for face-down coins (hand and pre-toss play slots).
  *  Meaningless until the toss phase resolves the face (SDD C4). */
@@ -108,6 +108,29 @@ function sameOffer(a: ShopOffer, b: ShopOffer): boolean {
   if (a.kind === 'handSize' || b.kind === 'handSize') return a.kind === b.kind
   if (a.kind === 'charm' && b.kind === 'charm') return a.charm === b.charm
   return a.kind === 'coin' && b.kind === 'coin' && a.effect === b.effect
+}
+
+/** The next free coin id (collection ids are unique: base 0..size-1, purchases append). */
+function nextCoinId(deck: RunState['deck']): number {
+  return Math.max(...[...deck.drawPile, ...deck.discardPile].map((c) => c.id)) + 1
+}
+
+/** A catalog id → the purchased coin's effect variant (M9.4): Weight/Double-Side
+ *  roll their favoured face via the rng; Draw-N → { kind: 'draw', count: N }. */
+function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
+  switch (effectId) {
+    case 'weight':
+    case 'doubleSide':
+      return { kind: effectId, favored: rng.next() < 0.5 ? 'H' : 'T' }
+    case 'draw1':
+      return { kind: 'draw', count: 1 }
+    case 'draw2':
+      return { kind: 'draw', count: 2 }
+    case 'draw3':
+      return { kind: 'draw', count: 3 }
+    default:
+      return { kind: effectId }
+  }
 }
 
 /** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
@@ -358,10 +381,18 @@ export function createRunStore() {
                 : HAND_SIZE_PRICE
           if (price === undefined || st.cash < price) return // broke — reject
           if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)
-          // M9.4: coin purchase (favoured-face roll); M9.7: hand-size purchase (cap).
-          if (offer.kind !== 'charm') return
+          // M9.7: hand-size purchase (cap check) — no-op until then.
+          if (offer.kind === 'handSize') return
           st.cash -= price
-          st.charms.push(offer.charm)
+          if (offer.kind === 'charm') {
+            st.charms.push(offer.charm)
+          } else {
+            // M9.4: new coin joins the collection (draw pile) with its effect variant;
+            // Weight/Double-Side roll their favoured face now, fixed for the run.
+            const coin: Coin = { id: nextCoinId(st.deck), effects: [purchasedEffect(offer.effect, rng)] }
+            st.deck.drawPile = [...st.deck.drawPile, coin]
+            st.rngState = rng.state()
+          }
           // Remove the bought offer (structurally — the draft wraps the passed object).
           st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
         }),
