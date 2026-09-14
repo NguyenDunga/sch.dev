@@ -52,6 +52,8 @@ export interface RunActions {
   score: () => void
   /** shop: toId gains all of fromId's effects (stack freely, no cap); fromId removed from the collection; free. */
   mergeCoin: (fromId: number, toId: number) => void
+  /** run/shop: reorder the charms — array order is the charm-bar (scoring) order. */
+  moveCharm: (from: number, to: number) => void
   /** UI convenience (C9 Menu button): back to the menu. */
   toMenu: () => void
 }
@@ -270,6 +272,17 @@ export function createRunStore() {
           to.effects = [...to.effects, ...from.effects]
           st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== fromId)
           st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== fromId)
+        }),
+
+      moveCharm: (from, to) =>
+        set((st) => {
+          if (st.phase !== 'run' && st.phase !== 'shop') return
+          if (from === to || from < 0 || to < 0 || from >= st.charms.length || to >= st.charms.length)
+            return
+          const charms = [...st.charms]
+          const [moved] = charms.splice(from, 1)
+          charms.splice(to, 0, moved)
+          st.charms = charms
         }),
 
       toMenu: () =>

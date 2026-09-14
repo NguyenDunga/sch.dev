@@ -139,12 +139,12 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 8.1 `CHARMS` pool (5, categories) | Not started | | |
-| 8.2 `charms[]` is the ordering source | Not started | | |
-| 8.3 `moveCharm(from, to)` | Not started | | |
-| 8.4 No-duplicates via `includes` | Not started | | |
-| 8.5 Removed charms absent | Not started | | |
-| 8.6 Reorder-affects-scoring test | Not started | | |
+| 8.1 `CHARMS` pool (5, categories) | Done | 2026-09-14 | Already in place from M1: CHARMS = the 5 defs (plusChips/plusMult/extraHand/payday/jackpotFever) with categories flip\|scoring\|pattern\|economy and baseline prices; pinned by balance.test.ts (5-charm pool test) |
+| 8.2 `charms[]` is the ordering source | Done | 2026-09-14 | RunState.charms: CharmId[] (types.ts, M1) — array order is the only ordering source, no index field; scoring iterates it left→right (M6) |
+| 8.3 `moveCharm(from, to)` | Done | 2026-09-14 | Store action: pure array move (splice out + splice in), allowed in run/shop phases (charm bar visible on both per SDD C7); no-ops on from===to, out of range, other phases. 2 tests: reorder round trip + no-op matrix |
+| 8.4 No-duplicates via `includes` | Done | 2026-09-14 | Nothing to build in M8 — the `charms.includes(id)` ownership check lives in the M9 shop buy/offer logic (noted for M9) |
+| 8.5 Removed charms absent | Done | 2026-09-14 | grep of src/ for Weighted Coin / Double-Sided / Always Heads / Re-Toss: zero definitions or types (only removal-history comments) |
+| 8.6 Reorder-affects-scoring test | Done | 2026-09-14 | Store-level with deterministic pre-resolved plays: Jackpot HHHHH [plusChips, jackpotFever] → 480, after moveCharm(0,1) → 440 (ties to M6.6); commutative pair plusChips+plusMult on threeSame → 50 in both orders |
 
 ### M9 — Shop (`src/state/runStore.ts`) → [wbs](../plan/plan_wbs-m9-shop.md)
 

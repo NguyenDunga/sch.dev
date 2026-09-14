@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
-import { none, some } from '@/core/helpers'
+import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace } from '@/core/scoring'
 import type { Coin, Face, HandPhase, HandSlot, Option } from '@/core/types'
@@ -888,5 +888,81 @@ describe('M7.6 — mergeCoin (shop action)', () => {
     store.getState().mergeCoin(900, 4242)
     store.getState().mergeCoin(900, 900)
     expect(store.getState().deck).toEqual(before.deck) // unknown ids + self-merge
+  })
+})
+
+describe('M8 — charms: moveCharm + scoring order', () => {
+  /** A store resting in the buff phase with a fully-resolved play (deterministic faces). */
+  function buffStore(charms: RunStore['charms'], faces: Face[]) {
+    const store = createRunStore()
+    store.getState().startRun('m8')
+    let id = 100
+    store.setState({
+      phase: 'run',
+      handPhase: 'buff',
+      charms,
+      handsLeft: 5,
+      hand: emptyHand(HAND_SIZE),
+      play: [
+        ...faces.map((face) => filledSlot({ id: id++, effects: [] }, face)),
+        ...Array.from({ length: PLAY_SIZE - faces.length }, () => ({ kind: 'empty' as const })),
+      ],
+    })
+    return store
+  }
+
+  it('8.3 moveCharm reorders charms (array order is the only ordering source)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m8-3')
+    store.setState({
+      phase: 'shop',
+      charms: ['plusChips', 'plusMult', 'extraHand'],
+    })
+
+    store.getState().moveCharm(0, 2)
+    expect(store.getState().charms).toEqual(['plusMult', 'extraHand', 'plusChips'])
+    store.getState().moveCharm(2, 0)
+    expect(store.getState().charms).toEqual(['plusChips', 'plusMult', 'extraHand'])
+  })
+
+  it('8.3 moveCharm no-ops: from === to, out of range, menu phase', () => {
+    const store = createRunStore()
+    store.getState().startRun('m8-3b')
+    store.setState({ charms: ['plusChips', 'plusMult'] }) // phase 'run'
+    const before = store.getState().charms
+
+    store.getState().moveCharm(0, 0)
+    store.getState().moveCharm(0, 5)
+    store.getState().moveCharm(2, 0)
+    store.getState().moveCharm(-1, 0)
+    expect(store.getState().charms).toEqual(before)
+
+    store.setState({ phase: 'menu' })
+    store.getState().moveCharm(0, 1)
+    expect(store.getState().charms).toEqual(before)
+  })
+
+  it('8.6 reordering changes scoring only for plusChips + jackpotFever on a Jackpot hand', () => {
+    // Jackpot HHHHH, [plusChips, jackpotFever] → (50+10)×2 chips × 4 = 480
+    const a = buffStore(['plusChips', 'jackpotFever'], ['H', 'H', 'H', 'H', 'H'])
+    a.getState().score()
+    expect(a.getState().blindScore).toBe(480)
+
+    // Reorder → [jackpotFever, plusChips] → (50×2+10) chips × 4 = 440
+    const b = buffStore(['plusChips', 'jackpotFever'], ['H', 'H', 'H', 'H', 'H'])
+    b.getState().moveCharm(0, 1)
+    expect(b.getState().charms).toEqual(['jackpotFever', 'plusChips'])
+    b.getState().score()
+    expect(b.getState().blindScore).toBe(440)
+  })
+
+  it('8.6 reordering a commutative pair (plusChips + plusMult) does not change the score', () => {
+    const scoreWith = (charms: RunStore['charms']) => {
+      const store = buffStore(charms, ['H', 'H', 'T', 'H']) // threeSame 15×1
+      store.getState().score()
+      return store.getState().blindScore
+    }
+    expect(scoreWith(['plusChips', 'plusMult'])).toBe(50) // (15+10) × (1+1)
+    expect(scoreWith(['plusMult', 'plusChips'])).toBe(50)
   })
 })
