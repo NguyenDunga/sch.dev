@@ -25,16 +25,16 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 0.1 Vite + React + TS scaffold (repo root) | Not started | | |
-| 0.2 Tailwind CSS | Not started | | |
-| 0.3 shadcn/ui (base) | Not started | | |
-| 0.4 @dnd-kit/sortable + core | Not started | | |
-| 0.5 pure-rand | Not started | | |
-| 0.6 vitest + testing-library, `test` script | Not started | | |
-| 0.7 Folder tree (core/state/components/pages/lib) | Not started | | |
-| 0.8 `npm run dev` renders "Hello 50/50" | Not started | | |
-| 0.9 `npm run build` works | Not started | | |
-| 0.10 `npm test` runs clean | Not started | | |
+| 0.1 Vite + React + TS scaffold (repo root) | Done | 2026-09-14 | Already in place; root `tsconfig.json` fixed (removed deprecated `baseUrl`/`paths`) |
+| 0.2 Tailwind CSS | Done | 2026-09-14 | `@tailwindcss/vite` plugin + directives in `src/index.css` |
+| 0.3 shadcn/ui (base) | Done | 2026-09-14 | `components.json` + base `button`/`card`, no custom theme |
+| 0.4 @dnd-kit/sortable + core | Done | 2026-09-14 | Installed `@dnd-kit/core` + `@dnd-kit/sortable` |
+| 0.5 pure-rand | Done | 2026-09-14 | Already in deps |
+| 0.6 vitest + testing-library, `test` script | Done | 2026-09-14 | Installed `@testing-library/react`; `"test": "vitest run"` present |
+| 0.7 Folder tree (core/state/components/pages/lib) | Done | 2026-09-14 | All folders present; tests colocated `*.test.ts` |
+| 0.8 `npm run dev` renders "Hello 50/50" | Done | 2026-09-14 | Dev server serves 50/50 menu (200); SSR smoke render passes, no runtime errors |
+| 0.9 `npm run build` works | Done | 2026-09-14 | Build exit 0; added missing `preview` script, `dist/` previews (200) |
+| 0.10 `npm test` runs clean | Done | 2026-09-14 | Exit 0 (70 tests pass) |
 
 ### M1 — Core Data Types (`src/core/types.ts`) → [wbs](../plan/plan_wbs-m1-data-types.md)
 
