@@ -16,7 +16,17 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { WritableDraft } from 'immer'
-import { BLINDS, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE, START_CASH } from '@/core/balance'
+import {
+  BLINDS,
+  CHARMS,
+  COIN_EFFECTS,
+  HANDS_PER_BLIND,
+  HAND_SIZE,
+  HAND_SIZE_CAP,
+  PLAY_SIZE,
+  SHOP_SLOTS,
+  START_CASH,
+} from '@/core/balance'
 import {
   buildCollection,
   discardToPile,
@@ -26,8 +36,9 @@ import {
 } from '@/core/deck'
 import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/helpers'
 import { createRng, generateSeed } from '@/core/rng'
+import type { Rng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import type { BossRuleId, Face, Option, RunState } from '@/core/types'
+import type { BossRuleId, Face, Option, RunState, ShopOffer } from '@/core/types'
 
 /** Placeholder face for face-down coins (hand and pre-toss play slots).
  *  Meaningless until the toss phase resolves the face (SDD C4). */
@@ -60,16 +71,42 @@ export interface RunActions {
 
 export type RunStore = RunState & RunActions
 
+/**
+ * M9.1: draw SHOP_SLOTS offers from the combined pool — unowned charms + all
+ * coin effects (coins may be offered repeatedly across shops) + the hand-size
+ * upgrade (while under the cap). Sampled without replacement (Fisher–Yates),
+ * so no offer duplicates within one shop and no owned charm is ever offered.
+ * The pool is always ≥ 5 (11 coin entries alone), so the shop always fills.
+ */
+function generateOffers(rng: Rng, charms: RunState['charms'], handSize: number): ShopOffer[] {
+  const pool: ShopOffer[] = [
+    ...CHARMS.filter((c) => !charms.includes(c.id)).map(
+      (c): ShopOffer => ({ kind: 'charm', charm: c.id }),
+    ),
+    ...COIN_EFFECTS.map((c): ShopOffer => ({ kind: 'coin', effect: c.effect })),
+  ]
+  if (handSize < HAND_SIZE_CAP) pool.push({ kind: 'handSize' })
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, SHOP_SLOTS)
+}
+
 /** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
  *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
-function endBlind(st: WritableDraft<RunState>) {
+function endBlind(st: WritableDraft<RunState>, rng: Rng) {
   const blind = BLINDS[st.blindIndex]
   if (st.blindScore >= blind.target) {
     if (st.blindIndex >= BLINDS.length - 1) {
       st.phase = 'runEnd'
       st.won = true
     } else {
-      st.phase = 'shop' // M9: draw shop offers from the rng
+      st.phase = 'shop'
+      st.shop = {
+        offers: generateOffers(rng, st.charms, st.handSize),
+        rerollUsed: false,
+      }
     }
   } else {
     st.phase = 'runEnd'
@@ -140,7 +177,7 @@ export function createRunStore() {
             // Empty pile at hand start: auto-skip the hand (no score), handsLeft −1,
             // back to draw (design decision 2026-09-14 — the SDD was silent here).
             st.handsLeft -= 1
-            if (st.handsLeft <= 0) endBlind(st)
+            if (st.handsLeft <= 0) endBlind(st, rng)
             return
           }
           st.handPhase = 'play'
@@ -255,7 +292,7 @@ export function createRunStore() {
           s.play = emptyHand(PLAY_SIZE)
           s.rngState = rng.state()
           s.handPhase = 'draw'
-          if (s.handsLeft <= 0) endBlind(s)
+          if (s.handsLeft <= 0) endBlind(s, rng)
         })
       },
 

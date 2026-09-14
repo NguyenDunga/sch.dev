@@ -68,6 +68,9 @@ export const COIN_EFFECTS: CoinDef[] = [
 export const HANDS_PER_BLIND = 10
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
 export const HAND_SIZE = 8
+/** Hand-size upgrade: price and cap (draft, 2026-09-13 Q&A round 3). */
+export const HAND_SIZE_PRICE = 10
+export const HAND_SIZE_CAP = 10
 /** Play slots — the player plays 1–5 coins per hand. */
 export const PLAY_SIZE = 5
 export const SHORT_FUSE_HANDS = 8

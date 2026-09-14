@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { BASE_DECK_SIZE, CHARMS, COIN_EFFECTS, HANDS_PER_BLIND, HAND_SIZE, HAND_SIZE_CAP, PLAY_SIZE, SHOP_SLOTS } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { emptyHand, filledSlot, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -964,5 +964,75 @@ describe('M8 — charms: moveCharm + scoring order', () => {
     }
     expect(scoreWith(['plusChips', 'plusMult'])).toBe(50) // (15+10) × (1+1)
     expect(scoreWith(['plusMult', 'plusChips'])).toBe(50)
+  })
+})
+
+describe('M9.1 — shop offer generation', () => {
+  /** A store that genuinely cleared blind 1 → shop (offers drawn from the rng). */
+  function shopStore(seed: string, charms: RunStore['charms'] = []) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({ charms, blindScore: 10_000, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    return store
+  }
+
+  it('entering the shop generates exactly 5 offers', () => {
+    const store = shopStore('m9-1')
+    expect(store.getState().phase).toBe('shop')
+    expect(store.getState().shop.offers).toHaveLength(SHOP_SLOTS)
+    expect(store.getState().shop.rerollUsed).toBe(false)
+  })
+
+  it('no owned charm is ever offered', () => {
+    const store = shopStore('m9-1b', ['plusChips', 'payday'])
+    for (const offer of store.getState().shop.offers) {
+      if (offer.kind === 'charm') {
+        expect(offer.charm).not.toBe('plusChips')
+        expect(offer.charm).not.toBe('payday')
+      }
+    }
+  })
+
+  it('every offer comes from the pool (unowned charms + coin effects + hand-size)', () => {
+    const store = shopStore('m9-1c', ['extraHand'])
+    const pool = new Set([
+      ...CHARMS.filter((c) => c.id !== 'extraHand').map((c) => `charm:${c.id}`),
+      ...COIN_EFFECTS.map((c) => `coin:${c.effect}`),
+      'handSize',
+    ])
+    for (const offer of store.getState().shop.offers) {
+      const key =
+        offer.kind === 'charm'
+          ? `charm:${offer.charm}`
+          : offer.kind === 'coin'
+            ? `coin:${offer.effect}`
+            : 'handSize'
+      expect(pool.has(key)).toBe(true)
+    }
+  })
+
+  it('same seed → identical offers (deterministic draw)', () => {
+    const a = shopStore('m9-1d').getState().shop.offers
+    const b = shopStore('m9-1d').getState().shop.offers
+    expect(a).toEqual(b)
+  })
+
+  it('no hand-size offer at the cap', () => {
+    const store = createRunStore()
+    store.getState().startRun('m9-1e')
+    store.setState({ handSize: HAND_SIZE_CAP, blindScore: 10_000, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    expect(
+      store
+        .getState()
+        .shop.offers.some((o) => o.kind === 'handSize'),
+    ).toBe(false)
   })
 })
