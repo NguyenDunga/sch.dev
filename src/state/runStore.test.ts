@@ -273,3 +273,116 @@ describe('M4.3 — pickCoin / unpickCoin', () => {
     expect(store.getState().play).toEqual(before.play)
   })
 })
+
+describe('M4.4 — discard', () => {
+  it('a plain coin goes to the discard pile (gone for the blind)', () => {
+    const store = drawnStore('m4-4a')
+    const st = store.getState()
+    const id = coinId(st.hand[0])
+    const drawPileBefore = st.deck.drawPile.length
+
+    store.getState().discard(0)
+    const after = store.getState()
+
+    expect(after.hand[0].kind).toBe('empty')
+    expect(after.deck.discardPile.map((c) => c.id)).toContain(id)
+    expect(after.deck.drawPile).toHaveLength(drawPileBefore) // draw pile untouched
+    expect(after.deck.drawPile.some((c) => c.id === id)).toBe(false) // gone for the blind
+  })
+
+  it('discard is unlimited — several coins in one play phase', () => {
+    const store = drawnStore('m4-4b')
+    const ids = [0, 1, 2].map((i) => coinId(store.getState().hand[i]))
+
+    store.getState().discard(0)
+    store.getState().discard(1)
+    store.getState().discard(2)
+    const after = store.getState()
+
+    expect([0, 1, 2].map((i) => after.hand[i].kind)).toEqual(['empty', 'empty', 'empty'])
+    expect(after.deck.discardPile.map((c) => c.id)).toEqual(expect.arrayContaining(ids))
+  })
+
+  // Where each redraw lands: a full 8-coin hand with the draw coin at hand[0],
+  // two plain coins (hand[1], hand[2]) discarded first, then the draw coin.
+  // Empty slots after the discards: 0, 1, 2 → discarded slot first, then left to right.
+  const REFILLED: Record<number, number[]> = { 1: [0], 2: [0, 1], 3: [0, 1, 2] }
+
+  it.each([1, 2, 3] as const)(
+    'a draw-%d coin redraws fresh face-down coins (discarded slot first, then left to right)',
+    (count) => {
+      const store = createRunStore()
+      store.getState().startRun(`m4-4d${count}`)
+      store.getState().drawHand()
+      const st = store.getState()
+      const id1 = coinId(st.hand[1])
+      const id2 = coinId(st.hand[2])
+      // Inject a draw-N coin into hand[0] (the base collection is all plain coins).
+      store.setState((s) => ({
+        hand: s.hand.map((slot, i) =>
+          i === 0 ? { kind: 'filled', coin: { id: 900, effects: [{ kind: 'draw', count }] }, face: 'H', echoUsed: false } : slot,
+        ),
+      }))
+
+      store.getState().discard(1) // plain → gone, slot 1 empty
+      store.getState().discard(2) // plain → gone, slot 2 empty
+      store.getState().discard(0) // draw-N → gone, redraw N
+      const after = store.getState()
+
+      for (const i of REFILLED[count]) {
+        expect(after.hand[i].kind).toBe('filled')
+        expect(coinId(after.hand[i])).not.toBe(900)
+      }
+      expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(5 + count)
+      expect(after.deck.discardPile.map((c) => c.id)).toEqual([id1, id2, 900])
+      expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE - count)
+    },
+  )
+
+  it('redraws are capped by the empty hand slots (full hand + draw2 → 1 redraw)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m4-4e')
+    store.setState((s) => ({
+      deck: {
+        drawPile: [
+          { id: 900, effects: [{ kind: 'draw', count: 2 }] },
+          ...s.deck.drawPile.slice(0, 9),
+        ],
+        discardPile: [],
+      },
+    }))
+    store.getState().drawHand() // full 8-coin hand, 900 at hand[0], pile = 2
+
+    store.getState().discard(0)
+    const after = store.getState()
+
+    expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(8) // only 1 redraw fits
+    expect(coinId(after.hand[0])).not.toBe(900)
+    expect(after.deck.drawPile).toHaveLength(1) // the 2nd redraw has no slot — stays in the pile
+  })
+
+  it('a draw3 coin redraws fewer when the draw pile is short', () => {
+    const store = createRunStore()
+    store.getState().startRun('m4-4f')
+    store.getState().drawHand()
+    // Inject a draw-3 coin into hand[0] and leave only 2 coins in the draw pile.
+    store.setState((s) => ({
+      hand: s.hand.map((slot, i) =>
+        i === 0 ? { kind: 'filled', coin: { id: 900, effects: [{ kind: 'draw', count: 3 }] }, face: 'H', echoUsed: false } : slot,
+      ),
+      deck: { drawPile: s.deck.drawPile.slice(0, 2), discardPile: [] },
+    }))
+
+    store.getState().discard(1) // slot 1 empty
+    store.getState().discard(2) // slot 2 empty
+    store.getState().discard(0) // draw-3 → only 2 coins left in the pile
+    const after = store.getState()
+
+    // 2 redraws (slots 0, 1); slot 2 stays empty — the pile ran out.
+    expect(after.hand[0].kind).toBe('filled')
+    expect(after.hand[1].kind).toBe('filled')
+    expect(after.hand[2].kind).toBe('empty')
+    expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(7)
+    expect(after.deck.drawPile).toHaveLength(0)
+  })
+})
