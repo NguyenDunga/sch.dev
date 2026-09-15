@@ -29,6 +29,8 @@ import { ScoringChoreography } from '@/components/juice/scoring-choreography'
 import { takeSnapshot } from '@/components/juice/choreography'
 import { useScoringChoreography } from '@/components/juice/use-scoring-choreography'
 import type { Beat, ChoroSeq, PlaySnapshot } from '@/components/juice/choreography'
+import { playSfx } from '@/components/juice/sfx'
+import { TOSS } from '@/lib/motion'
 
 /** { the previous hand/play ids, the deals computed from them }. */
 interface DealState {
@@ -62,7 +64,11 @@ function useAutoDraw() {
   const handPhase = useRunStore((s) => s.handPhase)
   const drawHand = useRunStore((s) => s.drawHand)
   useEffect(() => {
-    if (handPhase === 'draw') drawHand()
+    if (handPhase === 'draw') {
+      drawHand()
+      // 13.7 — the draw whoosh (UX §10).
+      playSfx('deal')
+    }
   }, [handPhase, drawHand])
 }
 
@@ -79,23 +85,11 @@ function useRunFlags(handPhase: HandPhase, play: Play) {
   return { revealed, canPick, canConfirm, canScore, getReflip }
 }
 
-/** Hand controls (12.6 + 13.1): pick / discard (+ ghost) / 6th-pick shake /
- *  confirm. Kept out of RunScreen so the component stays under the 60-line
- *  function limit. */
-function useHandFlow(hand: Hand, play: Play, wellRef: RefObject<HTMLDivElement | null>) {
-  const pickCoin = useRunStore((s) => s.pickCoin)
-  const discard = useRunStore((s) => s.discard)
-  const confirmPlay = useRunStore((s) => s.confirmPlay)
-  // Discard mode: tap a hand coin to discard it (unlimited). Reset on confirm
-  // (the only way a hand ends) so a new hand never starts in discard mode.
-  const [discardMode, setDiscardMode] = useState(false)
-  // 6th-pick feedback (UX §3): play full → shake the tapped coin 3px.
-  const [shake, setShake] = useState<{ id: number; n: number } | null>(null)
-  // 13.1: in-flight discard ghosts (the coin flies to the well + fades).
+/** 13.1 — in-flight discard ghosts (the coin flies to the well + fades). */
+function useDiscardGhost(wellRef: RefObject<HTMLDivElement | null>) {
   const [ghosts, setGhosts] = useState<DiscardGhost[]>([])
   const ghostKey = useRef(0)
-
-  const spawnDiscardGhost = (coin: Coin, el: HTMLElement) => {
+  const spawn = (coin: Coin, el: HTMLElement) => {
     const well = wellRef.current
     if (!well) return
     const rect = el.getBoundingClientRect()
@@ -110,6 +104,43 @@ function useHandFlow(hand: Hand, play: Play, wellRef: RefObject<HTMLDivElement |
       },
     ])
   }
+  const remove = (key: number) => setGhosts((gs) => gs.filter((g) => g.key !== key))
+  return { ghosts, spawn, remove }
+}
+
+/** 13.7 — the staggered toss whoosh (UX §10): one per filled slot, ±5% rate,
+ *  cleared on unmount (no leak). */
+function useTossSfx() {
+  const timers = useRef<number[]>([])
+  useEffect(() => {
+    const t = timers.current
+    return () => {
+      for (const id of t) window.clearTimeout(id)
+    }
+  }, [])
+  return (n: number) => {
+    for (let i = 0; i < n; i++) {
+      timers.current.push(
+        window.setTimeout(() => playSfx('toss', { rate: 1 + (Math.random() * 0.1 - 0.05) }), i * TOSS.stagger * 1000),
+      )
+    }
+  }
+}
+
+/** Hand controls (12.6 + 13.1): pick / discard (+ ghost) / 6th-pick shake /
+ *  confirm. Kept out of RunScreen so the component stays under the 60-line
+ *  function limit. */
+function useHandFlow(hand: Hand, play: Play, wellRef: RefObject<HTMLDivElement | null>) {
+  const pickCoin = useRunStore((s) => s.pickCoin)
+  const discard = useRunStore((s) => s.discard)
+  const confirmPlay = useRunStore((s) => s.confirmPlay)
+  // Discard mode: tap a hand coin to discard it (unlimited). Reset on confirm
+  // (the only way a hand ends) so a new hand never starts in discard mode.
+  const [discardMode, setDiscardMode] = useState(false)
+  // 6th-pick feedback (UX §3): play full → shake the tapped coin 3px.
+  const [shake, setShake] = useState<{ id: number; n: number } | null>(null)
+  const { ghosts, spawn: spawnDiscardGhost, remove: removeGhost } = useDiscardGhost(wellRef)
+  const playToss = useTossSfx()
 
   const handleHandTap = (i: number, el: HTMLElement) => {
     const slot = hand[i]
@@ -117,20 +148,25 @@ function useHandFlow(hand: Hand, play: Play, wellRef: RefObject<HTMLDivElement |
     if (discardMode) {
       spawnDiscardGhost(slot.coin, el)
       discard(i)
+      // 13.7 — the discard "shhk" (UX §10).
+      playSfx('discard')
       return
     }
     if (play.every(isFilled)) {
       setShake((s) => ({ id: slot.coin.id, n: (s?.n ?? 0) + 1 }))
+      // 13.7 — the invalid buzz (UX §10).
+      playSfx('error')
       return
     }
     pickCoin(i)
+    // 13.7 — the pick click (UX §10).
+    playSfx('pick')
   }
-
-  const removeGhost = (key: number) => setGhosts((gs) => gs.filter((g) => g.key !== key))
 
   const handleConfirm = () => {
     setDiscardMode(false)
     confirmPlay()
+    playToss(play.filter(isFilled).length)
   }
 
   return { discardMode, setDiscardMode, shake, handleHandTap, handleConfirm, ghosts, removeGhost }
@@ -274,6 +310,14 @@ function RunPortals({ ghosts, removeGhost, choro }: RunPortalsProps) {
   )
 }
 
+/** 13.7 — the unpick click (UX §10). */
+function useUnpickSfx(unpickCoin: (i: number) => void) {
+  return (i: number) => {
+    playSfx('unpick')
+    unpickCoin(i)
+  }
+}
+
 export function RunScreen() {
   const hand = useRunStore((s) => s.hand)
   const play = useRunStore((s) => s.play)
@@ -284,12 +328,12 @@ export function RunScreen() {
   const save = useRunStore((s) => s.save)
   const wellRef = useRef<HTMLDivElement>(null)
   const deals = useDeals(hand, play)
-  const { discardMode, setDiscardMode, shake, handleHandTap, handleConfirm, ghosts, removeGhost } = useHandFlow(
-    hand, play, wellRef,
-  )
+  const { discardMode, setDiscardMode, shake, handleHandTap, handleConfirm, ghosts, removeGhost } = useHandFlow(hand, play, wellRef)
   useAutoDraw()
   const { revealed, canPick, canConfirm, canScore, getReflip } = useRunFlags(handPhase, play)
   const { seq, beat, skipped, reduced, chipsRef, cashRef, handleScore } = useScoringChoro(score)
+  // 13.7 — the unpick click (UX §10).
+  const onUnpick = useUnpickSfx(unpickCoin)
 
   return (
     <main className="run-screen">
@@ -308,7 +352,7 @@ export function RunScreen() {
         deals={deals}
         wellRef={wellRef}
         onPick={handleHandTap}
-        onUnpick={unpickCoin}
+        onUnpick={onUnpick}
         getReflip={getReflip}
       />
       <ScoreTicker

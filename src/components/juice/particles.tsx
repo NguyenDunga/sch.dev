@@ -7,6 +7,7 @@ import { useRunStore } from '@/state/runStore'
 import { attachLayer, disposeParticles, emitConfetti } from './particles'
 import { CLEAR_SHAKE_AMPLITUDE } from './choreography'
 import { shakeScreen } from './screen-shake'
+import { playSfx } from './sfx'
 
 /** The fixed full-viewport canvas layer (pointer-events: none — it never
  *  blocks input, UX §0/§9). Mount once at the app root. */
@@ -33,6 +34,7 @@ export function BlindClearConfetti() {
     if (prev.current === 'run' && phase === 'shop') {
       emitConfetti()
       shakeScreen({ amplitude: CLEAR_SHAKE_AMPLITUDE, duration: 350 }) // UX §7: target-clear 10px
+      playSfx('winStinger') // 13.7 — the blind-clear stinger (UX §10)
     }
     prev.current = phase
   }, [phase])

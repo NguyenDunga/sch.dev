@@ -13,7 +13,7 @@
 // (tier_hit / chip / mult / cash) in 13.7; the settle burst / confetti in
 // 13.5. Reduced motion (UX §8): fast beats (≤150ms), no flights/flares.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { motion } from 'framer-motion'
 import { SHAKE_AMPLITUDE } from './choreography'
@@ -28,6 +28,7 @@ import {
   isBigHit,
   matchedIndices,
   TIER_COLOR_VAR,
+  TIER_RANK,
   type Beat,
   type ChoroSeq,
   type SnapshotCoin,
@@ -203,28 +204,67 @@ function CashFlight({ coins, targetRef }: CashFlightProps) {
   )
 }
 
+import { playSfx } from './sfx'
+
 interface BeatBurstsProps {
   beat: Beat
   tierColor: string | null
-  /** The scored tier (drives the resolve shake amplitude, UX §7). */
+  /** The scored tier (drives the resolve shake amplitude, UX §7, and the
+   *  tier-hit pitch, UX §10). */
   tier: TierId | null
   chipsRef: RefObject<HTMLElement | null>
   cashRef: RefObject<HTMLElement | null>
+  /** The number of chip ticks (one per flying chip, UX §10). */
+  chipTicks: number
+  /** The number of cash clinks (one per cash coin, UX §10). */
+  cashTicks: number
 }
 
 /** 13.5 — the particle bursts on their beats (UX §7): a chip burst (6–12,
  *  tier color) at the chips counter on beat 3, a cash burst at the cash
- *  counter on beat 6. Purely presentational (UX §0). */
-function BeatBursts({ beat, tierColor, tier, chipsRef, cashRef }: BeatBurstsProps) {
+ *  counter on beat 6. 13.7 — the matching sounds (UX §10): the tier hit on
+ *  beat 2 (pitch by tier rank), the rising chip ticks on beat 3, the mult
+ *  flare on beat 4, and the cash clinks on beat 6. Purely presentational
+ *  (UX §0). */
+function BeatBursts({ beat, tierColor, tier, chipsRef, cashRef, chipTicks, cashTicks }: BeatBurstsProps) {
   const chipsTarget = useFlightTarget(chipsRef)
   const cashTarget = useFlightTarget(cashRef)
+  // 13.7 — the staggered tick timers (cleared on beat change / unmount).
+  const beatTimers = useRef<number[]>([])
   useEffect(() => {
-    if (beat === 3) emitBurst({ x: chipsTarget.x, y: chipsTarget.y, color: tierColor ?? 'var(--primary)', count: 10 })
-    if (beat === 6) emitBurst({ x: cashTarget.x, y: cashTarget.y, color: 'var(--heads)', count: 12 })
+    return () => {
+      for (const t of beatTimers.current) window.clearTimeout(t)
+    }
+  }, [])
+  useEffect(() => {
+    if (beat === 2 && tier) {
+      // 13.7 — the tier hit, pitched up with the tier rank (UX §10).
+      playSfx('tierHit', { rate: 1 + TIER_RANK[tier] * 0.08 })
+    }
+    if (beat === 3) {
+      emitBurst({ x: chipsTarget.x, y: chipsTarget.y, color: tierColor ?? 'var(--primary)', count: 10 })
+      // 13.7 — the chip ticks: one per flying chip, rising in pitch (UX §10).
+      for (let i = 0; i < chipTicks; i++) {
+        beatTimers.current.push(window.setTimeout(() => playSfx('chip', { rate: 1 + i * 0.06 }), i * 40))
+      }
+    }
+    if (beat === 4) playSfx('mult')
+    if (beat === 6) {
+      emitBurst({ x: cashTarget.x, y: cashTarget.y, color: 'var(--heads)', count: 12 })
+      // 13.7 — the cash clinks, one per cash coin (UX §10).
+      for (let i = 0; i < cashTicks; i++) {
+        beatTimers.current.push(window.setTimeout(() => playSfx('cash'), i * 80))
+      }
+    }
     // 13.6 — the resolve shake: amplitude scaled by tier (UX §7), zero
     // under reduced motion (the trigger is a no-op there, UX §8).
     if (beat === 5 && tier) shakeScreen({ amplitude: SHAKE_AMPLITUDE[tier], duration: 300 })
-  }, [beat, chipsTarget, cashTarget, tierColor, tier])
+    return () => {
+      // Clear the pending ticks when the beat changes (no stale sounds).
+      for (const t of beatTimers.current) window.clearTimeout(t)
+      beatTimers.current = []
+    }
+  }, [beat, chipsTarget, cashTarget, tierColor, tier, chipTicks, cashTicks])
   return null
 }
 
@@ -276,7 +316,15 @@ export function ScoringChoreography({ seq, beat, reduced, chipsRef, cashRef }: C
       )}
       {beat === 5 && tier !== null && isBigHit(tier) && <PrimaryFlash />}
       {beat === 6 && !reduced && cashCoinCount(coins) > 0 && <CashFlight coins={coins} targetRef={cashRef} />}
-      <BeatBursts beat={beat} tierColor={tierColor} tier={tier} chipsRef={chipsRef} cashRef={cashRef} />
+      <BeatBursts
+        beat={beat}
+        tierColor={tierColor}
+        tier={tier}
+        chipsRef={chipsRef}
+        cashRef={cashRef}
+        chipTicks={chipCount(score, matched, snapshot?.charms ?? [])}
+        cashTicks={cashCoinCount(coins)}
+      />
     </div>
   )
 }

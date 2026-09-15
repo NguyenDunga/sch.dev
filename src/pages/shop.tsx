@@ -36,7 +36,7 @@ export function ShopScreen() {
       <header className="shop-header">
         <h1 className="shop-title">Shop</h1>
         <span className="shop-cash">${cash}</span>
-        <Button variant="outline" size="lg" disabled={rerollUsed} onClick={reroll}>
+        <Button variant="outline" size="lg" disabled={rerollUsed} sfx="reroll" onClick={reroll}>
           {rerollUsed ? 'Rerolled' : 'Reroll'}
         </Button>
       </header>

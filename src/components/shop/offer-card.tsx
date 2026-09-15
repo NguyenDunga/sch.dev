@@ -50,7 +50,7 @@ export function OfferCard({ offer, cash, charms, handSize, onBuy }: OfferCardPro
       <span className="offer-card-desc">{offerDescription(offer, handSize)}</span>
       <div className="offer-card-foot">
         <span className="offer-card-price">${price}</span>
-        <Button size="sm" disabled={disabled} onClick={() => onBuy(offer)}>
+        <Button size="sm" disabled={disabled} sfx="buy" onClick={() => onBuy(offer)}>
           {owned ? 'Owned' : atCap ? 'Max' : 'Buy'}
         </Button>
       </div>

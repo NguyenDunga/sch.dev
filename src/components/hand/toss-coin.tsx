@@ -29,6 +29,7 @@ import { CoinBadges } from './coin-badges'
 import { FaceBadge } from './coin-disc'
 import { settleRotation } from './toss'
 import { emitBurst } from '@/components/juice/particles'
+import { playSfx } from '@/components/juice/sfx'
 
 /** Full toss: two spins. Quick re-flip (Echo): one spin. */
 const FULL_SPINS = 2
@@ -43,8 +44,12 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** The 2D cross-fade fallback (reduced motion): the face fades in, ~160ms. */
+/** The 2D cross-fade fallback (reduced motion): the face fades in, ~160ms.
+ *  The land sound still plays (reduced motion affects motion, not audio). */
 function CrossfadeCoin({ face, effects }: { face: Face; effects: CoinEffect[] }) {
+  useEffect(() => {
+    playSfx('land', { rate: 1 + (Math.random() * 0.1 - 0.05) })
+  }, [])
   const label = face === 'H' ? 'heads' : 'tails'
   return (
     <div className="toss-coin toss-coin--2d">
@@ -119,6 +124,8 @@ function FlipCoin({ face, index, effects, quick }: FlipCoinProps) {
       await controls.start({ y: apex, transition: { duration: rise, ease: EASING.out } })
       if (cancelled) return
       landingSparkle(discRef.current, face) // the first landing
+      // 13.7 — the land thud at a slightly different rate (UX §10: ±5%).
+      playSfx('land', { rate: 1 + (Math.random() * 0.1 - 0.05) })
       controls.start({ y: 0, transition: SPRING.bouncy })
     }
     void run()

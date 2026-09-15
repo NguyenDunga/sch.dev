@@ -4,6 +4,8 @@ import { LoaderCircle } from "lucide-react"
 
 import { buttonVariants, flashCss, loadingCss } from "./button/buttonVariants"
 import type { VariantProps } from "class-variance-authority"
+import { playSfx } from "@/components/juice/sfx"
+import type { SfxEvent } from "@/components/juice/sfx"
 
 function Button({
   className,
@@ -12,6 +14,8 @@ function Button({
   pulse = false,
   loading = false,
   flash = false,
+  sfx = "button",
+  onClick,
   children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & {
@@ -21,7 +25,13 @@ function Button({
     loading?: boolean
     /** One-shot white sweep across the face. Set true to fire, clear it after the animation (e.g. onAnimationEnd). */
     flash?: boolean
+    /** The sound-map event on click (UX §10: button / reroll / buy). */
+    sfx?: SfxEvent
   }) {
+  const handleClick: NonNullable<ButtonPrimitive.Props['onClick']> = (e) => {
+    if (!loading) playSfx(sfx)
+    onClick?.(e)
+  }
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -31,6 +41,7 @@ function Button({
         loading && loadingCss,
         flash && flashCss,
       )}
+      onClick={handleClick}
       {...props}
     >
       {loading && <LoaderCircle aria-hidden className="size-4 animate-spin" />}

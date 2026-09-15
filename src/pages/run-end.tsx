@@ -2,11 +2,21 @@
 // score, final cash), the seed (for sharing/replay), and the Menu / New Run
 // buttons. Reads RunState; the summary numbers come straight from the store.
 
+import { useEffect } from 'react'
 import { BLINDS } from '@/core/balance'
 import { useRunStore } from '@/state/runStore'
 import { Button } from '@/components/ui/button'
+import { playSfx } from '@/components/juice/sfx'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const
+
+/** 13.7 — the game-over stinger (UX §10); a win already got the blind-clear
+ *  stinger on the shop transition. */
+function useLoseStinger(won: boolean) {
+  useEffect(() => {
+    if (!won) playSfx('loseStinger')
+  }, [won])
+}
 
 export function RunEndScreen() {
   const seed = useRunStore((s) => s.seed)
@@ -17,6 +27,7 @@ export function RunEndScreen() {
   const cash = useRunStore((s) => s.cash)
   const toMenu = useRunStore((s) => s.toMenu)
   const startRun = useRunStore((s) => s.startRun)
+  useLoseStinger(won)
 
   const blind = BLINDS[blindIndex]
   // Blinds cleared: all 12 on a win, otherwise the index of the blind lost
