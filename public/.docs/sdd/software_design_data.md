@@ -75,7 +75,7 @@ interface RunState {
   play: Play                 // 5 slots; the picked coins, tossed in the toss phase
   handPhase: HandPhase       // draw → play → toss → buff → score
   handSize: number           // 8 base; +1 per shop hand-size upgrade
-  handsLeft: number          // 10 (8 on Short Fuse; +1 with Extra Hand)
+  handsLeft: number          // 4 (3 on Short Fuse; +1 with Extra Hand) — m13a 4-hand blinds
   blindScore: number         // score accumulated in the current blind
   cash: number               // starts at $4
   charms: CharmId[]          // owned charms, in charm-bar (scoring) order
@@ -93,7 +93,7 @@ interface RunState {
 - `createRng(seed)`: seed string (6–8 chars) → `xmur3` hash (vendored in `core/rng.ts` — pure-rand ships no string hash in any version) → `xoroshiro128plus` state (pure-rand; the library's recommended generator — no xoshiro256 export exists).
 - **Draw-order contract** — the rng is drawn in this fixed order; it is part of the reproducibility guarantee (pinned by tests):
   1. **Blind start** — reshuffle the whole coin collection into the draw pile (Fisher–Yates with the rng); discard pile cleared
-  2. **Per-hand draw** — pop up to `handSize` coins from the draw pile (no rng; the shuffle supplies the randomness)
+  2. **Per-hand draw** — refill the hand up to `handSize` from the draw pile (no rng; the shuffle supplies the randomness); unplayed coins kept from the previous hand stay seated (m13a keep-unplayed)
   3. **Per play-phase discard** — draw-enchant redraws: pop N coins from the draw pile (no rng); coins enter the hand face-down
   4. **Per-slot toss** — face rolls in fixed order: odds roll (base 50/50, Weight 75/25, Magnetic 75/25, or Chaos's random-odds roll + face roll); then Echo re-flips in the buff phase (same rolls, once per Echo coin, player-timed)
   5. **Per-hand score** — one chance roll per Jackpot coin in the play (25%); Tax pays flat (no roll)
@@ -114,14 +114,14 @@ interface RunState {
 
 ## Balance Data (`src/core/balance.ts`)
 
-Data-only tables (draft values from [balance-baseline](../prm/plan/plan_balance-baseline.md) — tunable in playtest, not a scope change):
+Data-only tables (current values: [balance-baseline](../prm/plan/plan_balance-baseline.md) — m13a redesign values, tunable in playtest, not a scope change):
 
-- `TIERS: Tier[6]` — Jackpot 50×4 · 4-in-a-row 40×3 · Alternating 35×3 · 4-same 30×2 · Triple-run 20×2 · 3-same 15×1 (EV/hand 58.44 for a full plain 5-coin play without discard)
-- `BLINDS: Blind[12]` — 4 rounds × small/big/boss; targets 300 → 3500 (Heavy Target ×1.5 applied at runtime → 5250); rewards $4/$6/$10
+- `TIERS: Tier[6]` — Jackpot 50×4 · 4-in-a-row 40×3 · Alternating 35×3 · 4-same 30×2 · Triple-run 20×2 · 3-same 15×1 (EV/hand 58.44 for a full plain 5-coin play without discard — the tier table is **unchanged** by m13a; only the odds shift via the mixed deck)
+- `BLINDS: Blind[12]` — 4 rounds × small/big/boss; targets **150 → 1750** (m13a: halved from the old 300 → 3500; Heavy Target ×1.5 applied at runtime → **2625**); rewards $4/$6/$10
 - `BOSS_RULES: BossRule[4]` — No Alternating · Short Fuse · No Jackpots · Heavy Target (target ×1.5, +$5)
-- `CHARMS: CharmDef[5]` — pool with categories and prices (Re-Toss removed 2026-09-13)
+- `CHARMS: CharmDef[5]` — pool with categories and prices (Re-Toss removed 2026-09-13; Extra Hand re-priced $10 → $15 in m13a, 13a.11)
 - `COIN_EFFECTS: CoinDef[11]` — 9 effect types (Draw split into 3 tiers → 11 entries): Weight · Double-Side · Chaos · Echo · Magnetic · Reverse · Tax · Jackpot · Draw-1 · Draw-2 · Draw-3 (prices in balance-baseline)
-- Constants: `HANDS_PER_BLIND = 10` · `SHORT_FUSE_HANDS = 8` · `HAND_SIZE = 8` · `PLAY_SIZE = 5` · `HAND_SIZE_UPGRADE_PRICE = 10` (draft) · `HAND_SIZE_CAP = 10` (draft) · `START_CASH = 4` · `SHOP_SLOTS = 5` · `FREE_REROLLS = 1` · `PAYDAY_BONUS = 5` · `HEAVY_TARGET_BONUS = 5` · `BASE_DECK_SIZE = 80` (re-tuned 2026-09-14, no-wilds calculation — see balance-baseline Deck Size Calculation) · `REMOVE_COIN_COST = 1` · `TAX_PAYOUT = 1` · `JACKPOT_CHANCE = 0.25` · `JACKPOT_PAYOUT = 4`
+- Constants: `HANDS_PER_BLIND = 4` (m13a, was 10) · `SHORT_FUSE_HANDS = 3` (m13a, was 8) · `HAND_SIZE = 8` · `PLAY_SIZE = 5` · `HAND_SIZE_UPGRADE_PRICE = 10` (draft) · `HAND_SIZE_CAP = 10` (draft) · `START_CASH = 4` · `SHOP_SLOTS = 5` · `FREE_REROLLS = 1` · `PAYDAY_BONUS = 5` · `HEAVY_TARGET_BONUS = 5` · `LEFTOVER_HAND_BONUS = 1` (m13a early clear: +$1 per unused hand, draft — 13a.4) · `BASE_DECK_SIZE = 24` (m13a, was 80 — see m13a recalc Deck-drain check) · starter composition (`buildCollection`): **16 plain + 8 Weight(Heads)** (m13a — aligned favored face; the recalc's headline finding) · `REMOVE_COIN_COST = 1` · `TAX_PAYOUT = 1` · `JACKPOT_CHANCE = 0.25` · `JACKPOT_PAYOUT = 4`
 
 ## Data Flow Summary
 
@@ -129,7 +129,9 @@ Data-only tables (draft values from [balance-baseline](../prm/plan/plan_balance-
 seed ─→ rng (start)
 rng ─→ collection reshuffle (blind start) · face rolls (toss / echo re-flip) · jackpot chance rolls · shop offers + coin purchase rolls
 balance tables + charms + coin effects + boss rule ─→ score (per hand: chips×mult + coin cash)
-score ─→ blindScore ─→ win/lose ─→ reward ─→ cash ─→ shop ─→ charms + coins ─┐
+score ─→ blindScore ─→ win/lose (blind ends immediately when the target is met — leftover hands paid at LEFTOVER_HAND_BONUS, m13a) ─→ reward ─→ cash ─→ shop ─→ charms + coins ─┐
                                                                        └─→ (back to scoring)
 state ─→ localStorage (manual save) ─→ resume
+
+**Keep-unplayed (m13a):** after scoring, only the **played** coins leave to the discard pile; unplayed hand coins stay in the hand and the next hand refills up to `handSize` around them (deck drain ≈ played coins per hand — the recalc's ≈23 draws over 4 hands on a 24-deck).
 ```

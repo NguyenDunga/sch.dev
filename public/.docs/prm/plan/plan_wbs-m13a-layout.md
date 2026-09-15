@@ -1,0 +1,48 @@
+# M13a — Layout, Interaction Overhaul & Rebalance
+
+**Depends:** M12, M13 (juice motion — 13.1 deal/pick/discard already in flight) · **Files:** `src/pages/run.tsx`, `src/pages/shop.tsx`, `src/components/hand/*`, `src/components/run/*`, `src/components/shop/*`, `src/state/handActions.ts`, `src/state/shopActions.ts`, `src/core/balance.ts`, `src/core/deck.ts` · **Source of truth:** [SDD UX](../../sdd/software_design_ux.md) §3 (interaction model), §5 (timing); [Component Design](../../sdd/software_design_component.md) C6/C8; balance in [balance-baseline](plan_balance-baseline.md). Conventions: [overview](plan_wbs-overview.md).
+
+*Goal: turn the working-but-clunky M12 hand/shop flow into a fast, tactile, low-click loop. Two thrusts: (1) a **rebalance** — fewer, weightier hands on a small mixed deck so upgrades matter and the early game has spice; (2) an **interaction overhaul** — drag-and-drop coins, drop-zone scoring/discard, and auto-advancing phases that cut the click count per hand.*
+
+**Boundary:** the engine stays the source of truth. Drag-and-drop, drop zones, and auto-advance are **input conveniences** — they call the same store actions (`pickCoin`/`unpickCoin`/`discard`/`confirmPlay`/`score`) the buttons call today; they never compute an outcome. The rebalance is **data only** (`balance.ts` tables + `buildCollection`) plus the one mechanic change in 13a.2. Every new interaction keeps a keyboard/click equivalent (UX §8) and every celebration stays skippable (M13 §0).
+
+## Checkpoints
+
+### Rebalance
+
+- [ ] **13a.1 Auto-advance the buff phase.** When no Echo re-flip is available (no unused Echo coin in the play), the buff phase has nothing for the player to do — skip straight to scoring instead of forcing a Score click on an empty interaction. Keep the explicit Score button when a re-flip *is* available (the player may want to re-flip first). *Accept:* a hand with no Echo coin never stops in `buff`; a hand with an unused Echo coin still waits for input; skipping changes no number (M13 §0).
+
+- [ ] **13a.2 Keep unplayed coins in hand.** Replace the "dump every hand coin after scoring" rule (`returnHandToPile` in `scoreDraft`) with: only the **played** coins leave to the discard pile; **unplayed hand coins stay in the hand** and the next hand refills to `handSize` around them. This removes the reason the deck had to be huge (compensating for throwing 8 coins away per hand) and makes the 1–5 pick genuinely strategic (an unplayed coin isn't wasted). *Accept:* after `score`, the hand retains its unplayed coins; only played-slot coins are in the new discard pile; `drawHand` tops the hand up to `handSize`; per-blind drain matches [balance-baseline](plan_balance-baseline.md) (≈23 draws over 4 hands on a 24-deck). Update the M4/M8 conservation tests that assert "all 8 hand coins discarded".
+
+- [ ] **13a.3 Rebalance: 4 hands, small mixed deck, halved targets.** Apply the [balance-baseline](plan_balance-baseline.md) m13a numbers: `HANDS_PER_BLIND` 10→**4**, `SHORT_FUSE_HANDS` 8→**3**, `BASE_DECK_SIZE` 80→**24**, `buildCollection` → **16 plain + 8 Weight(favored Heads)**, and **halve the `BLINDS` target table** (150/250/400 · 300/500/750 · 500/800/1200 · 750/1200/1750). Rationale and per-blind EV in balance-baseline. *Accept:* `balance.test.ts` re-pinned to the new tables; a run is clearable on the new curve; the 32-hand plain-EV test is untouched (tier math unchanged).
+
+- [ ] **13a.4 Convert leftover hands to money on early clear.** The moment `blindScore ≥ target`, stop forcing the player through the rest of the hands: end the blind and pay a **bonus per unused hand** (draft: +$1/hand, tune in playtest), rewarding efficient clears. Keep a "keep playing" option only if playtest wants score-chasing; default is auto-end + payout. *Accept:* clearing on hand 2 of 4 ends the blind and pays for hands 3–4; the payout is deterministic and shown in the reward breakdown.
+
+### Interaction overhaul
+
+- [ ] **13a.5 Drag-and-drop + multi-select coins.** Clicking one coin at a time is slow. Add pointer drag: press-and-drag a hand coin into a play slot (or the score/discard zone, 13a.6); dnd-kit is already a dependency (used by the charm bar). Power-user selection: **Ctrl/Cmd+click** toggles a coin into a multi-selection, **Shift+click** range-selects, drag on any selected coin moves the whole selection, **click empty space / Esc** clears. *Accept:* drag moves a coin with a spring (UX §5 `pick`); multi-select has a visible selected state (UX §3); every drag/selection has a plain-click fallback (13a.12). *Open — enumerate the full shortcut set before build:* Ctrl/Cmd+A select-all-in-hand, double-click quick-play, number keys 1–5 to pick nth coin, Enter=confirm, Space=score — confirm which ship in v1.
+
+- [ ] **13a.6 Drop-zone score & discard areas.** Replace the modal **Discard toggle** (clunky — the player must switch modes) with two always-live drop targets flanking the hand: drag a coin **onto the play row / a "toss" zone** to play it, drag **into the discard well** (the `DiscardWell` from 13.1) to discard it. A corner "quick-discard" hotspot discards the hovered/selected coins directly. The discard well already renders (`piles.tsx`); wire drops to `discard`. *Accept:* the Discard mode toggle is gone; dragging to the discard well discards (draw-enchant redraw pip still shows); dragging to play picks; keyboard path still discards (a per-coin discard control for no-pointer users).
+
+- [ ] **13a.7 Pre-computed score + auto-end score phase.** The score is deterministic the instant the play is locked — show the projected **chips × mult = total** live as coins land, not behind a Score click. When the score choreography (M13 §6) finishes and nothing is left to interact with, **auto-advance** to the next hand. Keep the Score button as an **explicit fast-forward / early-end** (M13 §6 "second tap fast-forwards"), so power users aren't gated by the animation. *Accept:* the ticker updates without a click; the phase auto-ends when idle; the manual Score button still ends it early; no number changes on auto vs manual (M13 §0).
+
+- [ ] **13a.8 Rework the shop layout.** The current shop is a flat grid + a raw collection list — not readable. Redesign: put the **coin collection first and prominent** (it's the deck the player is building — show plain vs Weight(H/T) coins with their favored face visible, 13a.9), then the 5 offers as clearer cards (category color, price, effect one-liner, owned/affordable state), reroll and Leave as fixed primary actions. Group offers by kind (charm / coin / hand-size). *Accept:* the collection is the visual anchor; each coin's effects and favored face are legible; buy/merge/remove targets are obvious; layout holds at ~400px width.
+
+### Added checkpoints (m13a scope-completion)
+
+- [ ] **13a.9 Show each coin's favored face.** The balance headline finding: **75/25 coins only add value if the player can see which face they favor** and deliberately collect same-face coins. A Weight/Double-Side coin must show its favored face (H/T) on its badge everywhere it appears — hand, play, collection, shop offer. Without this, the mixed starter deck (13a.3) plays like plain 50/50. *Accept:* a Weight(H) coin is visually distinguishable from a Weight(T) coin at a glance; the badge reads on the ceramic theme in both light contexts; colorblind-safe (glyph + shape, not color alone — UX §8).
+
+- [ ] **13a.10 First-run onboarding hint.** The new drag/drop/multi-select model (13a.5–13a.7) is discoverable by power users but opaque to a first-timer. Add a lightweight, dismissible first-run coach layer: "drag coins to play · drag to the bin to discard · match a pattern to score." Show once (localStorage flag), never blocks input, skippable. *Accept:* appears on the first run only; dismiss persists; no layout shift; respects reduced-motion.
+
+- [ ] **13a.11 Re-tune hand-economy charms for the 4-hand blind.** With 4 hands, **Extra Hand** is now +25% hands (was +10%) and **Short Fuse** is a 25% cut (was 20%). Re-price/re-scope so neither dominates: draft Extra Hand $10→$15; leave Short Fuse at 3 hands but verify round-2 boss clear rates. *Accept:* a playtest note recording clear rates with/without Extra Hand; prices updated in `balance.ts` if the data supports it.
+
+- [ ] **13a.12 Keyboard & reduced-motion parity for the new input.** Every drag/drop/multi-select interaction (13a.5–13a.7) has an equivalent no-pointer path: focusable coins, key-to-pick (1–5), a discard control, confirm/score keys; drop animations degrade under `prefers-reduced-motion` (UX §8). *Accept:* a full hand can be played, discarded, and scored with the keyboard only; reduced-motion drops are instant with the same result; hit targets ≥44px.
+
+## Exit gate
+
+- [ ] All 13a checkpoints satisfied (or explicitly deferred with a note here).
+- [ ] `tsc --noEmit`, `npm run lint`, `npm test` all green; balance tests re-pinned to the balance-baseline tables (13a.3); M4/M8 conservation tests updated for keep-unplayed (13a.2).
+- [ ] A full 4-blind-per-round run is clearable end-to-end on the new curve, played **entirely by drag-and-drop** and **entirely by keyboard** (13a.12), both reaching the same scores.
+- [ ] Click-count per hand measurably reduced vs M12 (no Discard-mode toggle, no forced Score click on a no-Echo hand, auto-advance idle phases) — record before/after in `execute_work_management.md`.
+- [ ] No engine mutation from any input-convenience layer (drag, drop, auto-advance all route through existing store actions); every celebration still skippable (M13 §0).
+- [ ] `execute_work_management.md` M13a rows updated to Done with dates.

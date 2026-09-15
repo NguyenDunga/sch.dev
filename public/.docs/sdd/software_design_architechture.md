@@ -54,9 +54,9 @@ Three layers, strictly one-way dependencies (UI → state → core):
 | 4 | Balance values as data, not code | Playtest tuning = edit a table, not logic (scope plan: "balance is not scope") |
 | 5 | No backend / no network | Local-only delivery (charter §3), $0 budget |
 | 6 | Flat CSS-drawn art, no sprite assets | Zero budget; charter assumption §9 |
-| 7 | 5-phase hand flow | Draw 8 (hand size, shop-upgradable) face-down → freely play 1–5 (unlimited discard: plain coins gone for the blind; draw-enchant coins redraw into the hand) → game tosses the picked coins → buff (Echo re-flips + owned charms) → player taps Score (explicit — unlimited discard makes an auto-score timer hostile); deliberate hand-building (Q&A 2026-09-13 round 2; phase definition Q&A 2026-09-14, round 3; free 1–5 toss Q&A 2026-09-14, round 4) |
+| 7 | 5-phase hand flow | Refill to 8 (hand size, shop-upgradable) face-down **around kept coins** → freely play 1–5 (unlimited discard via a drop-zone: plain coins gone for the blind; draw-enchant coins redraw into the hand) → game tosses the picked coins → buff (Echo re-flips + owned charms; auto-advances when no re-flip is available, m13a) → live pre-computed score with an explicit early-end button (m13a); deliberate hand-building. **4 hands per blind (m13a)** (Q&A 2026-09-13 round 2; phase definition round 3; free 1–5 toss round 4; keep-unplayed + auto-advance + 4 hands, m13a 2026-09-15) |
 | 8 | Save in shop resumes at shop | Offers regenerated identically from preserved RNG state (Q&A 2026-09-12) |
-| 9 | Balatro-style coin deck | Persistent coin collection (base 80, re-tuned 2026-09-14 no-wilds calculation + purchased special coins); reshuffled per blind, finite within a blind (hand shrinks on deck-out, empty slots count as **nothing** — Q&A 2026-09-14, round 4); per-coin permanent effects (v1 core set of 9); unlimited discard with draw-enchant redraws; replaces re-toss + the 3 coin-modifier charms (Q&A 2026-09-13, round 2). No circulation: all hand coins go to the discard pile after scoring (Q&A 2026-09-14, round 3) |
+| 9 | Balatro-style coin deck | Persistent coin collection (base **24 = 16 plain + 8 Weight-Heads**, m13a 2026-09-15 — was 80 all-plain; + purchased special coins); reshuffled per blind, finite within a blind (hand refills with fewer on deck-out, empty slots count as **nothing** — Q&A 2026-09-14, round 4); per-coin permanent effects (v1 core set of 9); unlimited discard with draw-enchant redraws; replaces re-toss + the 3 coin-modifier charms (Q&A 2026-09-13, round 2). **Keep-unplayed (m13a):** only the played coins go to the discard pile after scoring; unplayed coins stay in the hand (was: all hand coins discarded, Q&A round 3) |
 
 ## Tech Stack (frozen — charter §4)
 
@@ -91,12 +91,12 @@ All MIT/open-source, $0 (charter §7).
 [buff phase] player may re-flip each Echo coin once
   → store.echoReflip(i) → core.resolveFace(rng, coin, left) again
   → owned charms (buffs) apply to the tossed coins
-[score phase] player taps Score (explicit — no auto-score timer)
+[score phase] live pre-computed score; auto-advances when idle, explicit Score button ends it early (m13a — was explicit-only tap)
   → core.scoreHand(play, bossRule, charms, rng) → Score ({ kind: 'none' | 'scored', … })
-  → core.returnHandToPile(deck, hand) → all hand coins (tossed + unpicked) → discard pile
+  → the played coins → discard pile; unplayed hand coins are kept for the next hand (keep-unplayed, m13a — returnHandToPile removed)
   → store: blindScore += total; cash += coin cash; handsLeft -= 1
   → UI: coin animation, chips×mult ticker, SFX
-  → handsLeft == 0 → blind clear (shop / run win) or run end (lose)
+  → blindScore ≥ target → blind clear early with unused-hand payout (m13a); handsLeft == 0 → blind clear (shop / run win) or run end (lose)
 ```
 
 ## Concurrency & Performance
@@ -122,3 +122,4 @@ All MIT/open-source, $0 (charter §7).
 | 2026-09-14 | Doc sync (no design change): tech-stack animation row corrected to motion/framer-motion (records the C10 decision of 2026-09-12); `Coin.param` → `faceParams` so merge can stack Weight + Double-Side; coin-effect count stated consistently (9 effect types, 11 catalog entries); WBS cross-refs updated from the retired M1–M4 numbering to the M0–M15 build milestones; repo layout corrected to `src/pages/` + `src/components/` | Qwen | SDD self-consistency + alignment with the M0–M15 WBS |
 | 2026-09-14 | UX build-out ("Balatro-grade smoothness"): added the [UX / Interaction & Juice](software_design_ux.md) SDD doc; new **Ceramic Tactile** flat/low-shadow theme; added @react-three/fiber + drei + rapier (flat-shaded 3D coin + physics) and lucide-react to the stack; **juice scope expanded** to particles + screen shake + a richer per-event SFX set (still flat art, still no music) | BlueCloud | UX scope + theme + tech amendment (charter §3/§4); see scope plan change log |
 | 2026-09-14 | No-null data model (Rust mentality, no design/scope change): every `null` and optional-as-absence removed from the domain — coin effects are now a tagged union carrying their own params (was `effects[]` + shared `faceParams?`), the boss rule lives inside the `boss` blind variant (was `boss?`), a hand slot is `{ kind:'empty' } \| { kind:'filled'; … }` (was `Slot \| null`), `Score` is `{ kind:'none' \| 'scored' }` (was `tier: TierId \| null`), and "maybe" values (neighbour face, deck draw, `lastScore`) use `Option<T>`; core/scoring/deck/store + all tests updated, `tsc` + 64 tests + eslint green | EDS | Code-quality: make illegal states unrepresentable |
+| 2026-09-15 | **m13a — rebalance + interaction overhaul:** 4 hands per blind (was 10); base deck 24 = 16 plain + 8 Weight-Heads (was 80 all-plain); **keep-unplayed** — only played coins are discarded after scoring, `returnHandToPile` removed; auto-advance buff/score phases with live pre-computed score; early-clear unused-hand payout; drag-and-drop + drop-zone play/discard; halved blind targets. Design in [WBS m13a](../prm/plan/plan_wbs-m13a-layout.md), numbers in [balance-baseline](../prm/plan/plan_balance-baseline.md) | EDS | Faster, weightier loop where upgrades matter; lower-click interaction |

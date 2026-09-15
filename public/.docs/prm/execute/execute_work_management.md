@@ -221,6 +221,25 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 | 13.8 Reduced-motion / a11y path | Not started | | |
 | 13.9 Perf (60fps, code-split, non-blocking) | Not started | | |
 
+### M13a — Layout, Interaction Overhaul & Rebalance → [wbs](../plan/plan_wbs-m13a-layout.md)
+
+> **M13a (2026-09-15):** interaction overhaul + rebalance layered on M12/M13. Numbers in [balance-baseline](../plan/plan_balance-baseline.md); mechanics in [SDD Component Design](../../sdd/software_design_component.md). All **Not started**.
+
+| Checkpoint | Status | Completed | Notes |
+| --- | --- | --- | --- |
+| 13a.1 Auto-advance the buff phase (skip no-Echo buff) | Not started | | Explicit Score kept when a re-flip is available |
+| 13a.2 Keep unplayed coins in hand (replace dump-all) | Not started | | Only played coins → discard; updates M4/M8 conservation tests |
+| 13a.3 Rebalance: 4 hands, 24 mixed deck, halved targets | Not started | | Per balance-baseline; re-pin balance.test.ts (tier math untouched); decide BASE_DECK_SIZE vs HAND_SIZE_CAP |
+| 13a.4 Convert leftover hands to money on early clear | Not started | | Draft +$1/unused hand; auto-end vs keep-playing TBD; economy is a playtest watch |
+| 13a.5 Drag-and-drop + multi-select coins | Not started | | Includes reorder within the play row via `movePlayCoin` (SDD C4) — enables Magnetic + adjacency tiers; shortcut set TBD |
+| 13a.6 Drop-zone score & discard areas | Not started | | Removes the Discard mode toggle; wire drops to piles.tsx well |
+| 13a.7 Pre-computed score + auto-end score phase | Not started | | Live ticker; Score button stays as manual fast-forward |
+| 13a.8 Rework the shop layout | Not started | | Collection-first; legible offers; drag-to-merge |
+| 13a.9 Show each coin's favored face | Not started | | Required for the mixed-deck spice; colorblind-safe glyph |
+| 13a.10 First-run onboarding hint | Not started | | localStorage-once, skippable, no input block |
+| 13a.11 Re-tune Extra Hand / Short Fuse for 4-hand blind | Not started | | Draft Extra Hand $10→$15; verify round-2 boss clears |
+| 13a.12 Keyboard & reduced-motion parity for new input | Not started | | Full keyboard play path; reduced-motion drops instant |
+
 ### M14 — Test Suite Completion → [wbs](../plan/plan_wbs-m14-tests.md)
 
 | Checkpoint | Status | Completed | Notes |

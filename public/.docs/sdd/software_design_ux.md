@@ -7,7 +7,7 @@ Part of the [Software Architecture](software_design_architechture.md). Presentat
 The engine is instant and deterministic (it resolves a whole hand the moment `score()` is called). **Juice is choreography played over already-computed state (`lastScore`, `RunState`), and it must never mutate state, decide an outcome, or gate an action.**
 
 - The 3D coin flip is *visual*: the engine already set `Slot.face` (M7 `resolveFace`); the animation **always lands on that face**. Physics is decorative — it is nudged/eased to settle on the predetermined result, never the reverse.
-- Every celebration is **skippable** (tap / key / click anywhere): skipping jumps to the settled end state and changes **no** number. This preserves the "explicit Score, no auto-score timer" rule (Scope Statement) — the *scoring* isn't timed; the *celebration* is skippable sugar.
+- Every celebration is **skippable** (tap / key / click anywhere): skipping jumps to the settled end state and changes **no** number. Under m13a the score is **pre-computed and shown live** and the score phase **auto-advances when idle**, with an explicit Score button kept as an early-end / fast-forward — the *scoring* still isn't a hidden timed reveal, the *celebration* is skippable sugar, and the auto-advance changes no number (it just removes a dead click).
 - Under `prefers-reduced-motion`, juice degrades to instant/cross-fade (§8) with identical results.
 
 ## 1. Feel Principles
@@ -156,3 +156,4 @@ Mix: SFX bus with a concurrency cap; quieter small events, louder tier/clear so 
 | Date | Change | Approved by | Reason |
 | --- | --- | --- | --- |
 | 2026-09-14 | UX/Juice design baseline v1.0: Ceramic Tactile flat theme (low-shadow), tactile interaction model, r3f/drei/rapier flat-shaded 3D coin, scoring choreography, particles + screen shake, expanded SFX set, reduced-motion/a11y, perf budget | BlueCloud | UX build-out — "Balatro-grade smoothness"; expands the juice scope + theme (see scope plan change log) |
+| 2026-09-15 | **m13a interaction overhaul:** drag-and-drop + multi-select coins, always-live play/discard **drop-zones** (replaces the discard-mode toggle), **live pre-computed score** + **auto-advancing buff/score phases** (explicit Score kept as early-end), show each coin's **favored face**, first-run onboarding, keyboard + reduced-motion parity. Findings in [ux-review-m13a](../prm/plan/ux-review-m13a.md); tasks in [WBS m13a](../prm/plan/plan_wbs-m13a-layout.md) | EDS | Lower-click, more tactile loop |
