@@ -161,6 +161,7 @@ export function leaveShopDraft(st: Draft, rng: Rng): void {
     next.kind === 'boss' && next.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
   st.handsLeft = baseHands + (st.charms.includes('extraHand') ? 1 : 0)
   st.blindScore = 0
+  st.earlyClearBonus = 0
   // 13a.2 keep-unplayed: the hand may still hold unplayed coins from the
   // last hand — they are part of the collection and go back into it.
   const inHand = st.hand.filter((s) => s.kind === 'filled').map((s) => s.coin)

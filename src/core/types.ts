@@ -71,6 +71,7 @@ export interface RunState {
   handsLeft: number          // 10 (8 on Short Fuse; +1 with Extra Hand)
   blindScore: number         // score accumulated in the current blind
   cash: number               // starts at $4
+  earlyClearBonus: number    // 13a.4: $ paid for unused hands on the last blind clear (0 on a full-budget clear)
   charms: CharmId[]          // owned charms, in charm-bar (scoring) order
   deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
   shop: { offers: ShopOffer[]; rerollUsed: boolean }

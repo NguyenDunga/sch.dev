@@ -16,7 +16,7 @@
 
 - [x] **13a.3 Rebalance: 4 hands, small mixed deck, halved targets.** Apply the [balance-baseline](plan_balance-baseline.md) m13a numbers: `HANDS_PER_BLIND` 10→**4**, `SHORT_FUSE_HANDS` 8→**3**, `BASE_DECK_SIZE` 80→**24**, `buildCollection` → **16 plain + 8 Weight(favored Heads)**, and **halve the `BLINDS` target table** (150/250/400 · 300/500/750 · 500/800/1200 · 750/1200/1750). Rationale and per-blind EV in balance-baseline. *Accept:* `balance.test.ts` re-pinned to the new tables; a run is clearable on the new curve; the 32-hand plain-EV test is untouched (tier math unchanged).
 
-- [ ] **13a.4 Convert leftover hands to money on early clear.** The moment `blindScore ≥ target`, stop forcing the player through the rest of the hands: end the blind and pay a **bonus per unused hand** (draft: +$1/hand, tune in playtest), rewarding efficient clears. Keep a "keep playing" option only if playtest wants score-chasing; default is auto-end + payout. *Accept:* clearing on hand 2 of 4 ends the blind and pays for hands 3–4; the payout is deterministic and shown in the reward breakdown.
+- [x] **13a.4 Convert leftover hands to money on early clear.** The moment `blindScore ≥ target`, stop forcing the player through the rest of the hands: end the blind and pay a **bonus per unused hand** (draft: +$1/hand, tune in playtest), rewarding efficient clears. Keep a "keep playing" option only if playtest wants score-chasing; default is auto-end + payout. *Accept:* clearing on hand 2 of 4 ends the blind and pays for hands 3–4; the payout is deterministic and shown in the reward breakdown.
 
 ### Interaction overhaul
 

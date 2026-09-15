@@ -14,7 +14,7 @@ describe('M11.1 — save()', () => {
   beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
   afterAll(() => vi.unstubAllGlobals())
 
-  it('writes { version: 2, state } to the fifty-fifty-run key (incl. rngState + collection)', () => {
+  it('writes { version: 3, state } to the fifty-fifty-run key (incl. rngState + collection)', () => {
     const store = createRunStore()
     store.getState().startRun('m11-1')
     store.getState().drawHand()
@@ -23,7 +23,7 @@ describe('M11.1 — save()', () => {
     const raw = localStorage.getItem('fifty-fifty-run')
     expect(raw).not.toBeNull()
     const saved = JSON.parse(raw as string)
-    expect(saved.version).toBe(2)
+    expect(saved.version).toBe(3)
     expect(saved.state.seed).toBe('m11-1')
     expect(saved.state.phase).toBe('run')
     expect(saved.state.rngState).toEqual(store.getState().rngState)
@@ -387,7 +387,7 @@ describe('Coverage — remaining edges (100% gate)', () => {
     const store = createRunStore()
     store.getState().startRun('cov-rs')
     const st = store.getState()
-    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 2, state: { ...st, phase: 'runEnd' } }))
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 3, state: { ...st, phase: 'runEnd' } }))
     const before = store.getState()
     store.getState().resume()
     expect(store.getState()).toEqual(before)
@@ -399,14 +399,14 @@ describe('M11.7 — hasSave (C5: Resume visible only when a resumable save exist
   afterAll(() => vi.unstubAllGlobals())
 
   function writeSave(state: unknown): void {
-    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 2, state }))
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 3, state }))
   }
 
   it('false when no save exists', () => {
     expect(createRunStore().getState().hasSave()).toBe(false)
   })
 
-  it('true for a valid v2 save in a resumable phase (seen by a fresh store)', () => {
+  it('true for a valid v3 save in a resumable phase (seen by a fresh store)', () => {
     const store = createRunStore()
     store.getState().startRun('has-save')
     store.getState().drawHand()
@@ -419,13 +419,16 @@ describe('M11.7 — hasSave (C5: Resume visible only when a resumable save exist
     expect(createRunStore().getState().hasSave()).toBe(false)
   })
 
-  it('false for a v1 (non-migratable) save', () => {
+  it('false for a v1 or v2 (non-migratable) save', () => {
     const store = createRunStore()
     store.getState().startRun('has-v1')
     store.getState().drawHand()
     store.getState().save()
     const state = JSON.parse(localStorage.getItem('fifty-fifty-run')!)
     localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 1, state }))
+    expect(createRunStore().getState().hasSave()).toBe(false)
+    // v2 (pre-earlyClearBonus) is equally non-migratable.
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 2, state }))
     expect(createRunStore().getState().hasSave()).toBe(false)
   })
 

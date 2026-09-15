@@ -243,3 +243,110 @@ describe('M10.8 — full 12-blind walk (mocked clears) reaches win', () => {
     expect(store.getState().won).toBe(true)
   })
 })
+
+describe('13a.4 — early clear: leftover hands convert to money', () => {
+  /** Plays `hands` 1-coin (0-score) hands, then a 3-same (15) hand that pushes
+   *  blindScore over the round-1 small target (150). Returns the store. */
+  function clearOnHand(seed: string, hands: number, charms: RunStore['charms'] = []) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({ blindScore: 135, charms }) // 135 + 15 (3-same) = 150 = target
+    for (let h = 0; h < hands; h++) {
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      if (h < hands - 1) {
+        store.getState().score() // 1 coin → 0, keeps playing
+      } else {
+        // The clearing hand: 3-same = 15 chips × 1 = 15 → blindScore 150.
+        store.setState({
+          handPhase: 'buff',
+          play: [
+            filledSlot({ id: 101, effects: [] }, 'H'),
+            filledSlot({ id: 102, effects: [] }, 'H'),
+            filledSlot({ id: 103, effects: [] }, 'H'),
+            { kind: 'empty' },
+            { kind: 'empty' },
+          ],
+        })
+        store.getState().score()
+      }
+    }
+    return store
+  }
+
+  it('clearing on hand 2 of 4 ends the blind and pays +$2 for hands 3–4', () => {
+    const store = clearOnHand('m13a-4a', 2)
+    const st = store.getState()
+    expect(st.phase).toBe('shop')
+    expect(st.handsLeft).toBe(HANDS_PER_BLIND - 2) // 2 unused hands
+    expect(st.earlyClearBonus).toBe(2) // +$1 × 2
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + 2) // 4 + 4 + 2
+  })
+
+  it('clearing on the last hand pays no early-clear bonus', () => {
+    const store = clearOnHand('m13a-4b', HANDS_PER_BLIND)
+    const st = store.getState()
+    expect(st.phase).toBe('shop')
+    expect(st.handsLeft).toBe(0)
+    expect(st.earlyClearBonus).toBe(0)
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward) // 4 + 4
+  })
+
+  it('early-clear bonus stacks with the Payday charm reward', () => {
+    const store = clearOnHand('m13a-4c', 2, ['payday'])
+    const st = store.getState()
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + PAYDAY_BONUS + 2) // 4 + 4 + 5 + 2
+    expect(st.earlyClearBonus).toBe(2)
+  })
+
+  it('early clear on the final blind wins the run and pays the bonus', () => {
+    const store = createRunStore()
+    store.getState().startRun('m13a-4d')
+    store.setState({
+      blindIndex: 11,
+      round: 4,
+      blindScore: 1750 * HEAVY_TARGET_MULT - 15, // 2625 − 15
+      handsLeft: 3,
+    })
+    store.getState().drawHand()
+    store.setState({
+      handPhase: 'buff',
+      play: [
+        filledSlot({ id: 101, effects: [] }, 'H'),
+        filledSlot({ id: 102, effects: [] }, 'H'),
+        filledSlot({ id: 103, effects: [] }, 'H'),
+        { kind: 'empty' },
+        { kind: 'empty' },
+      ],
+    })
+    store.getState().score()
+    const st = store.getState()
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(true)
+    expect(st.earlyClearBonus).toBe(2) // handsLeft 3 → 2 after the clearing hand
+    expect(st.cash).toBe(START_CASH + BLINDS[11].reward + HEAVY_TARGET_BONUS + 2)
+  })
+
+  it('missing the target still plays out the full hand budget (no early end)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m13a-4e')
+    store.setState({ blindScore: 0 })
+    for (let h = 0; h < HANDS_PER_BLIND - 1; h++) {
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      store.getState().score() // 0 each
+      expect(store.getState().phase).toBe('run') // still in the blind
+    }
+    // Last hand: still 0 → the blind ends on the budget, not early.
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    const st = store.getState()
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
+    expect(st.earlyClearBonus).toBe(0)
+  })
+})

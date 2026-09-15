@@ -1,8 +1,8 @@
 // C9 — Save / resume actions (M11).
 //
-// Save is explicit only (no autosave): { version: 2, state } to localStorage
+// Save is explicit only (no autosave): { version: 3, state } to localStorage
 // in the run/shop phases. Resume is a no-op when the save is absent,
-// unparseable, not version 2, or not resumable. Action bodies are module-level
+// unparseable, not version 3, or not resumable. Action bodies are module-level
 // functions (≤60 lines, NASA practice); the store wires them up.
 
 import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
@@ -14,7 +14,9 @@ import type { GetFn, SetFn } from './storeTypes'
 import { generateOffers } from './shopActions'
 
 const SAVE_KEY = 'fifty-fifty-run'
-const SAVE_VERSION = 2
+// v3 (m13a): the state gained `earlyClearBonus` (13a.4) — v2 saves are
+// discarded (not migratable), same policy as v1 → v2.
+const SAVE_VERSION = 3
 
 export function save(get: GetFn): void {
   const st = get()
@@ -23,13 +25,13 @@ export function save(get: GetFn): void {
 }
 
 /** Query (C5): a resumable save exists — the Resume button is visible only
- *  then. False for absent / unparseable / not version 2 / non-resumable. */
+ *  then. False for absent / unparseable / not version 3 / non-resumable. */
 export function hasSave(): boolean {
   return parseSave(localStorage.getItem(SAVE_KEY)).some
 }
 
 /** Parse + validate a save string; `none` when absent / unparseable / not
- *  version 2 / not resumable (v1 saves predate the coin collection). */
+ *  version 3 / not resumable (v1/v2 saves predate the collection/earlyClearBonus). */
 function parseSave(raw: string | null): Option<RunState> {
   if (raw === null) return none
   let saved: { version?: unknown; state?: RunState }
@@ -64,6 +66,7 @@ export function resume(set: SetFn, rng: Rng): void {
     st.deck = { drawPile: [...s.deck.drawPile, ...inHand], discardPile: s.deck.discardPile }
     st.handSize = s.handSize
     st.runScore = s.runScore
+    st.earlyClearBonus = s.earlyClearBonus
     st.rngState = s.rngState
     // Reset: hand, play, handPhase, lastScore, current-blind progress.
     st.hand = emptyHand(st.handSize)

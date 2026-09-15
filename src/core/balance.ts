@@ -70,6 +70,8 @@ export const COIN_EFFECTS: CoinDef[] = [
 export const HANDS_PER_BLIND = 4
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
 export const HAND_SIZE = 8
+/** 13a.4: bonus paid per unused hand when a blind clears before its hand budget (draft +$1/hand). */
+export const EARLY_CLEAR_BONUS_PER_HAND = 1
 /** Hand-size upgrade: price and cap (draft, 2026-09-13 Q&A round 3). */
 export const HAND_SIZE_PRICE = 10
 export const HAND_SIZE_CAP = 10

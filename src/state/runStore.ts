@@ -64,7 +64,7 @@ export interface RunActions {
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
   reroll: () => void
-  /** run/shop: manual save — serialize { version: 2, state } to localStorage (explicit only, no autosave). */
+  /** run/shop: manual save — serialize { version: 3, state } to localStorage (explicit only, no autosave). */
   save: () => void
   /** C5: a resumable save exists (the menu shows Resume only then). */
   hasSave: () => boolean
@@ -101,6 +101,7 @@ function initialState(): RunState {
     handsLeft: HANDS_PER_BLIND,
     blindScore: 0,
     cash: 0,
+    earlyClearBonus: 0,
     charms: [],
     deck: { drawPile: [], discardPile: [] },
     shop: { offers: [], rerollUsed: false },

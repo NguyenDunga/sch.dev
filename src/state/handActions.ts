@@ -19,6 +19,7 @@
 
 import {
   BLINDS,
+  EARLY_CLEAR_BONUS_PER_HAND,
   HANDS_PER_BLIND,
   HAND_SIZE,
   HEAVY_TARGET_BONUS,
@@ -59,6 +60,7 @@ function startRunDraft(st: Draft, rng: Rng, seed: string): void {
   st.handsLeft = HANDS_PER_BLIND
   st.blindScore = 0
   st.cash = START_CASH
+  st.earlyClearBonus = 0
   st.charms = []
   st.deck = shuffleCollection(rng, buildCollection())
   st.shop = { offers: [], rerollUsed: false }
@@ -199,7 +201,14 @@ function scoreDraft(st: Draft, rng: Rng): void {
   st.play = emptyHand(PLAY_SIZE)
   st.rngState = rng.state()
   st.handPhase = 'draw'
-  if (st.handsLeft <= 0) endBlind(st, rng)
+  // 13a.4: the moment the target is met, end the blind — don't force the
+  // player through the remaining hands (unused hands pay a bonus in endBlind).
+  if (st.handsLeft <= 0 || st.blindScore >= effectiveTarget(blind)) endBlind(st, rng)
+}
+
+/** The blind's runtime target (Heavy Target boss: ×1.5 — 1750 → 2625, m13a). */
+function effectiveTarget(blind: (typeof BLINDS)[number]): number {
+  return blind.kind === 'boss' && blind.rule === 'heavyTarget' ? blind.target * HEAVY_TARGET_MULT : blind.target
 }
 
 export function score(get: GetFn, set: SetFn, rng: Rng): void {
@@ -217,13 +226,16 @@ export function score(get: GetFn, set: SetFn, rng: Rng): void {
  *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
 function endBlind(st: Draft, rng: Rng): void {
   const blind = BLINDS[st.blindIndex]
-  // Heavy Target: the table target is ×1.5 at runtime (SDD data — 1750 → 2625, m13a).
   const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'
-  const target = isHeavy ? blind.target * HEAVY_TARGET_MULT : blind.target
-  if (st.blindScore >= target) {
-    // Reward: base + Payday charm + Heavy Target bonus.
+  if (st.blindScore >= effectiveTarget(blind)) {
+    // 13a.4: unused hands convert to money (+$1 each, deterministic).
+    st.earlyClearBonus = st.handsLeft * EARLY_CLEAR_BONUS_PER_HAND
+    // Reward: base + Payday charm + Heavy Target bonus + early-clear bonus.
     st.cash +=
-      blind.reward + (st.charms.includes('payday') ? PAYDAY_BONUS : 0) + (isHeavy ? HEAVY_TARGET_BONUS : 0)
+      blind.reward +
+      (st.charms.includes('payday') ? PAYDAY_BONUS : 0) +
+      (isHeavy ? HEAVY_TARGET_BONUS : 0) +
+      st.earlyClearBonus
     if (st.blindIndex >= BLINDS.length - 1) {
       st.phase = 'runEnd'
       st.won = true
