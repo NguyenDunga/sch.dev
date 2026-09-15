@@ -93,10 +93,15 @@ describe('M11.2 — resume() restore + no-op guards', () => {
     expect(st.phase).toBe('run')
     expect(st.cash).toBe(21)
     expect(st.charms).toEqual(['plusChips', 'payday'])
-    // the collection is preserved (same coins); the piles are re-reshuffled at blind start (M11.3)
+    // the collection is preserved (same coins); the unplayed hand coins are
+    // merged back into it (13a.2); the piles are re-reshuffled at blind start (M11.3)
     const ids = (d: { drawPile: { id: number }[]; discardPile: { id: number }[] }) =>
       [...d.drawPile, ...d.discardPile].map((c) => c.id).sort((x, y) => x - y)
-    expect(ids(st.deck)).toEqual(ids(saved.deck))
+    const handIds = saved.hand
+      .filter((s) => s.kind === 'filled')
+      .map((s) => s.coin.id)
+      .sort((x, y) => x - y)
+    expect(ids(st.deck)).toEqual([...ids(saved.deck), ...handIds].sort((x, y) => x - y))
     // rngState continues from the saved state (the blind-start shuffle advances it — mirrored afterwards)
     expect(st.handSize).toBe(saved.handSize)
     expect(st.runScore).toBe(saved.runScore)
@@ -223,10 +228,15 @@ describe('M11.5 — save → resume (fresh store) round-trip', () => {
     for (const field of ['seed', 'round', 'blindIndex', 'cash', 'charms', 'handSize', 'runScore'] as const) {
       expect(st[field]).toEqual(saved.state[field])
     }
-    // collection: the same coins (the piles are re-reshuffled at blind start, so compare as a set)
+    // collection: the same coins (the piles are re-reshuffled at blind start, so
+    // compare as a set) — plus the unplayed hand coins merged back (13a.2)
     const coinIds = (d: { drawPile: { id: number }[]; discardPile: { id: number }[] }) =>
       [...d.drawPile, ...d.discardPile].map((c) => c.id).sort((x, y) => x - y)
-    expect(coinIds(st.deck)).toEqual(coinIds(saved.state.deck))
+    const savedHandIds = (saved.state.hand as Array<{ kind: string; coin?: { id: number } }>)
+      .filter((s) => s.kind === 'filled')
+      .map((s) => s.coin!.id)
+      .sort((x, y) => x - y)
+    expect(coinIds(st.deck)).toEqual([...coinIds(saved.state.deck), ...savedHandIds].sort((x, y) => x - y))
     // and the effect payloads travel with the coins
     const byId = (d: { drawPile: { id: number; effects: unknown[] }[]; discardPile: { id: number; effects: unknown[] }[] }) =>
       new Map([...d.drawPile, ...d.discardPile].map((c) => [c.id, c.effects]))

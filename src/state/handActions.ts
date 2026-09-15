@@ -6,7 +6,9 @@
 // - play:  pickCoin / unpickCoin / discard — play 1–5, unlimited discard
 // - toss:  confirmPlay() — resolveFace per picked coin in play order (transient)
 // - buff:  echoReflip() — one re-flip per Echo coin (boosters apply at score)
-// - score: score() — C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1
+// - score: score() — C3 pipeline → blindScore/cash; ONLY the played coins
+//   go to the discard pile — unplayed hand coins stay in the hand and the
+//   next hand refills around them (13a.2 keep-unplayed); handsLeft −1
 //
 // An action fired in the wrong handPhase is a no-op.
 //
@@ -29,7 +31,6 @@ import {
   buildCollection,
   discardToPile,
   drawFromDeck,
-  returnHandToPile,
   shuffleCollection,
 } from '@/core/deck'
 import { emptyHand, filledSlot, isFilled, none, scoreTotal, some } from '@/core/helpers'
@@ -184,8 +185,9 @@ function scoreDraft(st: Draft, rng: Rng): void {
   const blind = BLINDS[st.blindIndex]
   const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
   const result = scoreHand(st.play, boss, st.charms, rng)
-  // ALL hand coins (tossed + unpicked) → discard pile (gone for the blind).
-  st.deck = returnHandToPile(st.deck, st.hand)
+  // 13a.2 keep-unplayed: only the PLAYED coins go to the discard pile (gone
+  // for the rest of the blind); unplayed hand coins stay in the hand and the
+  // next hand refills to handSize around them (drawHand fills empty slots).
   st.play.forEach((slot) => {
     if (slot.kind === 'filled') st.deck = discardToPile(st.deck, slot.coin)
   })
@@ -194,7 +196,6 @@ function scoreDraft(st: Draft, rng: Rng): void {
   st.cash += result.cash
   st.handsLeft -= 1
   st.lastScore = some(result)
-  st.hand = emptyHand(st.handSize)
   st.play = emptyHand(PLAY_SIZE)
   st.rngState = rng.state()
   st.handPhase = 'draw'

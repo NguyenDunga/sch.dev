@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildCollection, discardToPile, drawFromDeck, returnHandToPile, shuffleCollection } from './deck'
+import { buildCollection, discardToPile, drawFromDeck, shuffleCollection } from './deck'
 import { BASE_DECK_SIZE } from './balance'
 import { createRng, type Rng } from './rng'
-import { filledSlot, isSome, none, some } from './helpers'
-import type { Coin, Deck, Hand } from './types'
+import { isSome, none, some } from './helpers'
+import type { Coin, Deck } from './types'
 
 /** Small test deck of n plain coins (ids 0..n-1) — a test fixture, not a balance value. */
 const smallDeck = (n: number): Deck => ({
@@ -102,12 +102,13 @@ describe('finite pile within a blind (no mid-blind reshuffle)', () => {
       deck = { ...deck, drawPile: deck.drawPile.slice(1) }
     }
     expect(drawn).toHaveLength(5)
-    // After scoring: hand coins → discard; the rest discarded individually
-    const hand: Hand = drawn.slice(0, 3).map((c) => filledSlot(c, 'H'))
-    deck = returnHandToPile(deck, hand)
-    for (const c of drawn.slice(3)) deck = discardToPile(deck, c)
+    // 13a.2 keep-unplayed: only the PLAYED coins are discarded (one at a
+    // time); the unplayed hand coins stay in the hand (drawn here: 5, play
+    // 2, keep 3).
+    const played = drawn.slice(0, 2)
+    for (const c of played) deck = discardToPile(deck, c)
     expect(deck.drawPile).toHaveLength(0)
-    expect(deck.discardPile).toHaveLength(5)
+    expect(deck.discardPile).toHaveLength(2)
     // Drawing again still yields none — the hand shrinks, no mid-blind reshuffle
     expect(drawFromDeck(deck)).toEqual(none)
   })
@@ -149,39 +150,5 @@ describe('discardToPile', () => {
     const before = JSON.parse(JSON.stringify(deck))
     discardToPile(deck, deck.drawPile[0])
     expect(deck).toEqual(before)
-  })
-})
-
-describe('returnHandToPile', () => {
-  it('moves all hand coins to the discard pile in hand order; empty slots count as nothing', () => {
-    const deck = smallDeck(5)
-    const hand: Hand = [
-      filledSlot(deck.drawPile[0], 'H'),
-      { kind: 'empty' },
-      filledSlot(deck.drawPile[1], 'T'),
-      { kind: 'empty' },
-      { kind: 'empty' },
-    ]
-    const next = returnHandToPile(deck, hand)
-    expect(next.discardPile).toEqual([deck.drawPile[0], deck.drawPile[1]])
-    expect(next.drawPile).toEqual(deck.drawPile)
-  })
-
-  it('appends to existing discards', () => {
-    const deck = smallDeck(5)
-    const withDiscard = discardToPile(deck, deck.drawPile[0])
-    const hand: Hand = [filledSlot(deck.drawPile[1], 'H'), { kind: 'empty' }, { kind: 'empty' }]
-    const next = returnHandToPile(withDiscard, hand)
-    expect(next.discardPile).toEqual([deck.drawPile[0], deck.drawPile[1]])
-  })
-
-  it('does not mutate the deck or the hand', () => {
-    const deck = smallDeck(5)
-    const hand: Hand = [filledSlot(deck.drawPile[0], 'H'), { kind: 'empty' }, { kind: 'empty' }]
-    const beforeDeck = JSON.parse(JSON.stringify(deck))
-    const beforeHand = JSON.parse(JSON.stringify(hand))
-    returnHandToPile(deck, hand)
-    expect(deck).toEqual(beforeDeck)
-    expect(hand).toEqual(beforeHand)
   })
 })

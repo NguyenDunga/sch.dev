@@ -1,7 +1,7 @@
 import { BASE_DECK_SIZE } from './balance'
-import { isFilled, none, some } from './helpers'
+import { none, some } from './helpers'
 import type { Rng } from './rng'
-import type { Coin, Deck, Hand, Option } from './types'
+import type { Coin, Deck, Option } from './types'
 
 /**
  * C11 — coin collection (Balatro-style, SDD C11).
@@ -45,14 +45,4 @@ export function drawFromDeck(deck: Deck): Option<Coin> {
 /** Move a coin to the discard pile — gone for the rest of the blind. */
 export function discardToPile(deck: Deck, coin: Coin): Deck {
   return { ...deck, discardPile: [...deck.discardPile, coin] }
-}
-
-/**
- * After scoring: all hand coins → discard pile (gone for the rest of the
- * blind; recycled into the draw pile at the next blind start). Empty slots
- * count as nothing.
- */
-export function returnHandToPile(deck: Deck, hand: Hand): Deck {
-  const coins = hand.filter(isFilled).map((s) => s.coin)
-  return { ...deck, discardPile: [...deck.discardPile, ...coins] }
 }

@@ -581,7 +581,7 @@ describe('M4.7 — echoReflip', () => {
 })
 
 describe('M4.8 — score', () => {
-  it('moves ALL hand coins (tossed + unpicked) to the discard pile', () => {
+  it('moves ONLY the played coins to the discard pile; unplayed hand coins stay in the hand (13a.2)', () => {
     const store = drawnStore('m4-8a')
     const allIds = store.getState().hand.map(coinId)
     store.getState().pickCoin(0)
@@ -592,14 +592,19 @@ describe('M4.8 — score', () => {
     store.getState().score()
     const after = store.getState()
 
-    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(
-      [...allIds].sort((a, b) => a - b),
+    // The 3 played coins are in the discard pile; the other 5 stay in the hand.
+    const played = [allIds[0], allIds[2], allIds[5]].sort((a, b) => a - b)
+    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(played)
+    expect(after.hand.filter((s) => s.kind === 'filled').map((s) => s.coin.id).sort((a, b) => a - b)).toEqual(
+      allIds.filter((id) => !played.includes(id)).sort((a, b) => a - b),
     )
+    // 8 drawn, 3 played away from the HAND → the draw pile still holds 72.
     expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE)
   })
 
-  it('handsLeft −1, back to draw, hand and play emptied', () => {
+  it('handsLeft −1, back to draw, play emptied, hand keeps its unplayed coins', () => {
     const store = drawnStore('m4-8b')
+    const kept = store.getState().hand.map(coinId).slice(1) // hand[0] is played
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
 
@@ -608,7 +613,9 @@ describe('M4.8 — score', () => {
 
     expect(after.handsLeft).toBe(HANDS_PER_BLIND - 1)
     expect(after.handPhase).toBe('draw')
-    expect(after.hand.every((s) => s.kind === 'empty')).toBe(true)
+    expect(after.hand.filter((s) => s.kind === 'filled').map((s) => s.coin.id).sort((a, b) => a - b)).toEqual(
+      [...kept].sort((a, b) => a - b),
+    )
     expect(after.play.every((s) => s.kind === 'empty')).toBe(true)
   })
 
@@ -730,7 +737,7 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
 })
 
 describe('M4.10 — full cycle repeated', () => {
-  it('runs a full blind: 10 cycles of draw → play → buff → score, consuming the whole deck', () => {
+  it('runs a full blind: 10 cycles of draw → play → buff → score (13a.2: only played coins drain the deck)', () => {
     const store = createRunStore()
     store.getState().startRun('m4-10')
 
@@ -749,20 +756,23 @@ describe('M4.10 — full cycle repeated', () => {
       expect(st.deck.drawPile.length + st.deck.discardPile.length + inHand + inPlay).toBe(
         BASE_DECK_SIZE,
       )
-      // 8 coins leave the draw pile and land in the discard pile each cycle.
-      expect(st.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE * cycle)
-      expect(st.deck.discardPile).toHaveLength(HAND_SIZE * cycle)
+      // 13a.2 keep-unplayed: 1 coin is played (→ discard) per cycle; the
+      // other 7 stay in the hand, so the draw pile only loses 1 per cycle
+      // after the initial 8.
+      expect(st.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE - (cycle - 1))
+      expect(st.deck.discardPile).toHaveLength(cycle)
 
       if (cycle < HANDS_PER_BLIND) {
         expect(st.handPhase).toBe('draw') // the machine loops back
       }
     }
 
-    // The blind ends after the 10th hand.
+    // The blind ends after the 10th hand (the deck is far from drained —
+    // keep-unplayed no longer throws 8 coins away per hand).
     const final = store.getState()
     expect(final.handsLeft).toBe(0)
-    expect(final.deck.drawPile).toHaveLength(0)
-    expect(final.deck.discardPile).toHaveLength(BASE_DECK_SIZE)
+    expect(final.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE - (HANDS_PER_BLIND - 1))
+    expect(final.deck.discardPile).toHaveLength(HANDS_PER_BLIND)
     expect(final.phase).toBe('runEnd') // 1-coin hands score 0 → target missed
     expect(final.won).toBe(false)
   })
@@ -792,7 +802,7 @@ describe('M4.10 — full cycle repeated', () => {
 })
 
 describe('M4.11 — post-score state', () => {
-  it('after score: hand and play are empty, and their coins are in discardPile', () => {
+  it('after score: play is empty, only the played coins are in discardPile, unplayed stay in hand (13a.2)', () => {
     const store = drawnStore('m4-11')
     const handIds = store.getState().hand.map(coinId) // the 8 drawn coins
     store.getState().pickCoin(1)
@@ -802,14 +812,12 @@ describe('M4.11 — post-score state', () => {
     store.getState().score()
     const after = store.getState()
 
-    // Hand and play are completely empty.
-    expect(after.hand.every((s) => s.kind === 'empty')).toBe(true)
+    // Play is empty; the hand keeps its 6 unplayed coins.
     expect(after.play.every((s) => s.kind === 'empty')).toBe(true)
-    // The 8 coins that were in the hand are in the discard pile
-    // (2 tossed + 6 unpicked).
-    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(
-      [...handIds].sort((a, b) => a - b),
-    )
+    expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(6)
+    // Only the 2 tossed coins are in the discard pile.
+    const played = [handIds[1], handIds[4]].sort((a, b) => a - b)
+    expect(after.deck.discardPile.map((c) => c.id).sort((a, b) => a - b)).toEqual(played)
     // Nothing else moved: the draw pile is untouched.
     expect(after.deck.drawPile).toHaveLength(BASE_DECK_SIZE - HAND_SIZE)
   })

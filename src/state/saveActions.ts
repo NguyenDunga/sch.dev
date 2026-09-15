@@ -57,7 +57,11 @@ export function resume(set: SetFn, rng: Rng): void {
     st.blindIndex = s.blindIndex
     st.cash = s.cash
     st.charms = s.charms
-    st.deck = s.deck
+    // 13a.2 keep-unplayed: a mid-blind save may hold unplayed coins in the
+    // hand — they are part of the collection, so merge them back before the
+    // hand is reset (the run-branch reshuffle then includes them).
+    const inHand = s.hand.filter((sl) => sl.kind === 'filled').map((sl) => sl.coin)
+    st.deck = { drawPile: [...s.deck.drawPile, ...inHand], discardPile: s.deck.discardPile }
     st.handSize = s.handSize
     st.runScore = s.runScore
     st.rngState = s.rngState
