@@ -176,3 +176,11 @@
   justify-content: center;
   padding-bottom: 0.5rem;
 }
+
+/* Reduced motion (UX §8): no hover lift on the offer cards (the glow ring
+   stays — it is a color change, not motion). */
+@media (prefers-reduced-motion: reduce) {
+  .offer-card:hover {
+    translate: none;
+  }
+}

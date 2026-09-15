@@ -3,7 +3,7 @@
 // ~300ms, spring-soft). Under prefers-reduced-motion it degrades to a plain
 // cross-fade (UX §8) — same final screen, no slide.
 
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { SPRING } from '@/lib/motion'
 import { useRunStore } from '@/state/runStore'
 import { MenuScreen } from '@/pages/menu'
@@ -54,13 +54,17 @@ function JuiceLayer() {
 
 export default function App() {
   return (
-    <>
+    // 13.8 — reduced motion (UX §8): `reducedMotion="user"` makes framer
+    // disable every transform/layout animation (deal flights, pick springs,
+    // screen slides) for users who prefer reduced motion, keeping only
+    // opacity/color changes — same final state and numbers.
+    <MotionConfig reducedMotion="user">
       {/* 13.6 — the app-root shake wrapper: the resolve shake (run) and the
           target-clear shake (run → shop) both move the whole screen. */}
       <ScreenShake>
         <Screens />
       </ScreenShake>
       <JuiceLayer />
-    </>
+    </MotionConfig>
   )
 }

@@ -104,7 +104,8 @@
 }
 
 /* the tilt layer: hover lift 4px / press 2px (CSS `translate`), pointer
-   tilt (CSS `rotate`, written from JS), 120ms spring-snappy feel. */
+   tilt (CSS `transform: rotateX/rotateY`, written from JS), 120ms
+   spring-snappy feel. */
 .hand-coin-tilt {
   display: flex;
   flex-direction: column;
@@ -112,7 +113,7 @@
   gap: 0.3rem;
   transition:
     translate 120ms var(--ease-out),
-    rotate 120ms var(--ease-out);
+    transform 120ms var(--ease-out);
 }
 
 .hand-coin:hover:not(:disabled) .hand-coin-tilt {
@@ -281,4 +282,20 @@
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+/* Reduced motion (UX §8): no hover lift/tilt (the badge brightening stays —
+   it is a color change, not motion). The JS pointer tilt is gated in
+   hand-coin.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  .hand-coin:hover:not(:disabled) .hand-coin-tilt,
+  .hand-coin:active:not(:disabled) .hand-coin-tilt,
+  .play-slot--reflip:hover,
+  .play-slot--reflip:active {
+    translate: none;
+  }
+  /* the 6th-pick shake is motion too (the error sfx still plays). */
+  .hand-coin-tilt--shake {
+    animation: none;
+  }
 }

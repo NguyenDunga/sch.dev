@@ -15,7 +15,7 @@
 - [x] 13.5 **Particles** — chip bursts, coin sparkles, cash coins, and canvas-confetti on blind clear ([UX §7](../../sdd/software_design_ux.md)); colors from the active tier tokens.
 - [x] 13.6 **Screen shake** — amplitude scaled by tier with exponential decay (UX §7); **zero** under reduced-motion.
 - [x] 13.7 **Sound map** — howler SFX for every event in the [UX §10 table](../../sdd/software_design_ux.md) (deal, pick/unpick, discard, toss/land ±5% rate, tier hit, chip tick rising pitch, mult, cash, button/reroll/buy, error, win/lose stingers); concurrency cap + ducking; **no music**. CC0 assets in `public/resource/sfx/`.
-- [ ] 13.8 **Reduced motion / a11y** — `prefers-reduced-motion` path per [UX §8](../../sdd/software_design_ux.md): 2D coin, no shake, minimal particles, fast counters; colorblind-safe H/T; same final numbers.
+- [x] 13.8 **Reduced motion / a11y** — `prefers-reduced-motion` path per [UX §8](../../sdd/software_design_ux.md): 2D coin, no shake, minimal particles, fast counters; colorblind-safe H/T; same final numbers.
 - [ ] 13.9 **Perf** — 60fps for toss + choreography + confetti; three/r3f/rapier code-split; `frameloop="demand"`; dispose on unmount; input never blocked (UX §9).
 
 ## Exit gate

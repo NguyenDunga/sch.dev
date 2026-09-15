@@ -67,15 +67,20 @@ export function HandCoin({ coin, index, enabled, shaking, shakeKey, dealIndex, o
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     const el = tiltRef.current
-    if (!el || !enabled) return
+    // UX §8: no hover tilt under reduced motion.
+    if (!el || !enabled || reduceMotion) return
     const rect = e.currentTarget.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
     const x = (e.clientX - rect.left) / rect.width - 0.5 // -0.5..0.5
     const y = (e.clientY - rect.top) / rect.height - 0.5
-    el.style.rotate = `${(-y * MAX_TILT_DEG * 2).toFixed(2)}deg ${(x * MAX_TILT_DEG * 2).toFixed(2)}deg`
+    // The tilt is a 3D rotation (rotateX/rotateY) — the CSS `rotate`
+    // property takes a single angle, so it lives on `transform` (this div
+    // carries no other transforms; framer's are on the button).
+    el.style.transform = `rotateX(${(-y * MAX_TILT_DEG * 2).toFixed(2)}deg) rotateY(${(x * MAX_TILT_DEG * 2).toFixed(2)}deg)`
   }
 
   const onPointerLeave = () => {
-    if (tiltRef.current) tiltRef.current.style.rotate = ''
+    if (tiltRef.current) tiltRef.current.style.transform = ''
   }
 
   const { initial, transition } = dealProps(dealIndex, reduceMotion)
