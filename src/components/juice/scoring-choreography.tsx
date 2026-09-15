@@ -16,8 +16,10 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { motion } from 'framer-motion'
+import { SHAKE_AMPLITUDE } from './choreography'
+import { shakeScreen } from './screen-shake'
 import { none, some } from '@/core/helpers'
-import type { CharmId, Score } from '@/core/types'
+import type { CharmId, Score, TierId } from '@/core/types'
 import { EASING } from '@/lib/motion'
 import {
   bannerText,
@@ -204,6 +206,8 @@ function CashFlight({ coins, targetRef }: CashFlightProps) {
 interface BeatBurstsProps {
   beat: Beat
   tierColor: string | null
+  /** The scored tier (drives the resolve shake amplitude, UX §7). */
+  tier: TierId | null
   chipsRef: RefObject<HTMLElement | null>
   cashRef: RefObject<HTMLElement | null>
 }
@@ -211,13 +215,16 @@ interface BeatBurstsProps {
 /** 13.5 — the particle bursts on their beats (UX §7): a chip burst (6–12,
  *  tier color) at the chips counter on beat 3, a cash burst at the cash
  *  counter on beat 6. Purely presentational (UX §0). */
-function BeatBursts({ beat, tierColor, chipsRef, cashRef }: BeatBurstsProps) {
+function BeatBursts({ beat, tierColor, tier, chipsRef, cashRef }: BeatBurstsProps) {
   const chipsTarget = useFlightTarget(chipsRef)
   const cashTarget = useFlightTarget(cashRef)
   useEffect(() => {
     if (beat === 3) emitBurst({ x: chipsTarget.x, y: chipsTarget.y, color: tierColor ?? 'var(--primary)', count: 10 })
     if (beat === 6) emitBurst({ x: cashTarget.x, y: cashTarget.y, color: 'var(--heads)', count: 12 })
-  }, [beat, chipsTarget, cashTarget, tierColor])
+    // 13.6 — the resolve shake: amplitude scaled by tier (UX §7), zero
+    // under reduced motion (the trigger is a no-op there, UX §8).
+    if (beat === 5 && tier) shakeScreen({ amplitude: SHAKE_AMPLITUDE[tier], duration: 300 })
+  }, [beat, chipsTarget, cashTarget, tierColor, tier])
   return null
 }
 
@@ -269,7 +276,7 @@ export function ScoringChoreography({ seq, beat, reduced, chipsRef, cashRef }: C
       )}
       {beat === 5 && tier !== null && isBigHit(tier) && <PrimaryFlash />}
       {beat === 6 && !reduced && cashCoinCount(coins) > 0 && <CashFlight coins={coins} targetRef={cashRef} />}
-      <BeatBursts beat={beat} tierColor={tierColor} chipsRef={chipsRef} cashRef={cashRef} />
+      <BeatBursts beat={beat} tierColor={tierColor} tier={tier} chipsRef={chipsRef} cashRef={cashRef} />
     </div>
   )
 }

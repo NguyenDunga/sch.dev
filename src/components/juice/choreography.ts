@@ -104,6 +104,20 @@ export function isBigHit(tier: TierId): boolean {
   return TIER_RANK[tier] >= 3
 }
 
+/** Screen-shake amplitude per tier in px (UX §7): threeSame 2 ·
+ *  tripleRun/fourSame 3–4 · alternating/fourRow 5–6 · jackpot 8. */
+export const SHAKE_AMPLITUDE: Record<TierId, number> = {
+  threeSame: 2,
+  tripleRun: 3,
+  fourSame: 4,
+  alternating: 5,
+  fourRow: 6,
+  jackpot: 8,
+}
+
+/** The target-clear shake (UX §7: 10px). */
+export const CLEAR_SHAKE_AMPLITUDE = 10
+
 /** The tier banner text (beat 2): "JACKPOT!" / the tier name / "No match". */
 export function bannerText(score: Score): string {
   if (score.kind !== 'scored') return 'No match'

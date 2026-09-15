@@ -11,6 +11,7 @@ import { RunScreen } from '@/pages/run'
 import { ShopScreen } from '@/pages/shop'
 import { RunEndScreen } from '@/pages/run-end'
 import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles.tsx'
+import { ScreenShake } from '@/components/juice/screen-shake.tsx'
 
 const SCREENS = {
   menu: MenuScreen,
@@ -54,7 +55,11 @@ function JuiceLayer() {
 export default function App() {
   return (
     <>
-      <Screens />
+      {/* 13.6 — the app-root shake wrapper: the resolve shake (run) and the
+          target-clear shake (run → shop) both move the whole screen. */}
+      <ScreenShake>
+        <Screens />
+      </ScreenShake>
       <JuiceLayer />
     </>
   )

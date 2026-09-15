@@ -1,9 +1,18 @@
-// Placeholder — screen shake wrapper.
-// SDD UX §7 · WBS M13.6.
-// Amplitude scaled by tier with exponential decay; ZERO under prefers-reduced-motion.
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { attachShakeEl } from './screen-shake'
 
+/** The shaken wrapper (the app root � the resolve shake and the target-clear
+ *  shake both move the whole screen). */
 export function ScreenShake({ children }: { children: ReactNode }) {
-  // TODO: translate the wrapper on a shake trigger with exp decay; disabled on reduced-motion.
-  return <>{children}</>
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    attachShakeEl(ref.current)
+    return () => attachShakeEl(null)
+  }, [])
+  return (
+    <div className="screen-shake" ref={ref}>
+      {children}
+    </div>
+  )
 }
