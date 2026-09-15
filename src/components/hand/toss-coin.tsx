@@ -21,13 +21,14 @@
 // Reduced motion (UX §4/§8): a 2D cross-fade of the face (~160ms), no arc,
 // no tumble, no 3D — same landing face.
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion, useAnimation, useReducedMotion } from 'framer-motion'
 import type { CoinEffect, Face } from '@/core/types'
 import { ECHO, EASING, SPRING, TOSS } from '@/lib/motion'
 import { CoinBadges } from './coin-badges'
 import { FaceBadge } from './coin-disc'
 import { settleRotation } from './toss'
+import { emitBurst } from '@/components/juice/particles'
 
 /** Full toss: two spins. Quick re-flip (Echo): one spin. */
 const FULL_SPINS = 2
@@ -81,8 +82,23 @@ interface FlipCoinProps {
  * landing bounce. `transform-style: preserve-3d` + `backface-visibility`
  * make it read as a flipping coin (a thin line when edge-on).
  */
+/** 13.5 — the landing sparkle (UX §7: ~4 particles on land) at the coin's
+ *  screen position. */
+function landingSparkle(el: HTMLElement | null, face: Face): void {
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  emitBurst({
+    x: r.left + r.width / 2,
+    y: r.top + r.height / 2,
+    color: face === 'H' ? 'var(--heads)' : 'var(--tails)',
+    count: 4,
+    speed: 0.55,
+  })
+}
+
 function FlipCoin({ face, index, effects, quick }: FlipCoinProps) {
   const controls = useAnimation()
+  const discRef = useRef<HTMLDivElement>(null)
   const rise = quick ? ECHO.rise : TOSS.rise
   const tumble = quick ? ECHO.tumble : TOSS.tumble
   const apex = quick ? ECHO_APEX : TOSS_APEX
@@ -102,16 +118,17 @@ function FlipCoin({ face, index, effects, quick }: FlipCoinProps) {
       // overshoot past 0 IS the landing bounce (UX §4/§5).
       await controls.start({ y: apex, transition: { duration: rise, ease: EASING.out } })
       if (cancelled) return
+      landingSparkle(discRef.current, face) // the first landing
       controls.start({ y: 0, transition: SPRING.bouncy })
     }
     void run()
     return () => {
       cancelled = true
     }
-  }, [controls, apex, delay, finalRotate, rise, tumble])
+  }, [controls, apex, delay, finalRotate, rise, tumble, face])
 
   return (
-    <div className="toss-coin">
+    <div className="toss-coin" ref={discRef}>
       <motion.div
         className="toss-coin-flip"
         initial={{ y: 0, rotateX: 0 }}

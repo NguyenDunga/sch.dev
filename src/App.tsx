@@ -10,6 +10,7 @@ import { MenuScreen } from '@/pages/menu'
 import { RunScreen } from '@/pages/run'
 import { ShopScreen } from '@/pages/shop'
 import { RunEndScreen } from '@/pages/run-end'
+import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles.tsx'
 
 const SCREENS = {
   menu: MenuScreen,
@@ -38,6 +39,23 @@ function Screens() {
   )
 }
 
+/** The app-root juice layer (13.5): the particle canvas (persistent across
+ *  screens so the blind-clear confetti outlives the run screen) + the
+ *  blind-clear confetti trigger. */
+function JuiceLayer() {
+  return (
+    <>
+      <ParticleLayer />
+      <BlindClearConfetti />
+    </>
+  )
+}
+
 export default function App() {
-  return <Screens />
+  return (
+    <>
+      <Screens />
+      <JuiceLayer />
+    </>
+  )
 }

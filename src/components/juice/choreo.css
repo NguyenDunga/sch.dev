@@ -126,3 +126,14 @@
   font-size: 0.7rem;
   font-weight: 700;
 }
+
+/* 13.5 — the particle canvas layer (fixed, full-viewport, never blocks
+   input — UX §0/§9). */
+.particle-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 60;
+}

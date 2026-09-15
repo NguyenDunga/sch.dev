@@ -12,7 +12,7 @@
 - [x] 13.2 **Toss + Echo** — the 3D flip/settle and single-coin echo re-toss (M12.5 plumbing) tuned to `spring-bouncy`; lands on `Slot.face`.
 - [x] 13.3 **Scoring choreography** — the 7-beat sequence in [UX §6](../../sdd/software_design_ux.md): reveal/match pulse → tier banner slam → chips build (flying chips + pitch-rising ticker) → mult flare → resolve (collide + total count-up) → cash fly → settle. Driven by `lastScore`.
 - [x] 13.4 **Skip/fast-forward** — a tap/key during the sequence jumps to the settled end state; verify no number changes vs. letting it play out.
-- [ ] 13.5 **Particles** — chip bursts, coin sparkles, cash coins, and canvas-confetti on blind clear ([UX §7](../../sdd/software_design_ux.md)); colors from the active tier tokens.
+- [x] 13.5 **Particles** — chip bursts, coin sparkles, cash coins, and canvas-confetti on blind clear ([UX §7](../../sdd/software_design_ux.md)); colors from the active tier tokens.
 - [ ] 13.6 **Screen shake** — amplitude scaled by tier with exponential decay (UX §7); **zero** under reduced-motion.
 - [ ] 13.7 **Sound map** — howler SFX for every event in the [UX §10 table](../../sdd/software_design_ux.md) (deal, pick/unpick, discard, toss/land ±5% rate, tier hit, chip tick rising pitch, mult, cash, button/reroll/buy, error, win/lose stingers); concurrency cap + ducking; **no music**. CC0 assets in `public/resource/sfx/`.
 - [ ] 13.8 **Reduced motion / a11y** — `prefers-reduced-motion` path per [UX §8](../../sdd/software_design_ux.md): 2D coin, no shake, minimal particles, fast counters; colorblind-safe H/T; same final numbers.

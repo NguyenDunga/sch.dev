@@ -30,6 +30,7 @@ import {
   type ChoroSeq,
   type SnapshotCoin,
 } from './choreography'
+import { emitBurst } from './particles'
 
 /** The coin row's center (viewport fractions) — the flights' origin. */
 const ROW_X = 0.5
@@ -200,6 +201,26 @@ function CashFlight({ coins, targetRef }: CashFlightProps) {
   )
 }
 
+interface BeatBurstsProps {
+  beat: Beat
+  tierColor: string | null
+  chipsRef: RefObject<HTMLElement | null>
+  cashRef: RefObject<HTMLElement | null>
+}
+
+/** 13.5 — the particle bursts on their beats (UX §7): a chip burst (6–12,
+ *  tier color) at the chips counter on beat 3, a cash burst at the cash
+ *  counter on beat 6. Purely presentational (UX §0). */
+function BeatBursts({ beat, tierColor, chipsRef, cashRef }: BeatBurstsProps) {
+  const chipsTarget = useFlightTarget(chipsRef)
+  const cashTarget = useFlightTarget(cashRef)
+  useEffect(() => {
+    if (beat === 3) emitBurst({ x: chipsTarget.x, y: chipsTarget.y, color: tierColor ?? 'var(--primary)', count: 10 })
+    if (beat === 6) emitBurst({ x: cashTarget.x, y: cashTarget.y, color: 'var(--heads)', count: 12 })
+  }, [beat, chipsTarget, cashTarget, tierColor])
+  return null
+}
+
 /** Beat 5 — the --primary flash on big hits (UX §6). */
 function PrimaryFlash() {
   return (
@@ -248,6 +269,7 @@ export function ScoringChoreography({ seq, beat, reduced, chipsRef, cashRef }: C
       )}
       {beat === 5 && tier !== null && isBigHit(tier) && <PrimaryFlash />}
       {beat === 6 && !reduced && cashCoinCount(coins) > 0 && <CashFlight coins={coins} targetRef={cashRef} />}
+      <BeatBursts beat={beat} tierColor={tierColor} chipsRef={chipsRef} cashRef={cashRef} />
     </div>
   )
 }
