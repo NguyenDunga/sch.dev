@@ -22,3 +22,17 @@ export const DURATION = { micro: 90, quick: 160, base: 240, slow: 400 } as const
 // `discard`: coin flies to the discard well + fade, 180ms, ease-out.
 export const DEAL = { duration: 0.22, stagger: 0.04 } as const
 export const DISCARD = { duration: 0.18 } as const
+// `toss` (13.2): 3D flip + settle (UX §4/§5), 700–900ms total. The rise is
+// ease-out; the landing is a spring-bouncy settle whose overshoot IS the
+// bounce. `tumble` ends exactly at the first landing (rise + ~110ms, the
+// bouncy spring's first zero-crossing).
+export const TOSS = {
+  rise: 0.4,
+  tumble: 0.51,
+  stagger: 0.05, // left→right
+} as const
+// `echo` (13.2): single-coin re-toss (UX §5), ~500ms, spring-bouncy.
+export const ECHO = {
+  rise: 0.15,
+  tumble: 0.26,
+} as const

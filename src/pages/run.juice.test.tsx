@@ -5,10 +5,15 @@
 //   - discarding a coin spawns a ghost that flies to the well (portaled to
 //     <body>) and removes itself when the flight completes; the coin moves
 //     to the discard pile in the store
+// 13.2 — toss + echo (integration, jsdom):
+//   - confirmPlay reveals a toss coin per picked coin, each landing on the
+//     store-resolved face (Slot.face)
+//   - an Echo re-flip re-tosses the single coin (remount) on its new face
 //
-// The deal flight and the pick/unpick springs are framer-motion transforms
-// (not assertable in jsdom); the deal *detection* is unit-tested in
-// deal.test.ts.
+// The deal flight, pick/unpick springs, and the toss arc/tumble are
+// framer-motion transforms (not assertable in jsdom); the deal *detection*
+// is unit-tested in deal.test.ts and the toss *landing face* in
+// toss-coin.test.tsx.
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -16,14 +21,14 @@ import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
 
+afterEach(() => {
+  cleanup()
+})
+
 describe('13.1 — run screen piles + discard ghost', () => {
   beforeAll(() => {
     // Same localStorage stub as the smoke suite (see screens.smoke.test.tsx).
     vi.stubGlobal('localStorage', makeLocalStorage())
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   it('the deck and discard well render the pile counts', () => {
@@ -80,5 +85,65 @@ describe('13.1 — run screen piles + discard ghost', () => {
     // The redrawn coins fly in from the deck (the ghost of the discarded
     // coin is still in flight).
     await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })
+  })
+})
+
+describe('13.2 — toss + echo (lands on Slot.face)', () => {
+  it('confirmPlay reveals a toss coin per picked coin, each on the store-resolved face', () => {
+    useRunStore.getState().startRun('juice-toss')
+    useRunStore.getState().drawHand()
+    render(<RunScreen />)
+
+    // Pick 5 coins, then confirm (play → toss → buff, synchronous in the
+    // store — the UI observes 'buff' and renders the revealed coins).
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    }
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+
+    const { play } = useRunStore.getState()
+    expect(play.filter((s) => s.kind === 'filled')).toHaveLength(5)
+    // The 5 toss coins (role=img, labelled heads/tails) in play-row order.
+    const flips = screen.getAllByRole('img', { name: /^(heads|tails)$/ })
+    expect(flips).toHaveLength(5)
+    play.forEach((slot, i) => {
+      if (slot.kind !== 'filled') return
+      expect(flips[i].getAttribute('aria-label')).toBe(slot.face === 'H' ? 'heads' : 'tails')
+    })
+  })
+
+  it('an Echo re-flip re-tosses the single coin on its (new) face', () => {
+    useRunStore.getState().startRun('juice-echo')
+    useRunStore.getState().drawHand()
+    // Force an Echo coin into the first hand slot (presentational test —
+    // the re-flip logic is covered in handFlow.test.ts).
+    const hand = useRunStore.getState().hand
+    useRunStore.setState({
+      hand: hand.map((s, i) =>
+        i === 0 && s.kind === 'filled' ? { ...s, coin: { ...s.coin, effects: [{ kind: 'echo' }] } } : s,
+      ),
+    })
+    render(<RunScreen />)
+
+    // Pick the Echo coin, confirm → buff (a re-flip is now available).
+    fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+    const reflip = screen.getByRole('button', { name: 're-flip slot 1' })
+    const before = reflip.querySelector('.toss-coin')
+    fireEvent.click(reflip)
+
+    // The coin re-mounts (key change: face + echoUsed) and lands on the
+    // store-resolved face — the re-toss, not a face swap. The echo is now
+    // used, so the slot renders a plain toss coin (no re-flip button).
+    const slot = useRunStore.getState().play[0]
+    expect(slot.kind).toBe('filled')
+    const after = document.querySelector('.play-row .toss-coin')
+    expect(after).not.toBe(before)
+    if (slot.kind === 'filled') {
+      expect(slot.echoUsed).toBe(true)
+      expect(after?.querySelector('.toss-coin-flip')?.getAttribute('aria-label')).toBe(
+        slot.face === 'H' ? 'heads' : 'tails',
+      )
+    }
   })
 })

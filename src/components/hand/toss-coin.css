@@ -1,11 +1,15 @@
 /*
- * Toss coin (12.5) — the 3D coin that arcs up, tumbles, and settles on the
- * resolved face (SDD UX §4). CSS 3D transforms (flat + unlit, no WebGL).
+ * Toss coin (12.5 + 13.2) — the 3D coin that arcs up, tumbles, and settles
+ * on the resolved face (SDD UX §4). CSS 3D transforms (flat + unlit, no
+ * WebGL).
  *
  * Structure:
  *   .toss-coin          perspective + column (coin + badges)
  *     .toss-coin-flip   the 3D disc (preserve-3d); framer drives y (arc) +
- *                       rotateX (tumble)
+ *                       rotateX (tumble). The landing is a spring-bouncy
+ *                       settle (13.2): the spring overshoots past the rest
+ *                       line, so the coin briefly dips below it — z-index
+ *                       keeps it in front of the badges below.
  *       .toss-face--heads / --tails   the two faces (backface-visibility)
  *     .coin-badges      face badge + effect badges (outside the flip)
  *
@@ -23,6 +27,7 @@
 
 .toss-coin-flip {
   position: relative;
+  z-index: 1; /* in front of the badges during the spring landing dip */
   width: 3.5rem;
   height: 3.5rem;
   transform-style: preserve-3d;
