@@ -334,8 +334,8 @@ describe('Coverage — remaining edges (100% gate)', () => {
       const eff = store.getState().deck.drawPile.at(-1)?.effects[0]
       return eff && (eff.kind === 'weight' || eff.kind === 'doubleSide') ? eff.favored : undefined
     }
-    expect(face('probe-0', 'weight')).toBe('H')
-    expect(face('probe-2', 'doubleSide')).toBe('T')
+    expect(face('probe-5', 'weight')).toBe('H')
+    expect(face('probe-0', 'doubleSide')).toBe('T')
   })
 
   it('drawHand skips non-empty hand slots (fills only the empty ones)', () => {

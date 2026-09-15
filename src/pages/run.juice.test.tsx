@@ -89,8 +89,8 @@ describe('13.1 — run screen piles + discard ghost', () => {
     useRunStore.getState().startRun('juice-piles')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
-    // 80-coin base deck, 8 drawn → 72 left; nothing discarded yet.
-    expect(screen.getByRole('img', { name: 'Draw pile, 72 coins' })).toBeTruthy()
+    // 24-coin base deck (m13a), 8 drawn → 16 left; nothing discarded yet.
+    expect(screen.getByRole('img', { name: 'Draw pile, 16 coins' })).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Discard pile, 0 coins' })).toBeTruthy()
   })
 
@@ -133,9 +133,9 @@ describe('13.1 — run screen piles + discard ghost', () => {
 
     // The Draw-2 coin is gone; a full hand has one empty slot, so only one
     // of the two redraws lands (the store logic is covered in handFlow.test):
-    // 80 − 8 dealt − 1 redraw = 71 left in the draw pile.
+    // 24 − 8 dealt − 1 redraw = 15 left in the draw pile (m13a deck).
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(8)
-    expect(screen.getByRole('img', { name: 'Draw pile, 71 coins' })).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'Draw pile, 15 coins' })).toBeTruthy()
     // The redrawn coins fly in from the deck (the ghost of the discarded
     // coin is still in flight).
     await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })

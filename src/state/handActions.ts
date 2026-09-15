@@ -217,7 +217,7 @@ export function score(get: GetFn, set: SetFn, rng: Rng): void {
  *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
 function endBlind(st: Draft, rng: Rng): void {
   const blind = BLINDS[st.blindIndex]
-  // Heavy Target: the table target is ×1.5 at runtime (SDD data — 3500 → 5250).
+  // Heavy Target: the table target is ×1.5 at runtime (SDD data — 1750 → 2625, m13a).
   const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'
   const target = isHeavy ? blind.target * HEAVY_TARGET_MULT : blind.target
   if (st.blindScore >= target) {

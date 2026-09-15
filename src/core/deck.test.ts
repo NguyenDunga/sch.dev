@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildCollection, discardToPile, drawFromDeck, shuffleCollection } from './deck'
-import { BASE_DECK_SIZE } from './balance'
+import { BASE_DECK_SIZE, STARTER_WEIGHT_COINS } from './balance'
 import { createRng, type Rng } from './rng'
 import { isSome, none, some } from './helpers'
 import type { Coin, Deck } from './types'
@@ -15,12 +15,16 @@ const ids = (deck: Deck): number[] => deck.drawPile.map((c) => c.id)
 const sortedIds = (deck: Deck): number[] => [...ids(deck)].sort((a, b) => a - b)
 
 describe('buildCollection', () => {
-  it('builds the base collection of plain 50/50 coins (effects: [])', () => {
+  it('builds the m13a mixed starter deck: 16 plain 50/50 + 8 Weight(Heads)', () => {
     const deck = buildCollection()
     expect(deck.drawPile).toHaveLength(BASE_DECK_SIZE)
     expect(deck.discardPile).toHaveLength(0)
-    for (const coin of deck.drawPile) {
-      expect(coin.effects).toEqual([])
+    const plain = deck.drawPile.filter((c) => c.effects.length === 0)
+    const weight = deck.drawPile.filter((c) => c.effects.length > 0)
+    expect(plain).toHaveLength(BASE_DECK_SIZE - STARTER_WEIGHT_COINS)
+    expect(weight).toHaveLength(STARTER_WEIGHT_COINS)
+    for (const coin of weight) {
+      expect(coin.effects).toEqual([{ kind: 'weight', favored: 'H' }]) // aligned Heads
     }
   })
 

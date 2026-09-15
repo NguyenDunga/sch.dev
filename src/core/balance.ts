@@ -20,23 +20,25 @@ export const TIERS: Tier[] = [
 ]
 
 export const BLINDS: Blind[] = [
-  { round: 1, kind: 'small', target: 300, reward: 4 },
-  { round: 1, kind: 'big', target: 500, reward: 6 },
-  { round: 1, kind: 'boss', target: 800, reward: 10, rule: 'noAlternating' },
-  { round: 2, kind: 'small', target: 600, reward: 4 },
-  { round: 2, kind: 'big', target: 1000, reward: 6 },
-  { round: 2, kind: 'boss', target: 1500, reward: 10, rule: 'shortFuse' },
-  { round: 3, kind: 'small', target: 1000, reward: 4 },
-  { round: 3, kind: 'big', target: 1600, reward: 6 },
-  { round: 3, kind: 'boss', target: 2400, reward: 10, rule: 'noJackpots' },
-  { round: 4, kind: 'small', target: 1500, reward: 4 },
-  { round: 4, kind: 'big', target: 2400, reward: 6 },
-  { round: 4, kind: 'boss', target: 3500, reward: 10, rule: 'heavyTarget' },
+  // m13a (2026-09-15): targets halved from the 10-hand baseline — the
+  // difficulty shape is unchanged (plan_balance-baseline.md).
+  { round: 1, kind: 'small', target: 150, reward: 4 },
+  { round: 1, kind: 'big', target: 250, reward: 6 },
+  { round: 1, kind: 'boss', target: 400, reward: 10, rule: 'noAlternating' },
+  { round: 2, kind: 'small', target: 300, reward: 4 },
+  { round: 2, kind: 'big', target: 500, reward: 6 },
+  { round: 2, kind: 'boss', target: 750, reward: 10, rule: 'shortFuse' },
+  { round: 3, kind: 'small', target: 500, reward: 4 },
+  { round: 3, kind: 'big', target: 800, reward: 6 },
+  { round: 3, kind: 'boss', target: 1200, reward: 10, rule: 'noJackpots' },
+  { round: 4, kind: 'small', target: 750, reward: 4 },
+  { round: 4, kind: 'big', target: 1200, reward: 6 },
+  { round: 4, kind: 'boss', target: 1750, reward: 10, rule: 'heavyTarget' },
 ]
 
 export const BOSS_RULES: BossRule[] = [
   { id: 'noAlternating', name: 'No Alternating', description: 'Alternating hands score 0' },
-  { id: 'shortFuse', name: 'Short Fuse', description: '8 hands instead of 10' },
+  { id: 'shortFuse', name: 'Short Fuse', description: '3 hands instead of 4' },
   { id: 'noJackpots', name: 'No Jackpots', description: '5-same hands score as 4-same' },
   { id: 'heavyTarget', name: 'Heavy Target', description: 'Target ×1.5, +$5 bonus reward' },
 ]
@@ -65,7 +67,7 @@ export const COIN_EFFECTS: CoinDef[] = [
   { effect: 'draw3', name: 'Draw-3', price: 12 },
 ]
 
-export const HANDS_PER_BLIND = 10
+export const HANDS_PER_BLIND = 4
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
 export const HAND_SIZE = 8
 /** Hand-size upgrade: price and cap (draft, 2026-09-13 Q&A round 3). */
@@ -73,21 +75,29 @@ export const HAND_SIZE_PRICE = 10
 export const HAND_SIZE_CAP = 10
 /** Play slots — the player plays 1–5 coins per hand. */
 export const PLAY_SIZE = 5
-export const SHORT_FUSE_HANDS = 8
+export const SHORT_FUSE_HANDS = 3
 export const START_CASH = 4
 export const SHOP_SLOTS = 5
 export const FREE_REROLLS = 1
 export const PAYDAY_BONUS = 5
 export const HEAVY_TARGET_BONUS = 5
-/** Heavy Target boss: the blind's table target is multiplied by this at runtime (3500 → 5250). */
+/** Heavy Target boss: the blind's table target is multiplied by this at runtime (1750 → 2625). */
 export const HEAVY_TARGET_MULT = 1.5
 /**
- * Base collection size. Re-tuned 2026-09-14 (Q&A round 4, no-wilds
- * calculation — see plan_balance-baseline.md): 10 hands × 5 = 50 coins per
- * blind with buffer; empty slots count as nothing, so a full 5-coin play is
- * always the EV-optimal plain play.
+ * Base collection size (m13a, 2026-09-15 — plan_balance-baseline.md): a
+ * small mixed deck. Keep-unplayed (13a.2) means only the played coins drain
+ * the deck, so 4 hands × 8 draw-to-8 needs ≈23 draws — 24 covers it with a
+ * 1-coin buffer. Hand-size upgrades can deck out on the last hand (accepted
+ * cost — open decision resolved 2026-09-15: keep 24).
  */
-export const BASE_DECK_SIZE = 80
+export const BASE_DECK_SIZE = 24
+/**
+ * m13a: the starter collection is 16 plain 50/50 + 8 Weight coins, ALL
+ * favoring Heads. Aligned favored faces are the whole point — random/opposing
+ * faces cancel under a face-down draw and collapse EV to the plain baseline
+ * (plan_balance-baseline.md, critical finding).
+ */
+export const STARTER_WEIGHT_COINS = 8
 /** Shop: delete a coin from the collection. */
 export const REMOVE_COIN_COST = 1
 /** Coin cash effects. */

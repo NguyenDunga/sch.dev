@@ -17,6 +17,7 @@ import {
   SHORT_FUSE_HANDS,
   SHOP_SLOTS,
   START_CASH,
+  STARTER_WEIGHT_COINS,
   TAX_PAYOUT,
   WEIGHT_ODDS,
 } from './balance'
@@ -43,7 +44,7 @@ describe('BLINDS', () => {
       'small', 'big', 'boss',
       'small', 'big', 'boss',
     ])
-    expect(BLINDS.map((b) => b.target)).toEqual([300, 500, 800, 600, 1000, 1500, 1000, 1600, 2400, 1500, 2400, 3500])
+    expect(BLINDS.map((b) => b.target)).toEqual([150, 250, 400, 300, 500, 750, 500, 800, 1200, 750, 1200, 1750]) // m13a: halved
     expect(BLINDS.map((b) => b.reward)).toEqual([4, 6, 10, 4, 6, 10, 4, 6, 10, 4, 6, 10])
   })
 
@@ -94,15 +95,16 @@ describe('COIN_EFFECTS', () => {
 })
 
 describe('constants', () => {
-  it('baseline constants (Balatro-style deck, 2026-09-13 Q&A round 2; deck re-tuned 2026-09-14 round 4)', () => {
-    expect(HANDS_PER_BLIND).toBe(10)
-    expect(SHORT_FUSE_HANDS).toBe(8)
+  it('baseline constants (m13a rebalance 2026-09-15 — 4 hands, 24 mixed deck, halved targets)', () => {
+    expect(HANDS_PER_BLIND).toBe(4)
+    expect(SHORT_FUSE_HANDS).toBe(3)
     expect(START_CASH).toBe(4)
     expect(SHOP_SLOTS).toBe(5)
     expect(FREE_REROLLS).toBe(1)
     expect(PAYDAY_BONUS).toBe(5)
     expect(HEAVY_TARGET_BONUS).toBe(5)
-    expect(BASE_DECK_SIZE).toBe(80)
+    expect(BASE_DECK_SIZE).toBe(24)
+    expect(STARTER_WEIGHT_COINS).toBe(8)
     expect(REMOVE_COIN_COST).toBe(1)
     expect(TAX_PAYOUT).toBe(1)
     expect(JACKPOT_CHANCE).toBe(0.25)

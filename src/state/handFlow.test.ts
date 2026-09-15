@@ -737,7 +737,7 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
 })
 
 describe('M4.10 — full cycle repeated', () => {
-  it('runs a full blind: 10 cycles of draw → play → buff → score (13a.2: only played coins drain the deck)', () => {
+  it('runs a full blind: 4 cycles of draw → play → buff → score (13a.2: only played coins drain the deck)', () => {
     const store = createRunStore()
     store.getState().startRun('m4-10')
 
@@ -767,7 +767,7 @@ describe('M4.10 — full cycle repeated', () => {
       }
     }
 
-    // The blind ends after the 10th hand (the deck is far from drained —
+    // The blind ends after the 4th hand (the deck is far from drained —
     // keep-unplayed no longer throws 8 coins away per hand).
     const final = store.getState()
     expect(final.handsLeft).toBe(0)

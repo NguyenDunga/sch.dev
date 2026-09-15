@@ -1,4 +1,4 @@
-import { BASE_DECK_SIZE } from './balance'
+import { BASE_DECK_SIZE, STARTER_WEIGHT_COINS } from './balance'
 import { none, some } from './helpers'
 import type { Rng } from './rng'
 import type { Coin, Deck, Option } from './types'
@@ -12,12 +12,21 @@ import type { Coin, Deck, Option } from './types'
  * cleared at each blind start.
  */
 
-/** Fresh run: base collection of plain 50/50 coins (BASE_DECK_SIZE, ids 0..size-1). */
+/**
+ * Fresh run: the m13a base collection — plain 50/50 coins + Weight coins
+ * that all favor Heads (aligned favored faces; plan_balance-baseline.md).
+ * Ids 0..size-1.
+ */
 export function buildCollection(): Deck {
-  return {
-    drawPile: Array.from({ length: BASE_DECK_SIZE }, (_, i): Coin => ({ id: i, effects: [] })),
-    discardPile: [],
-  }
+  const plain = Array.from(
+    { length: BASE_DECK_SIZE - STARTER_WEIGHT_COINS },
+    (_, i): Coin => ({ id: i, effects: [] }),
+  )
+  const weight = Array.from({ length: STARTER_WEIGHT_COINS }, (_, i): Coin => ({
+    id: BASE_DECK_SIZE - STARTER_WEIGHT_COINS + i,
+    effects: [{ kind: 'weight', favored: 'H' }],
+  }))
+  return { drawPile: [...plain, ...weight], discardPile: [] }
 }
 
 /**

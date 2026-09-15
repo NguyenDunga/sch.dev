@@ -101,25 +101,25 @@ describe('M10.4 — endBlind rewards', () => {
   }
 
   it('target met: cash += reward, phase shop', () => {
-    const store = endBlindStore('m10-4', 0, 300)
+    const store = endBlindStore('m10-4', 0, 150)
     const st = store.getState()
     expect(st.phase).toBe('shop')
     expect(st.cash).toBe(START_CASH + BLINDS[0].reward) // 4 + 4
   })
 
   it('Payday charm adds +$5 to the reward', () => {
-    const store = endBlindStore('m10-4b', 0, 300, ['payday'])
+    const store = endBlindStore('m10-4b', 0, 150, ['payday'])
     expect(store.getState().cash).toBe(START_CASH + BLINDS[0].reward + PAYDAY_BONUS)
   })
 
-  it('Heavy Target boss: the effective target is ×1.5 (3500 → 5250)', () => {
-    const missed = endBlindStore('m10-4c', 11, 5249)
+  it('Heavy Target boss: the effective target is ×1.5 (1750 → 2625)', () => {
+    const missed = endBlindStore('m10-4c', 11, 2624)
     expect(missed.getState().won).toBe(false)
     expect(missed.getState().phase).toBe('runEnd')
   })
 
   it('target missed: runEnd lose, no reward paid', () => {
-    const store = endBlindStore('m10-4d', 0, 299)
+    const store = endBlindStore('m10-4d', 0, 149)
     expect(store.getState().phase).toBe('runEnd')
     expect(store.getState().won).toBe(false)
     expect(store.getState().cash).toBe(START_CASH) // no reward on a miss
@@ -127,10 +127,10 @@ describe('M10.4 — endBlind rewards', () => {
 })
 
 describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
-  it('blindScore ≥ 5250 on the last blind → phase runEnd, won = true, boss reward + Heavy Target bonus paid', () => {
+  it('blindScore ≥ 2625 on the last blind → phase runEnd, won = true, boss reward + Heavy Target bonus paid', () => {
     const store = createRunStore()
     store.getState().startRun('m10-5')
-    store.setState({ blindIndex: 11, round: 4, blindScore: 5250, handsLeft: 1 })
+    store.setState({ blindIndex: 11, round: 4, blindScore: 2625, handsLeft: 1 })
     store.getState().drawHand()
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
@@ -142,10 +142,10 @@ describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
     expect(st.cash).toBe(START_CASH + BLINDS[11].reward + HEAVY_TARGET_BONUS) // 4 + 10 + 5
   })
 
-  it('one point short (5249) → lose, not win', () => {
+  it('one point short (2624) → lose, not win', () => {
     const store = createRunStore()
     store.getState().startRun('m10-5b')
-    store.setState({ blindIndex: 11, round: 4, blindScore: 5249, handsLeft: 1 })
+    store.setState({ blindIndex: 11, round: 4, blindScore: 2624, handsLeft: 1 })
     store.getState().drawHand()
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
@@ -192,7 +192,7 @@ describe('M10.7 — miss the target after the hand budget → lose (even with ca
   it('last hand scores below the target: runEnd lose, cash untouched (no reward)', () => {
     const store = createRunStore()
     store.getState().startRun('m10-7')
-    store.setState({ blindScore: 299, handsLeft: 1, cash: 50 })
+    store.setState({ blindScore: 149, handsLeft: 1, cash: 50 })
     store.getState().drawHand()
     store.getState().pickCoin(0) // a lone coin scores no tier → 0
     store.getState().confirmPlay()
