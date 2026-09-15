@@ -4,7 +4,7 @@ Work Breakdown Structure for the 50/50 build. The project is decomposed into **1
 
 **Execution rule:** complete checkpoints **in order** within a milestone, and complete milestones **in order** (M0 → M15). Do not start a milestone until every checkpoint in the milestones it depends on is done and its exit gate passes. Dependencies are listed at the top of each milestone file.
 
-> **Status:** M0–M11 **Done** (plus the pre-M12 NASA quality gate); M12 in progress (12.1–12.4 done). Checkboxes are checked off in each plan doc as checkpoints land; live status is tracked in [Direct & Manage Project Work](../execute/execute_work_management.md).
+> **Status:** M0–M12 **Done** (plus the pre-M12 NASA quality gate). M13 (Juice) next. Checkboxes are checked off in each plan doc as checkpoints land; live status is tracked in [Direct & Manage Project Work](../execute/execute_work_management.md).
 
 ## Build Conventions (read first)
 
