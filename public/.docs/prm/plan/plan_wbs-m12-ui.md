@@ -16,7 +16,7 @@
 - [x] 12.8 **Run-end (C9)** — win/lose, run summary (blinds cleared, runScore, cash), seed shown for sharing, Menu.
 - [x] 12.9 **Manual Save** button on Run → `save`; no autosave.
 - [x] 12.10 **Tactile controls pass** — every button/slot/card has default/hover/active/disabled/selected/focus-visible states (UX §3); hit targets ≥44px; keyboard path works.
-- [ ] 12.11 **Smoke tests** — each screen renders from a valid `RunState` without throwing (the r3f canvas is mockable/skipped in jsdom).
+- [x] 12.11 **Smoke tests** — each screen renders from a valid `RunState` without throwing (the r3f canvas is mockable/skipped in jsdom).
 
 ## Exit gate
 
