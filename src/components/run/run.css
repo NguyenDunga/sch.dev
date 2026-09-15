@@ -180,6 +180,100 @@
   justify-content: center;
 }
 
+/* -- piles (13.1): deck + discard well flanking the hand row -------------- */
+
+.piles-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deck-stack {
+  position: relative;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.deck-disc {
+  position: absolute;
+  inset: 0;
+}
+
+.deck-disc--2 {
+  translate: 3px 3px;
+}
+
+.deck-disc--1 {
+  translate: 1.5px 1.5px;
+}
+
+/* the top disc is the raised sticker element — hard offset only (UX §2). */
+.deck-disc--top {
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.discard-well {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.discard-well-hole {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 9999px;
+  border: 2px dashed var(--line);
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
+}
+
+.pile-count {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  min-width: 1.5rem;
+  padding: 0 0.3rem;
+  text-align: center;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- discard ghost (13.1) ---------------------------------------------------
+ * fixed overlay (portaled to <body>): the ghost coin flies from the tapped
+ * coin's viewport rect to the well center + fades, 180ms ease-out. */
+
+.discard-ghost-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.discard-ghost {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
 /* discard mode: the hand coins take on a red tint (tap to discard). */
 .hand-row--discard .hand-coin .coin-disc {
   outline: 2px dashed var(--danger);

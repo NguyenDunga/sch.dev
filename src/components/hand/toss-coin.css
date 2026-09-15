@@ -39,8 +39,8 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--ink);
-  backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   -webkit-user-select: none;
   user-select: none;
 }

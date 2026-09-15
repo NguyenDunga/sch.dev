@@ -62,13 +62,16 @@ export function PlaySlot({ index, slot, revealed, onUnpick, onReflip }: PlaySlot
   }
 
   // Face-down (play): the 2D coin seated in the well, tappable to unpick.
+  // Pick (13.1, UX §5): the coin springs in with `spring-snappy` — the
+  // crossfade plays on the element that mounts (this one). Unpick uses
+  // `spring-soft` (the hand coin's layout transition).
   return (
     <motion.button
       type="button"
       className="play-slot play-slot--filled"
       layoutId={`coin-${coin.id}`}
       layout
-      transition={SPRING.soft}
+      transition={SPRING.snappy}
       onClick={onUnpick}
       aria-label={`slot ${index + 1}, unpick`}
     >

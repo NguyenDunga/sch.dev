@@ -172,6 +172,21 @@
   border: 2px dashed var(--line);
 }
 
+/* small coin disc (the deck stack, 13.1). */
+.coin-disc--sm {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.1rem;
+}
+
+/* deal-flight layer (13.1): framer transform (x/y/scale/opacity) lives here;
+   the tilt div's CSS translate/rotate compose with it. */
+.hand-coin-deal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* -- play slot ---------------------------------------------------------------- */
 
 .play-slot {

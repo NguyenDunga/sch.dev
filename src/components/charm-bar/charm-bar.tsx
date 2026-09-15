@@ -4,30 +4,10 @@
 // no game logic.
 
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { CHARMS } from '@/core/balance'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { CharmId } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-
-function CharmChip({ id }: { id: CharmId }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  const def = CHARMS.find((c) => c.id === id)
-  return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`charm-chip charm-chip--${id}${isDragging ? ' charm-chip--dragging' : ''}`}
-      {...attributes}
-      {...listeners}
-      title={`${def?.name ?? id} (${def?.category ?? ''})`}
-      aria-label={`${def?.name ?? id}, drag to reorder`}
-    >
-      {def?.name ?? id}
-    </button>
-  )
-}
+import { CharmChip } from './charm-chip';
 
 export function CharmBar() {
   const charms = useRunStore((s) => s.charms)
