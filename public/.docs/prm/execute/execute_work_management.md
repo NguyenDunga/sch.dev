@@ -227,7 +227,7 @@ One row per checkpoint, grouped by milestone. A checkpoint is `Done` only when i
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 13a.1 Auto-advance the buff phase (skip no-Echo buff) | Not started | | Explicit Score kept when a re-flip is available |
+| 13a.1 Auto-advance the buff phase (skip no-Echo buff) | Done | 2026-09-15 | UI flow convenience (same pattern as the auto-draw — `useAutoScore` in `run.tsx`), the store is untouched. When the buff phase opens with **no unused Echo re-flip** in the play, the run scores itself after the last tossed coin lands (`(n−1)·TOSS.stagger + TOSS.rise + 150ms`) by calling the same `handleScore` the button calls (snapshot + `score`). A hand with an available re-flip is never auto-scored (the player may want to re-flip first), and the explicit Score button stays as a fast-forward (a double score is a no-op — the store only scores from `buff`). Tests: `run.13a.test.tsx` (a no-Echo hand never stops in `buff`; an unused-Echo hand waits for input and the Score button still works; **auto vs. manual score changes no number** — same seed, identical blindScore/runScore/cash/lastScore/handsLeft/discard). 298/298 tests, tsc + lint green |
 | 13a.2 Keep unplayed coins in hand (replace dump-all) | Not started | | Only played coins → discard; updates M4/M8 conservation tests |
 | 13a.3 Rebalance: 4 hands, 24 mixed deck, halved targets | Not started | | Per balance-baseline; re-pin balance.test.ts (tier math untouched); decide BASE_DECK_SIZE vs HAND_SIZE_CAP |
 | 13a.4 Convert leftover hands to money on early clear | Not started | | Draft +$1/unused hand; auto-end vs keep-playing TBD; economy is a playtest watch |

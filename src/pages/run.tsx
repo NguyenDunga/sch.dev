@@ -6,7 +6,8 @@
 // (no auto-timer), and the Echo re-flip (buff). The Save button lands in
 // 12.9. 13.1 lands the deal/pick/discard motion (UX §5): the deck + discard
 // well piles, the staggered deal flight, the pick/unpick springs, and the
-// discard ghost (coin → well, fade). UI is a thin layer — it reads RunState
+// discard ghost (coin → well, fade). 13a.1 auto-advances a no-Echo buff
+// straight to scoring. UI is a thin layer — it reads RunState
 // and calls store actions; juice never mutates state (UX §0).
 
 import { useEffect, useRef, useState } from 'react'
@@ -318,6 +319,24 @@ function useUnpickSfx(unpickCoin: (i: number) => void) {
   }
 }
 
+/** 13a.1 — auto-advance buff → score when the buff phase has nothing for
+ *  the player (no unused Echo re-flip in the play). Waits for the last
+ *  tossed coin to land (stagger + rise) plus a short beat, then fires the
+ *  same handleScore the button calls (snapshot + score). The explicit
+ *  Score button stays as a fast-forward; a double score is a no-op (the
+ *  store only scores from 'buff'). A hand with an available re-flip is
+ *  never auto-scored (the player may want to re-flip first). */
+function useAutoScore(handPhase: HandPhase, play: Play, onScore: () => void) {
+  const reflipAvailable = play.some((_, i) => canReflipAt(play, handPhase, i))
+  useEffect(() => {
+    if (handPhase !== 'buff' || reflipAvailable) return
+    const n = play.filter(isFilled).length
+    const delay = ((n - 1) * TOSS.stagger + TOSS.rise + 0.15) * 1000
+    const id = window.setTimeout(onScore, delay)
+    return () => window.clearTimeout(id)
+  }, [handPhase, reflipAvailable, play, onScore])
+}
+
 export function RunScreen() {
   const hand = useRunStore((s) => s.hand)
   const play = useRunStore((s) => s.play)
@@ -332,8 +351,8 @@ export function RunScreen() {
   useAutoDraw()
   const { revealed, canPick, canConfirm, canScore, getReflip } = useRunFlags(handPhase, play)
   const { seq, beat, skipped, reduced, chipsRef, cashRef, handleScore } = useScoringChoro(score)
-  // 13.7 — the unpick click (UX §10).
-  const onUnpick = useUnpickSfx(unpickCoin)
+  useAutoScore(handPhase, play, handleScore) // 13a.1 — a no-Echo buff never waits for a Score click
+  const onUnpick = useUnpickSfx(unpickCoin) // 13.7 — the unpick click (UX §10)
 
   return (
     <main className="run-screen">
