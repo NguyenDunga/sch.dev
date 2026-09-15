@@ -83,6 +83,7 @@ afterEach(() => {
   cleanup()
   disposeParticles() // drop any particles the (stubbed) loop never drained
   setReduced(false)
+  vi.stubGlobal('devicePixelRatio', 1)
 })
 
 describe('13.5 — particle layer', () => {
@@ -128,6 +129,22 @@ describe('13.5 — particle layer', () => {
     // The rects were drawn (confetti is the 'rect' shape).
     frame(1000)
     expect(ctx2d.fillRect).toHaveBeenCalled()
+  })
+
+  it('caps the canvas DPR at 2 (UX §9: no 3× retina overdraw)', () => {
+    vi.stubGlobal('devicePixelRatio', 3)
+    render(<ParticleLayer />)
+    const c = document.querySelector('canvas.particle-layer') as HTMLCanvasElement
+    expect(c.width).toBe(window.innerWidth * 2)
+    expect(c.height).toBe(window.innerHeight * 2)
+  })
+
+  it('uses the real DPR when it is under the cap', () => {
+    vi.stubGlobal('devicePixelRatio', 1.5)
+    render(<ParticleLayer />)
+    const c = document.querySelector('canvas.particle-layer') as HTMLCanvasElement
+    expect(c.width).toBe(Math.floor(window.innerWidth * 1.5))
+    expect(c.height).toBe(Math.floor(window.innerHeight * 1.5))
   })
 })
 

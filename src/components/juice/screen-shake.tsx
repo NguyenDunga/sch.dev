@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { attachShakeEl } from './screen-shake'
 
-/** The shaken wrapper (the app root — the resolve shake and the target-clear
+/** The shaken wrapper (the app root â€” the resolve shake and the target-clear
  *  shake both move the whole screen). */
 export function ScreenShake({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
