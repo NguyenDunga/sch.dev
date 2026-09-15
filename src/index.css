@@ -7,6 +7,7 @@
 @import "./components/hand/coin.css";
 @import "./components/hand/toss-coin.css";
 @import "./components/hand/score-ticker.css";
+@import "./components/juice/choreo.css";
 @import "./components/run/run.css";
 @import "./components/shop/shop.css";
 @import "./components/run/run-end.css";

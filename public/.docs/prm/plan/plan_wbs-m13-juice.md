@@ -10,7 +10,7 @@
 
 - [x] 13.1 **Deal/pick/discard motion** — `deal`, `pick`, `unpick`, `discard` animations per the [UX §5 table](../../sdd/software_design_ux.md) (springs, staggers).
 - [x] 13.2 **Toss + Echo** — the 3D flip/settle and single-coin echo re-toss (M12.5 plumbing) tuned to `spring-bouncy`; lands on `Slot.face`.
-- [ ] 13.3 **Scoring choreography** — the 7-beat sequence in [UX §6](../../sdd/software_design_ux.md): reveal/match pulse → tier banner slam → chips build (flying chips + pitch-rising ticker) → mult flare → resolve (collide + total count-up) → cash fly → settle. Driven by `lastScore`.
+- [x] 13.3 **Scoring choreography** — the 7-beat sequence in [UX §6](../../sdd/software_design_ux.md): reveal/match pulse → tier banner slam → chips build (flying chips + pitch-rising ticker) → mult flare → resolve (collide + total count-up) → cash fly → settle. Driven by `lastScore`.
 - [ ] 13.4 **Skip/fast-forward** — a tap/key during the sequence jumps to the settled end state; verify no number changes vs. letting it play out.
 - [ ] 13.5 **Particles** — chip bursts, coin sparkles, cash coins, and canvas-confetti on blind clear ([UX §7](../../sdd/software_design_ux.md)); colors from the active tier tokens.
 - [ ] 13.6 **Screen shake** — amplitude scaled by tier with exponential decay (UX §7); **zero** under reduced-motion.

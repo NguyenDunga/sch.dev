@@ -1,0 +1,128 @@
+/*
+ * Scoring choreography (13.3) — the fixed celebration layer (SDD UX §6).
+ * pointer-events: none — it never blocks input (UX §0/§9). Ceramic Tactile
+ * (UX §2): glow rings + hard offsets only, no blurred shadows.
+ */
+
+.choreo-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* beat 1 — the revealed coin row (centered at the play row's height). */
+.choreo-coins {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.choreo-coins--fade {
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-out);
+}
+
+.choreo-coin {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.choreo-coin--h {
+  background: var(--heads);
+  color: var(--ink);
+}
+
+.choreo-coin--t {
+  background: var(--tails);
+  color: var(--surface);
+}
+
+.choreo-coin--dim {
+  opacity: 0.45;
+}
+
+/* the matched pattern: a glow ring in the tier color (light, not shadow). */
+.choreo-coin--match {
+  box-shadow: 0 0 0 3px var(--tier, var(--primary));
+}
+
+/* beat 2 — the tier banner (the wrapper carries the centering transform so
+ * framer's scale animation doesn't fight it). */
+.choreo-banner-wrap {
+  position: absolute;
+  top: 26%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.choreo-banner {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+  padding: 0.35rem 1.25rem;
+  border-radius: var(--r-md);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-hard);
+  white-space: nowrap;
+}
+
+.choreo-banner--none {
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
+}
+
+/* the full-screen flash (tier color on beat 2, --primary on big hits). */
+.choreo-flash {
+  position: fixed;
+  inset: 0;
+}
+
+.choreo-flash--primary {
+  background: var(--primary);
+}
+
+/* beat 3 — the flying chips (fixed at 0,0; framer moves them in viewport
+ * coords from the coin row to the chips counter). */
+.choreo-chip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ink);
+}
+
+/* beat 6 — the cash coins (Tax/Jackpot payers fly to the cash counter). */
+.choreo-cash-coin {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  background: var(--heads);
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 700;
+}

@@ -20,10 +20,64 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
+import type { Face } from '@/core/types'
+import { some } from '@/core/helpers'
+
+/**
+ * A matchMedia stub for framer's useReducedMotion (installed at module
+ * level, before any render, so framer's one-time read sees it): motion-dom
+ * reads `window.matchMedia("(prefers-reduced-motion)")` once and subscribes
+ * to its `change` events; `setReduced` flips the preference (the 13.3
+ * reduced-motion test) and resets after each test.
+ */
+const reduced = (() => {
+  const listeners: Array<() => void> = []
+  const mql = {
+    matches: false,
+    media: '(prefers-reduced-motion)',
+    onchange: null,
+    addEventListener: (_event: string, fn: () => void) => listeners.push(fn),
+    removeEventListener: (fn: () => void) => {
+      const i = listeners.indexOf(fn)
+      if (i >= 0) listeners.splice(i, 1)
+    },
+    addListener: (fn: () => void) => listeners.push(fn),
+    removeListener: (fn: () => void) => {
+      const i = listeners.indexOf(fn)
+      if (i >= 0) listeners.splice(i, 1)
+    },
+    dispatchEvent: vi.fn(),
+  }
+  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
+  return {
+    setReduced: (r: boolean) => {
+      mql.matches = r
+      listeners.forEach((fn) => fn())
+    },
+  }
+})()
 
 afterEach(() => {
   cleanup()
+  reduced.setReduced(false)
 })
+
+/** Observe <body> (the choreo overlay is portaled there) for the given
+ *  selector; collects the class names that ever appeared while observing. */
+function observeFlights(selector: string): { seen: string[]; stop: () => void } {
+  const seen: string[] = []
+  const mo = new MutationObserver(() => {
+    document.querySelectorAll(selector).forEach((el) => {
+      const c = el.className
+      if (!seen.includes(c)) seen.push(c)
+    })
+  })
+  mo.observe(document.body, { childList: true, subtree: true })
+  return {
+    seen,
+    stop: () => mo.disconnect(),
+  }
+}
 
 describe('13.1 — run screen piles + discard ghost', () => {
   beforeAll(() => {
@@ -145,5 +199,115 @@ describe('13.2 — toss + echo (lands on Slot.face)', () => {
         slot.face === 'H' ? 'heads' : 'tails',
       )
     }
+  })
+})
+
+describe('13.3 — scoring choreography (the 7 beats)', () => {
+  beforeAll(() => {
+    vi.stubGlobal('localStorage', makeLocalStorage())
+  })
+
+  /** A run with 4 coins picked, confirmed, and the play faces forced to
+   *  HHHH (fourRow: 40 × 3 = 120, no coin cash). */
+  function fourRowRun(seed: string) {
+    useRunStore.getState().startRun(seed)
+    useRunStore.getState().drawHand()
+    render(<RunScreen />)
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    }
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+    const { play } = useRunStore.getState()
+    useRunStore.setState({ play: play.map((s) => (s.kind === 'filled' ? { ...s, face: 'H' as const } : s)) })
+  }
+
+  it('Score plays the sequence to the end: banner, chip flights, ticker settles on the store numbers', async () => {
+    fourRowRun('juice-choro')
+    const flights = observeFlights('.choreo-chip')
+    fireEvent.click(screen.getByRole('button', { name: /score/i }))
+
+    // Beat 2: the tier banner slams in with the tier name.
+    await waitFor(() => expect(screen.getByText('4-IN-A-ROW')).toBeTruthy())
+    // The sequence runs to the end (≤ ~2.4s budget): the overlay is gone
+    // and the ticker rests on the store's numbers.
+    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
+    flights.stop()
+    expect(flights.seen.length).toBeGreaterThan(0) // the matched chips flew
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
+
+    // The numbers come from the store (juice never mutates state, UX §0).
+    const { lastScore, blindScore } = useRunStore.getState()
+    expect(blindScore).toBe(120)
+    expect(lastScore).toEqual(
+      some({ kind: 'scored', tier: 'fourRow', chips: 40, mult: 3, total: 120, cash: 0 }),
+    )
+  })
+
+  it('a tap during the sequence skips to the settled end; no number changes', async () => {
+    fourRowRun('juice-skip')
+    const cashBefore = useRunStore.getState().cash
+    fireEvent.click(screen.getByRole('button', { name: /score/i }))
+
+    // Wait for the banner (beat 2), then tap anywhere → skip to the end.
+    await waitFor(() => expect(screen.getByText('4-IN-A-ROW')).toBeTruthy())
+    fireEvent.pointerDown(document.body)
+
+    // Snapped: the overlay is gone and the ticker shows the final numbers
+    // instantly (no count-up left to play).
+    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'))
+
+    // No number changes: the store numbers are exactly what score() set —
+    // the same values the full-sequence test settles on.
+    const { lastScore, blindScore, cash } = useRunStore.getState()
+    expect(blindScore).toBe(120)
+    expect(cash).toBe(cashBefore)
+    expect(lastScore).toEqual(
+      some({ kind: 'scored', tier: 'fourRow', chips: 40, mult: 3, total: 120, cash: 0 }),
+    )
+  })
+
+  it('a no-tier hand plays the "No match" banner and the cash lands', async () => {
+    useRunStore.getState().startRun('juice-nomatch')
+    useRunStore.getState().drawHand()
+    render(<RunScreen />)
+    // Force a Tax coin into the first hand slot, then pick 2 coins (HT →
+    // no tier; the tax pays $1 cash).
+    const hand = useRunStore.getState().hand
+    useRunStore.setState({
+      hand: hand.map((s, i) =>
+        i === 0 && s.kind === 'filled' ? { ...s, coin: { ...s.coin, effects: [{ kind: 'tax' as const }] } } : s,
+      ),
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }))
+    const { play } = useRunStore.getState()
+    useRunStore.setState({
+      play: play.map((s, i) => (s.kind === 'filled' ? { ...s, face: (i === 0 ? 'H' : 'T') as Face } : s)),
+    })
+    const cashBefore = useRunStore.getState().cash
+    fireEvent.click(screen.getByRole('button', { name: /score/i }))
+
+    // The "No match" banner (not a tier slam) and the cash landing.
+    await waitFor(() => expect(screen.getByText('No match')).toBeTruthy())
+    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
+    expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash')
+    expect(useRunStore.getState().cash).toBe(cashBefore + 1)
+  })
+
+  it('reduced motion: fast beats, no flights (UX §8)', async () => {
+    reduced.setReduced(true)
+    fourRowRun('juice-reduced')
+    const flights = observeFlights('.choreo-chip, .choreo-cash-coin')
+    const t0 = Date.now()
+    fireEvent.click(screen.getByRole('button', { name: /score/i }))
+    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 2000 })
+    flights.stop()
+    // The reduced budget is ~1s (vs ~2.2s with motion).
+    expect(Date.now() - t0).toBeLessThan(1500)
+    // No chip/cash flights in reduced motion.
+    expect(flights.seen).toEqual([])
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
   })
 })

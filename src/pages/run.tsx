@@ -25,6 +25,10 @@ import { CharmBar } from '@/components/charm-bar/charm-bar'
 import { Deck, DiscardWell } from '@/components/run/piles'
 import { DiscardGhostLayer, type DiscardGhost } from '@/components/run/discard-ghost'
 import { computeDealIndex, idsOf, sameIds, type PrevSlots } from '@/components/run/deal'
+import { ScoringChoreography } from '@/components/juice/scoring-choreography'
+import { takeSnapshot } from '@/components/juice/choreography'
+import { useScoringChoreography } from '@/components/juice/use-scoring-choreography'
+import type { Beat, ChoroSeq, PlaySnapshot } from '@/components/juice/choreography'
 
 /** { the previous hand/play ids, the deals computed from them }. */
 interface DealState {
@@ -218,6 +222,58 @@ function PlayArea({
   )
 }
 
+/** 13.3 — the scoring choreography wiring: the play snapshot is captured
+ *  at the Score tap, right before score() (the store empties the play
+ *  synchronously — read from the store, not the render closure, so it is
+ *  always current), then the 7-beat sequence plays over lastScore
+ *  (purely presentational, UX §0/§6). */
+function useScoringChoro(score: () => void) {
+  const snapshotRef = useRef<PlaySnapshot | null>(null)
+  const { seq, beat, skipped, reduced } = useScoringChoreography(snapshotRef)
+  const chipsRef = useRef<HTMLSpanElement>(null)
+  const cashRef = useRef<HTMLSpanElement>(null)
+  const handleScore = () => {
+    const s = useRunStore.getState()
+    snapshotRef.current = takeSnapshot(s.play, s.charms)
+    score()
+  }
+  return { seq, beat, skipped, reduced, chipsRef, cashRef, handleScore }
+}
+
+interface RunPortalsProps {
+  ghosts: DiscardGhost[]
+  removeGhost: (key: number) => void
+  /** The choreography view (13.3): the sequence + beat + the flight refs. */
+  choro: {
+    seq: ChoroSeq | null
+    beat: Beat
+    reduced: boolean
+    chipsRef: RefObject<HTMLSpanElement | null>
+    cashRef: RefObject<HTMLSpanElement | null>
+  }
+}
+
+/** The portaled fixed layers (13.1 discard ghost + 13.3 choreo): portaled
+ *  to <body> so the fixed layers track viewport coords even while the
+ *  screen-in/out transform is active. */
+function RunPortals({ ghosts, removeGhost, choro }: RunPortalsProps) {
+  return (
+    <>
+      {createPortal(<DiscardGhostLayer ghosts={ghosts} onDone={removeGhost} />, document.body)}
+      {createPortal(
+        <ScoringChoreography
+          seq={choro.seq}
+          beat={choro.beat}
+          reduced={choro.reduced}
+          chipsRef={choro.chipsRef}
+          cashRef={choro.cashRef}
+        />,
+        document.body,
+      )}
+    </>
+  )
+}
+
 export function RunScreen() {
   const hand = useRunStore((s) => s.hand)
   const play = useRunStore((s) => s.play)
@@ -229,12 +285,11 @@ export function RunScreen() {
   const wellRef = useRef<HTMLDivElement>(null)
   const deals = useDeals(hand, play)
   const { discardMode, setDiscardMode, shake, handleHandTap, handleConfirm, ghosts, removeGhost } = useHandFlow(
-    hand,
-    play,
-    wellRef,
+    hand, play, wellRef,
   )
   useAutoDraw()
   const { revealed, canPick, canConfirm, canScore, getReflip } = useRunFlags(handPhase, play)
+  const { seq, beat, skipped, reduced, chipsRef, cashRef, handleScore } = useScoringChoro(score)
 
   return (
     <main className="run-screen">
@@ -256,7 +311,12 @@ export function RunScreen() {
         onUnpick={unpickCoin}
         getReflip={getReflip}
       />
-      <ScoreTicker score={lastScore} />
+      <ScoreTicker
+        score={lastScore}
+        choro={seq ? { runId: seq.runId, beat, skipped } : null}
+        chipsRef={chipsRef}
+        cashRef={cashRef}
+      />
       <ActionBar
         handPhase={handPhase}
         discardMode={discardMode}
@@ -264,11 +324,13 @@ export function RunScreen() {
         canScore={canScore}
         onToggleDiscard={() => setDiscardMode((m) => !m)}
         onConfirm={handleConfirm}
-        onScore={score}
+        onScore={handleScore}
       />
-      {/* Portaled to <body>: the fixed ghost must track viewport coords even
-          while the screen-in/out transform is active (13.1). */}
-      {createPortal(<DiscardGhostLayer ghosts={ghosts} onDone={removeGhost} />, document.body)}
+      <RunPortals
+        ghosts={ghosts}
+        removeGhost={removeGhost}
+        choro={{ seq, beat, reduced, chipsRef, cashRef }}
+      />
     </main>
   )
 }

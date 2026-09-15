@@ -38,3 +38,18 @@
   font-weight: 600;
   color: var(--cash);
 }
+
+/* 13.3 — choreography beats: the mult flare (color ramps toward hot) and
+ * the resolve collide (inline-block so the transforms apply). */
+.score-ticker-chips,
+.score-ticker-mult {
+  display: inline-block;
+}
+
+.score-ticker-mult {
+  transition: color 0.12s var(--ease-out);
+}
+
+.score-ticker-mult--flare {
+  color: var(--primary);
+}
