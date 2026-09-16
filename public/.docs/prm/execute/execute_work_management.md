@@ -294,13 +294,17 @@ Net: a typical hand that discards once and has no Echo now costs **3 fewer inter
 
 ### M14 — Test Suite Completion → [wbs](../plan/plan_wbs-m14-tests.md)
 
+> **M14 (2026-09-17):** consolidate and confirm coverage before README/ship. 14.1–14.5 **Done** (2026-09-17).
+
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 14.1 Every core module + store has a test | Not started | | |
-| 14.2 Full suite 100% green | Not started | | |
-| 14.3 Determinism regression (draw-order + state/restore) | Not started | | |
-| 14.4 Boundary sweep (k × tiers) | Not started | | |
-| 14.5 No `Math.random` in core/state | Not started | | |
+| 14.1 Every core module + store has a test | Done | 2026-09-17 | `src/core/rng.test.ts`, `src/core/deck.test.ts`, `src/core/scoring.test.ts`, `src/state/handFlow.test.ts` (57 tests covering the run store lifecycle). |
+| 14.2 Full suite 100% green | Done | 2026-09-17 | 424 tests across 33 files, all passing. |
+| 14.3 Determinism regression (draw-order + state/restore) | Done | 2026-09-17 | `src/core/m14-determinism.test.ts`: 3-blind loop (draw → pick → confirm → score → shop → leave) with a fixed seed; full observable trace identical across two runs. RNG state/restore contract verified mid-run. |
+| 14.4 Boundary sweep (k × tiers) | Done | 2026-09-17 | `src/core/m14-boundary-sweep.test.ts`: 24 tests covering 1/2/3/4/5 coins × all 6 tiers through `matchTier` + `scoreHand`, including charm boosters and boss rules. |
+| 14.5 No `Math.random` in core/state | Done | 2026-09-17 | `src/core/m14-no-math-random.test.ts`: recursive scan of all non-test `.ts`/`.tsx` in `src/core/` + `src/state/`, skipping comments; fails on any `Math.random(` call. |
+
+**M14 exit-gate status (2026-09-17):** all 5 checkpoints Done; `tsc --noEmit` clean; `eslint` clean; 424/424 tests green (33 files); determinism regression + boundary sweep pass; no `Math.random` in engine/store.
 
 ### M15 — README & Final Packaging → [wbs](../plan/plan_wbs-m15-readme.md)
 
