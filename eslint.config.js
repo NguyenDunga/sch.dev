@@ -28,9 +28,9 @@ export default defineConfig([
   },
   {
     // NASA practice: no function longer than 60 lines.
-    // Excluded: test files (describe blocks) and the dev-only debug page.
-    files: ['**/*.{ts,tsx}'],
-    ignores: ['**/*.test.ts', '**/*.test.tsx', 'src/pages/debug.tsx'],
+    // Applies to all .ts files in src; test files excluded.
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.test.ts'],
     rules: {
       'max-lines-per-function': ['error', { max: 60 }],
     },
