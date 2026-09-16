@@ -5,8 +5,13 @@
 //
 // States (UX §3): default / hover (lift 4px + tilt toward cursor, max 8°,
 // badges brighten) / press (depress 2px) / disabled (desaturated, no
-// offset, cursor not-allowed) / focus-visible (3px coral ring). "Selected"
+// offset, cursor not-allowed) / focus-visible (3px coral ring) / selected
+// (13a.5 multi-select: lift 6px + coral ring). "Selected" for a plain click
 // is the pick itself — the coin springs out of the hand.
+//
+// 13a.5 drag & multi-select: `dragProps` carries dnd-kit's pointer
+// listeners (press-drag to the play row); `onSelectClick` routes
+// Ctrl/Cmd+click (toggle) and Shift+click (range) before a plain pick.
 //
 // Deal (13.1, UX §5): a coin that just came from the deck (`dealIndex`
 // defined) flies in from the deck side — 220ms, 40ms stagger per deal
@@ -15,9 +20,10 @@
 // slot → hand, spring-soft) play instead. Reduced motion: quick fade, no
 // flight/stagger (UX §8).
 
-import { useRef } from 'react'
-import type { PointerEvent } from 'react'
+import { forwardRef, useRef } from 'react'
+import type { MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { DEAL, EASING, SPRING } from '@/lib/motion'
 import type { Coin } from '@/core/types'
 import { CoinBadges } from './coin-badges'
@@ -35,6 +41,14 @@ interface HandCoinProps {
   /** Stagger index among the freshly dealt coins (undefined = not a fresh
    *  deal — e.g. an unpick return, which uses the layout crossfade). */
   dealIndex?: number
+  /** 13a.5: the coin is in the multi-selection (lift + coral ring). */
+  selected?: boolean
+  /** 13a.5: a drag is in flight (the original dims; the overlay follows). */
+  dragging?: boolean
+  /** 13a.5: dnd-kit pointer listeners (press-drag to the play row). */
+  dragProps?: DraggableSyntheticListeners
+  /** 13a.5: Ctrl/Cmd+click / Shift+click routing — true = handled (no pick). */
+  onSelectClick?: (e: ReactMouseEvent<HTMLButtonElement>) => boolean
   onPick: (el: HTMLElement) => void
 }
 
@@ -58,17 +72,15 @@ function dealProps(dealIndex: number | undefined, reduceMotion: boolean) {
   }
 }
 
-export function HandCoin({ coin, index, enabled, shaking, shakeKey, dealIndex, onPick }: HandCoinProps) {
-  // The tilt is written straight to the DOM (no re-render per pointermove).
-  // It lives on the inner div so it composes with the hover lift (CSS
-  // `translate`) and the layout animation (framer `transform` on the button).
+/** The hover tilt (UX §3): written straight to the DOM (no re-render per
+ *  pointermove). Gated off under reduced motion (UX §8) and mid-drag. */
+function useCoinTilt(enabled: boolean, dragging: boolean) {
   const tiltRef = useRef<HTMLDivElement>(null)
   const reduceMotion = useReducedMotion() ?? false
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
     const el = tiltRef.current
-    // UX §8: no hover tilt under reduced motion.
-    if (!el || !enabled || reduceMotion) return
+    if (!el || !enabled || reduceMotion || dragging) return
     const rect = e.currentTarget.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
     const x = (e.clientX - rect.left) / rect.width - 0.5 // -0.5..0.5
@@ -83,20 +95,46 @@ export function HandCoin({ coin, index, enabled, shaking, shakeKey, dealIndex, o
     if (tiltRef.current) tiltRef.current.style.transform = ''
   }
 
+  return { tiltRef, onPointerMove, onPointerLeave, reduceMotion }
+}
+
+/** The a11y label: position, selection state, effect kinds. */
+function coinAriaLabel(index: number, selected: boolean, effects: Coin['effects']): string {
+  const fx = effects.length ? ` (${effects.map((e) => e.kind).join(', ')})` : ''
+  return `Pick coin ${index + 1}${selected ? ' (selected)' : ''}${fx}`
+}
+
+export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function HandCoin(
+  { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick },
+  ref,
+) {
+  const { tiltRef, onPointerMove, onPointerLeave, reduceMotion } = useCoinTilt(enabled, !!dragging)
+
+  const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    // 13a.5: Ctrl/Cmd+click (toggle) and Shift+click (range) are selection
+    // gestures — they never pick. A plain click picks (the fallback).
+    if (onSelectClick?.(e)) return
+    onPick(e.currentTarget)
+  }
+
   const { initial, transition } = dealProps(dealIndex, reduceMotion)
 
   return (
     <motion.button
+      ref={ref}
       type="button"
       layoutId={`coin-${coin.id}`}
       layout
       transition={{ layout: SPRING.soft }}
-      className={`hand-coin${enabled ? '' : ' hand-coin--disabled'}`}
+      className={`hand-coin${enabled ? '' : ' hand-coin--disabled'}${selected ? ' hand-coin--selected' : ''}${
+        dragging ? ' hand-coin--dragging' : ''
+      }`}
       disabled={!enabled}
-      onClick={(e) => onPick(e.currentTarget)}
+      onClick={handleClick}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
-      aria-label={`Pick coin ${index + 1}${coin.effects.length ? ` (${coin.effects.map((e) => e.kind).join(', ')})` : ''}`}
+      {...dragProps}
+      aria-label={coinAriaLabel(index, !!selected, coin.effects)}
     >
       {/* The deal-flight layer: animates once on mount (fresh deal only).
           Kept separate from the tilt div so the shake remount (key) never
@@ -115,4 +153,4 @@ export function HandCoin({ coin, index, enabled, shaking, shakeKey, dealIndex, o
       </motion.div>
     </motion.button>
   )
-}
+})

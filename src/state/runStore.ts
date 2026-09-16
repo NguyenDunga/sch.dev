@@ -28,6 +28,7 @@ import {
   score,
   startRun,
   unpickCoinDraft,
+  movePlayCoinDraft,
 } from './handActions'
 import {
   buyDraft,
@@ -48,6 +49,8 @@ export interface RunActions {
   pickCoin: (handIndex: number) => void
   /** play: return a play coin to the first empty hand slot. */
   unpickCoin: (slotIndex: number) => void
+  /** 13a.5 play: reorder the play row (move onto empty, swap onto filled). */
+  movePlayCoin: (from: number, to: number) => void
   /** play (unlimited): hand coin → discard pile (gone for the blind); draw-enchant coins redraw N face-down. */
   discard: (handIndex: number) => void
   /** play → toss → buff: resolveFace per picked coin in play order (requires ≥1 picked). */
@@ -123,6 +126,7 @@ export function createRunStore() {
       drawHand: () => set((st) => drawHandDraft(st, rng)),
       pickCoin: (handIndex) => set((st) => pickCoinDraft(st, handIndex)),
       unpickCoin: (slotIndex) => set((st) => unpickCoinDraft(st, slotIndex)),
+      movePlayCoin: (from, to) => set((st) => movePlayCoinDraft(st, from, to)),
       discard: (handIndex) => set((st) => discardDraft(st, handIndex)),
       confirmPlay: () => confirmPlay(get, set, rng),
       echoReflip: (slotIndex) => set((st) => echoReflipDraft(st, slotIndex, rng)),

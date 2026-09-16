@@ -260,6 +260,56 @@ describe('M4.3 — pickCoin / unpickCoin', () => {
   })
 })
 
+describe('M13a.5 — movePlayCoin (play-row reorder)', () => {
+  it('moves a play coin onto an empty slot', () => {
+    const store = drawnStore('13a5-m1')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(1)
+    const id0 = coinId(store.getState().play[0])
+    const id1 = coinId(store.getState().play[1])
+
+    store.getState().movePlayCoin(0, 3)
+    const st = store.getState()
+    expect(coinId(st.play[3])).toBe(id0)
+    expect(coinId(st.play[0])).toBe(-1)
+    expect(coinId(st.play[1])).toBe(id1) // untouched
+  })
+
+  it('swaps two filled slots', () => {
+    const store = drawnStore('13a5-m2')
+    store.getState().pickCoin(0)
+    store.getState().pickCoin(1)
+    const id0 = coinId(store.getState().play[0])
+    const id1 = coinId(store.getState().play[1])
+
+    store.getState().movePlayCoin(1, 0)
+    const st = store.getState()
+    expect(coinId(st.play[0])).toBe(id1)
+    expect(coinId(st.play[1])).toBe(id0)
+  })
+
+  it('is a no-op outside the play phase', () => {
+    const store = drawnStore('13a5-m3')
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay() // → buff
+    const before = store.getState()
+
+    store.getState().movePlayCoin(0, 1)
+    expect(store.getState().play).toEqual(before.play)
+  })
+
+  it('is a no-op for an empty source, out-of-range, or same index', () => {
+    const store = drawnStore('13a5-m4')
+    store.getState().pickCoin(0)
+    const before = store.getState()
+
+    store.getState().movePlayCoin(1, 0) // empty source
+    store.getState().movePlayCoin(0, PLAY_SIZE) // out of range
+    store.getState().movePlayCoin(0, 0) // same index
+    expect(store.getState().play).toEqual(before.play)
+  })
+})
+
 describe('M4.4 — discard', () => {
   it('a plain coin goes to the discard pile (gone for the blind)', () => {
     const store = drawnStore('m4-4a')

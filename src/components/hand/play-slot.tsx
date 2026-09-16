@@ -10,6 +10,7 @@
 // play slot via a shared framer-motion `layoutId`.
 
 import { motion } from 'framer-motion'
+import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import type { HandSlot } from '@/core/types'
 import { SPRING } from '@/lib/motion'
 import { CoinBadges } from './coin-badges'
@@ -24,55 +25,85 @@ interface PlaySlotProps {
   onUnpick: () => void
   /** Buff phase: re-flip an unused Echo coin (provided only when allowed). */
   onReflip?: () => void
+  /** 13a.5: droppable ref for the slot root (reorder drop target). */
+  slotRef?: (el: HTMLElement | null) => void
+  /** 13a.5: a drag hovers over this slot (dashed ring). */
+  over?: boolean
+  /** 13a.5: draggable ref for the face-down coin (reorder). */
+  dragRef?: (el: HTMLElement | null) => void
+  /** 13a.5: the face-down coin is being dragged (dims). */
+  dragging?: boolean
+  /** 13a.5: dnd-kit pointer listeners for the face-down coin. */
+  dragProps?: DraggableSyntheticListeners
 }
 
-export function PlaySlot({ index, slot, revealed, onUnpick, onReflip }: PlaySlotProps) {
+/** Tossed (revealed) coin: settles on the resolved face (12.5); in the buff
+ *  phase an unused Echo coin is tappable to re-flip (12.6) — the TossCoin is
+ *  keyed by face + echoUsed so it re-mounts (and re-animates, quick) when the
+ *  re-flip resolves a new face. */
+function RevealedSlot({ slot, index, onReflip }: { slot: Extract<HandSlot, { kind: 'filled' }>; index: number; onReflip?: () => void }) {
+  const coin = slot.coin
+  const toss = (
+    <TossCoin
+      key={`${coin.id}-${slot.face}-${slot.echoUsed}`}
+      face={slot.face}
+      index={index}
+      effects={coin.effects}
+      quick={slot.echoUsed}
+    />
+  )
+  if (onReflip) {
+    return (
+      <button type="button" className="play-slot play-slot--reflip" onClick={onReflip} aria-label={`re-flip slot ${index + 1}`}>
+        {toss}
+      </button>
+    )
+  }
+  return toss
+}
+
+export function PlaySlot({
+  index,
+  slot,
+  revealed,
+  onUnpick,
+  onReflip,
+  slotRef,
+  over,
+  dragRef,
+  dragging,
+  dragProps,
+}: PlaySlotProps) {
   if (slot.kind === 'empty') {
     return (
-      <div className="play-slot" aria-hidden>
+      <div ref={slotRef} className={`play-slot${over ? ' play-slot--over' : ''}`} aria-hidden>
         <span className="play-slot-index">{index + 1}</span>
       </div>
     )
   }
 
-  const coin = slot.coin
+  if (revealed) return <RevealedSlot slot={slot} index={index} onReflip={onReflip} />
 
-  // Revealed (toss/buff/score): the 3D toss coin settles on the resolved face
-  // (12.5). In the buff phase an unused Echo coin is tappable to re-flip
-  // (12.6) — the TossCoin is keyed by face + echoUsed so it re-mounts (and
-  // re-animates, quick) when the re-flip resolves a new face.
-  if (revealed) {
-    const toss = (
-      <TossCoin
-        key={`${coin.id}-${slot.face}-${slot.echoUsed}`}
-        face={slot.face}
-        index={index}
-        effects={coin.effects}
-        quick={slot.echoUsed}
-      />
-    )
-    if (onReflip) {
-      return (
-        <button type="button" className="play-slot play-slot--reflip" onClick={onReflip} aria-label={`re-flip slot ${index + 1}`}>
-          {toss}
-        </button>
-      )
-    }
-    return toss
-  }
+  const coin = slot.coin
 
   // Face-down (play): the 2D coin seated in the well, tappable to unpick.
   // Pick (13.1, UX §5): the coin springs in with `spring-snappy` — the
   // crossfade plays on the element that mounts (this one). Unpick uses
   // `spring-soft` (the hand coin's layout transition).
+  // 13a.5: draggable (reorder the row) + a drop target (move/swap).
   return (
     <motion.button
+      ref={(el) => {
+        slotRef?.(el)
+        dragRef?.(el)
+      }}
       type="button"
-      className="play-slot play-slot--filled"
+      className={`play-slot play-slot--filled${over ? ' play-slot--over' : ''}${dragging ? ' play-slot--dragging' : ''}`}
       layoutId={`coin-${coin.id}`}
       layout
       transition={SPRING.snappy}
       onClick={onUnpick}
+      {...dragProps}
       aria-label={`slot ${index + 1}, unpick`}
     >
       <CoinDisc face={undefined} />

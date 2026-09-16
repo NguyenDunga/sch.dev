@@ -119,6 +119,20 @@ export function unpickCoinDraft(st: Draft, slotIndex: number): void {
   st.play[slotIndex] = { kind: 'empty' }
 }
 
+/** 13a.5: reorder the play row (drag a face-down play coin onto another
+ *  slot). Move onto an empty slot, swap onto a filled one. Only in the play
+ *  phase — the toss plays the row in its final order (order-dependent tiers:
+ *  tripleRun / alternating / fourRow). */
+export function movePlayCoinDraft(st: Draft, from: number, to: number): void {
+  if (st.phase !== 'run' || st.handPhase !== 'play') return
+  if (from === to || from < 0 || to < 0 || from >= PLAY_SIZE || to >= PLAY_SIZE) return
+  const a = st.play[from]
+  if (!a || a.kind !== 'filled') return
+  const b = st.play[to]
+  st.play[to] = a
+  st.play[from] = b
+}
+
 export function discardDraft(st: Draft, handIndex: number): void {
   if (st.phase !== 'run' || st.handPhase !== 'play') return
   const slot = st.hand[handIndex]

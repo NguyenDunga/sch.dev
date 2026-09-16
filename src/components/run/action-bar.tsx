@@ -11,6 +11,8 @@ interface ActionBarProps {
   discardMode: boolean
   canConfirm: boolean
   canScore: boolean
+  /** 13a.5: the multi-selection count (a "N selected" hint). */
+  selectedCount: number
   onToggleDiscard: () => void
   onConfirm: () => void
   onScore: () => void
@@ -21,6 +23,7 @@ export function ActionBar({
   discardMode,
   canConfirm,
   canScore,
+  selectedCount,
   onToggleDiscard,
   onConfirm,
   onScore,
@@ -37,6 +40,11 @@ export function ActionBar({
           >
             {discardMode ? 'Discarding' : 'Discard'}
           </Button>
+          {selectedCount > 0 && (
+            <span className="selection-hint" role="status">
+              {selectedCount} selected
+            </span>
+          )}
           <Button size="xl" pulse={canConfirm} disabled={!canConfirm} onClick={onConfirm}>
             Confirm
           </Button>

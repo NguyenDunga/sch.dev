@@ -284,14 +284,72 @@
   flex-wrap: wrap;
 }
 
+/* -- 13a.5: multi-select + drag ------------------------------------------------ */
+
+/* selected: lifted 6px + a hard coral ring on the disc (UX §3 — the visible
+   selected state; ring + lift, not color alone). */
+.hand-coin--selected .hand-coin-tilt {
+  translate: 0 -6px;
+}
+
+.hand-coin--selected .coin-disc {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* dragging: the original dims — the DragOverlay copy follows the pointer. */
+.hand-coin--dragging {
+  opacity: 0.35;
+}
+
+/* the drag overlay copy (dnd-kit positions it; no pointer events). */
+.coin-drag-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+/* the play row drop target: a dashed ring while a coin hovers over it. */
+.play-drop-zone {
+  border-radius: var(--r-md);
+}
+
+.play-drop-zone--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 4px;
+}
+
+/* 13a.5: an individual slot under a dragged coin (reorder drop target). */
+.play-slot--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 2px;
+}
+
+/* 13a.5: the original play coin dims while its drag copy is in flight. */
+.play-slot--dragging {
+  opacity: 0.35;
+}
+
+/* the selection count hint (action bar). */
+.selection-hint {
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Reduced motion (UX §8): no hover lift/tilt (the badge brightening stays —
    it is a color change, not motion). The JS pointer tilt is gated in
-   hand-coin.tsx. */
+   hand-coin.tsx. The selected lift is motion too — the ring stays. */
 @media (prefers-reduced-motion: reduce) {
   .hand-coin:hover:not(:disabled) .hand-coin-tilt,
   .hand-coin:active:not(:disabled) .hand-coin-tilt,
   .play-slot--reflip:hover,
   .play-slot--reflip:active {
+    translate: none;
+  }
+  .hand-coin--selected .hand-coin-tilt {
     translate: none;
   }
   /* the 6th-pick shake is motion too (the error sfx still plays). */
