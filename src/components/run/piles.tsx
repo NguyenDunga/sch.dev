@@ -10,6 +10,7 @@
 
 import type { RefObject } from 'react'
 import { Trash2 } from 'lucide-react'
+import { FaceDownIcon } from '@/components/icons'
 import { useRunStore } from '@/state/runStore'
 
 /** The draw pile: a small stack of face-down discs + its count. */
@@ -20,7 +21,9 @@ export function Deck() {
       <div className="deck-stack" aria-hidden>
         <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--2" />
         <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--1" />
-        <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--top">?</span>
+        <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--top">
+          <FaceDownIcon size={16} strokeWidth={2} aria-hidden />
+        </span>
       </div>
       <span className="pile-count">{count}</span>
     </div>

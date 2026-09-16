@@ -126,8 +126,8 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
       ),
     })
     render(<RunScreen />)
-    // The redraw pip (↻2 badge) is visible on the coin before the discard.
-    expect(screen.getByText('↻2')).toBeTruthy()
+    // 13c.4 — the redraw pip (Draw icon) is visible on the coin before the discard.
+    expect(document.querySelector('.coin-badge svg')).toBeTruthy()
 
     const coin = screen.getAllByRole('button', { name: /pick coin 1/i })[0]
     coin.focus()

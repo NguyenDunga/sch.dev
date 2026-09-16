@@ -68,6 +68,9 @@
 }
 
 .choreo-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-family: var(--font-heading);
   font-size: 2.25rem;
   font-weight: 700;
@@ -80,6 +83,12 @@
   color: var(--ink);
   box-shadow: var(--shadow-hard);
   white-space: nowrap;
+}
+
+/* 13c.6 — the tier icon (the primary signal; the text is the a11y text). */
+.choreo-banner-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .choreo-banner--none {

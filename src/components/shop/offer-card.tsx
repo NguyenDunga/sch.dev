@@ -5,8 +5,9 @@
 // re-rejects (buyDraft) — the disabled state is just UX feedback.
 
 import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE } from '@/core/balance'
-import type { ShopOffer } from '@/core/types'
+import type { ShopOffer, CoinEffectKind } from '@/core/types'
 import { Button } from '@/components/ui/button'
+import { ACTION_ICONS, CHARM_ICONS, EFFECT_ICONS } from '@/lib/icons'
 import { CHARM_DESCRIPTIONS, COIN_DESCRIPTIONS } from './descriptions'
 
 interface OfferCardProps {
@@ -46,10 +47,22 @@ export function OfferCard({ offer, cash, charms, handSize, onBuy }: OfferCardPro
   // is already disabled; the store also re-rejects).
   const poor = !owned && !atCap && cash < price
   const buyDisabled = cash < price || owned || atCap
+  // 13c.7 — the offer icon: charm / coin / hand-size. CoinEffectId includes
+  // draw1/draw2/draw3 (not a CoinEffectKind) — map them to the draw icon.
+  const effectKind = offer.kind === 'coin' ? (offer.effect.startsWith('draw') ? 'draw' : offer.effect) : undefined
+  const OfferIcon =
+    offer.kind === 'charm'
+      ? CHARM_ICONS[offer.charm].icon
+      : offer.kind === 'coin'
+        ? EFFECT_ICONS[effectKind as CoinEffectKind].icon
+        : ACTION_ICONS.handSize.icon
 
   return (
     <div className={`offer-card offer-card--${offer.kind}${poor ? ' offer-card--poor' : ''}`}>
-      <span className="offer-card-name">{offerName(offer)}</span>
+      <span className="offer-card-name">
+        <OfferIcon size={16} strokeWidth={2} aria-hidden className="offer-card-icon" />
+        {offerName(offer)}
+      </span>
       <span className="offer-card-desc">{offerDescription(offer, handSize)}</span>
       <div className="offer-card-foot">
         <span className={`offer-card-price${poor ? ' offer-card-price--poor' : ''}`}>${price}</span>

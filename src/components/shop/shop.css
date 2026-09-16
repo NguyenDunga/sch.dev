@@ -262,10 +262,19 @@
 }
 
 .offer-card-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--font-heading);
   font-size: 1rem;
   font-weight: 700;
   color: var(--ink);
+}
+
+/* 13c.7 — the offer icon (charm / coin / hand-size). */
+.offer-card-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .offer-card-desc {

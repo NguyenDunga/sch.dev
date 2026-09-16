@@ -6,6 +6,7 @@
 
 import type { HandPhase } from '@/core/types'
 import { Button } from '@/components/ui/button'
+import { ACTION_ICONS } from '@/lib/icons'
 
 interface ActionBarProps {
   handPhase: HandPhase
@@ -18,6 +19,8 @@ interface ActionBarProps {
 }
 
 export function ActionBar({ handPhase, canConfirm, canScore, selectedCount, onConfirm, onScore }: ActionBarProps) {
+  const ConfirmIcon = ACTION_ICONS.confirm.icon
+  const ScoreIcon = ACTION_ICONS.score.icon
   return (
     <div className="action-bar">
       {handPhase === 'play' && (
@@ -28,12 +31,14 @@ export function ActionBar({ handPhase, canConfirm, canScore, selectedCount, onCo
             </span>
           )}
           <Button size="xl" pulse={canConfirm} disabled={!canConfirm} onClick={onConfirm}>
+            <ConfirmIcon size={20} strokeWidth={2.5} aria-hidden />
             Confirm
           </Button>
         </>
       )}
       {handPhase === 'buff' && (
         <Button size="xl" pulse disabled={!canScore} onClick={onScore}>
+          <ScoreIcon size={20} strokeWidth={2.5} aria-hidden />
           Score
         </Button>
       )}

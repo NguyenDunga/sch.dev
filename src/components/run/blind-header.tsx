@@ -5,6 +5,7 @@
 
 import { BLINDS, BOSS_RULES, HEAVY_TARGET_MULT } from '@/core/balance'
 import { useRunStore } from '@/state/runStore'
+import { ACTION_ICONS } from '@/lib/icons'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const
 
@@ -28,6 +29,9 @@ export function BlindHeader() {
   const bossRule = blind.kind === 'boss' ? BOSS_RULES.find((r) => r.id === blind.rule) : undefined
   const target = effectiveTarget(blindIndex)
   const met = blindScore >= target
+  const HandSizeIcon = ACTION_ICONS.handSize.icon
+  const DeckIcon = ACTION_ICONS.deck.icon
+  const DiscardIcon = ACTION_ICONS.discard.icon
 
   return (
     <header className="blind-header" aria-label="Blind">
@@ -44,12 +48,15 @@ export function BlindHeader() {
       </div>
       <div className="blind-header-stats">
         <span className="blind-header-stat" title="Hands left this blind">
+          <HandSizeIcon size={14} strokeWidth={2} aria-hidden />
           <strong>{handsLeft}</strong> hands
         </span>
         <span className="blind-header-stat" title="Coins in the draw pile">
+          <DeckIcon size={14} strokeWidth={2} aria-hidden />
           <strong>{drawCount}</strong> draw
         </span>
         <span className="blind-header-stat" title="Coins in the discard pile">
+          <DiscardIcon size={14} strokeWidth={2} aria-hidden />
           <strong>{discardCount}</strong> disc
         </span>
       </div>

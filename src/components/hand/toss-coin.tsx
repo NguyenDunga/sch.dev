@@ -27,6 +27,7 @@ import { useEffect, useRef } from 'react'
 import { motion, useAnimate, useReducedMotion } from 'framer-motion'
 import type { CoinEffect, Face } from '@/core/types'
 import { DURATION, ECHO, EASING, SPRING, TOSS } from '@/lib/motion'
+import { FACE_ICONS } from '@/lib/icons'
 import { CoinBadges } from './coin-badges'
 import { FaceBadge } from './coin-disc'
 import { settleRotation } from './toss'
@@ -49,6 +50,7 @@ function CrossfadeCoin({ face, effects, index, onLand }: { face: Face; effects: 
     onLand?.(index)
   }, [onLand, index])
   const label = face === 'H' ? 'heads' : 'tails'
+  const FaceIcon = FACE_ICONS[face].icon
   return (
     <div className="toss-coin toss-coin--2d">
       <motion.span
@@ -59,7 +61,7 @@ function CrossfadeCoin({ face, effects, index, onLand }: { face: Face; effects: 
         role="img"
         aria-label={label}
       >
-        {face}
+        <FaceIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
       </motion.span>
       <span className="coin-badges">
         <FaceBadge face={face} />
@@ -117,6 +119,8 @@ function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps) {
   const delay = quick ? 0 : index * TOSS.stagger
   const finalRotate = settleRotation(face, quick ? QUICK_SPINS : FULL_SPINS)
   const label = face === 'H' ? 'heads' : 'tails'
+  const HeadsIcon = FACE_ICONS.H.icon
+  const TailsIcon = FACE_ICONS.T.icon
 
   useEffect(() => {
     const el = flipRef.current
@@ -152,8 +156,12 @@ function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps) {
   return (
     <div className="toss-coin" ref={discRef}>
       <div ref={flipRef} className="toss-coin-flip" style={{ transformStyle: 'preserve-3d' }} role="img" aria-label={label}>
-        <div className="toss-face toss-face--heads">H</div>
-        <div className="toss-face toss-face--tails">T</div>
+        <div className="toss-face toss-face--heads">
+          <HeadsIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
+        </div>
+        <div className="toss-face toss-face--tails">
+          <TailsIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
+        </div>
       </div>
       <span className="coin-badges">
         <FaceBadge face={face} />

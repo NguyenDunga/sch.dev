@@ -98,7 +98,7 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     expect(hasNonZeroRotation(tilt.style.transform)).toBe(false)
   })
 
-  it('H/T carry a glyph + ARIA label, never color alone (colorblind-safe)', () => {
+  it('H/T carry an icon + ARIA label, never color alone (colorblind-safe)', () => {
     const { container } = render(
       <>
         <CoinDisc face="H" />
@@ -106,11 +106,12 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
       </>,
     )
     const [h, t] = container.querySelectorAll('.coin-disc')
-    expect(h.textContent).toBe('H')
-    expect(t.textContent).toBe('T')
-    expect(h.getAttribute('aria-label')).toBe('heads')
-    expect(t.getAttribute('aria-label')).toBe('tails')
-    // 13a.9 — the face color is part of the signal (glyph + color, never
+    // 13c.3 — the face is an icon (an SVG), not a text glyph.
+    expect(h.querySelector('svg')).toBeTruthy()
+    expect(t.querySelector('svg')).toBeTruthy()
+    expect(h.getAttribute('aria-label')).toBe('Heads')
+    expect(t.getAttribute('aria-label')).toBe('Tails')
+    // 13a.9 — the face color is part of the signal (icon + color, never
     // color alone): the disc class keys off the full face word.
     expect(h.classList.contains('coin-disc--heads')).toBe(true)
     expect(t.classList.contains('coin-disc--tails')).toBe(true)
@@ -120,7 +121,8 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     const { container } = render(
       <HandCoin coin={{ id: 2, effects: [{ kind: 'weight', favored: 'H' }] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
     )
-    expect(container.querySelector('.coin-badge')?.textContent).toBe('W')
-    expect(container.querySelector('.face-badge--heads')?.textContent).toBe('H')
+    // 13c.4 — the effect badge is an icon (an SVG), not a text glyph.
+    expect(container.querySelector('.coin-badge svg')).toBeTruthy()
+    expect(container.querySelector('.face-badge--heads svg')).toBeTruthy()
   })
 })

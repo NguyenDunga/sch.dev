@@ -6,6 +6,9 @@
 //   - plain effects are unchanged (no face badge)
 //   - a merged coin shows every effect's favored face
 //   - the tooltip names the favored face
+//
+// 13c.4 — the cryptic single-letter glyphs are replaced with registry icons.
+// The tests now check for the icon elements (SVG) + the face badges.
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
@@ -21,47 +24,48 @@ const TAX: CoinEffect = { kind: 'tax' }
 const ECHO: CoinEffect = { kind: 'echo' }
 
 describe('13a.9 — favored-face badges', () => {
-  it('a Weight(H) coin shows the W badge plus a Heads face badge', () => {
+  it('a Weight(H) coin shows the Weight icon plus a Heads face badge', () => {
     render(<CoinBadges effects={[WEIGHT_H]} />)
-    expect(screen.getByText('W')).toBeTruthy()
-    // The favored-face pill (glyph H, heads color).
-    const face = screen.getByText('H', { selector: '.face-badge--heads' })
+    // The Weight icon (an SVG in the .coin-badge).
+    expect(document.querySelector('.coin-badge svg')).toBeTruthy()
+    // The favored-face pill (Heads icon, heads color).
+    const face = document.querySelector('.face-badge--heads svg')
     expect(face).toBeTruthy()
   })
 
-  it('a Weight(T) coin shows the W badge plus a Tails face badge', () => {
+  it('a Weight(T) coin shows the Weight icon plus a Tails face badge', () => {
     render(<CoinBadges effects={[WEIGHT_T]} />)
-    expect(screen.getByText('W')).toBeTruthy()
-    expect(screen.getByText('T', { selector: '.face-badge--tails' })).toBeTruthy()
+    expect(document.querySelector('.coin-badge svg')).toBeTruthy()
+    expect(document.querySelector('.face-badge--tails svg')).toBeTruthy()
   })
 
-  it('a Double-Side coin shows the DS badge plus its favored face', () => {
+  it('a Double-Side coin shows the Double-Side icon plus its favored face', () => {
     render(<CoinBadges effects={[DOUBLE_T]} />)
-    expect(screen.getByText('DS')).toBeTruthy()
-    expect(screen.getByText('T', { selector: '.face-badge--tails' })).toBeTruthy()
+    expect(document.querySelector('.coin-badge svg')).toBeTruthy()
+    expect(document.querySelector('.face-badge--tails svg')).toBeTruthy()
   })
 
   it('plain effects are unchanged (no face badge)', () => {
     render(<CoinBadges effects={[TAX, ECHO]} />)
-    expect(screen.getByText('$')).toBeTruthy()
-    expect(screen.getByText('E')).toBeTruthy()
+    // Two effect icons (Tax + Echo).
+    expect(document.querySelectorAll('.coin-badge svg').length).toBe(2)
     expect(document.querySelector('.face-badge')).toBeNull()
   })
 
   it('a merged coin shows every effect and its favored face', () => {
     render(<CoinBadges effects={[WEIGHT_H, DOUBLE_T]} />)
-    expect(screen.getByText('W')).toBeTruthy()
-    expect(screen.getByText('DS')).toBeTruthy()
-    expect(screen.getByText('H', { selector: '.face-badge--heads' })).toBeTruthy()
-    expect(screen.getByText('T', { selector: '.face-badge--tails' })).toBeTruthy()
+    // Two effect icons (Weight + Double-Side).
+    expect(document.querySelectorAll('.coin-badge svg').length).toBe(2)
+    expect(document.querySelector('.face-badge--heads svg')).toBeTruthy()
+    expect(document.querySelector('.face-badge--tails svg')).toBeTruthy()
   })
 
   it('the tooltip names the favored face', () => {
     const { unmount } = render(<CoinBadges effects={[WEIGHT_H]} />)
-    expect(screen.getByTitle(/weight/i).getAttribute('title')).toMatch(/heads/i)
+    expect(screen.getAllByTitle(/weight/i)[0].getAttribute('title')).toMatch(/heads/i)
     unmount()
     render(<CoinBadges effects={[DOUBLE_T]} />)
-    expect(screen.getByTitle(/double-side/i).getAttribute('title')).toMatch(/tails/i)
+    expect(screen.getAllByTitle(/double-side/i)[0].getAttribute('title')).toMatch(/tails/i)
   })
 
   it('no effects renders nothing', () => {

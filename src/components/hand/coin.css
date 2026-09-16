@@ -21,12 +21,14 @@
   place-items: center;
   border-radius: 9999px;
   border: 2px solid var(--ink);
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 700;
   color: var(--ink);
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* 13c.3 — the face icon (Heads / Tails / face-down). */
+.coin-disc-icon {
+  display: block;
 }
 
 .coin-disc--back {
@@ -159,7 +161,6 @@
 .coin-disc--sm {
   width: 2.75rem;
   height: 2.75rem;
-  font-size: 1.1rem;
 }
 
 /* deal-flight layer (13.1): framer transform (x/y/scale/opacity) lives here;

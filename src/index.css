@@ -163,3 +163,17 @@
     @apply overflow-x-clip bg-background text-foreground;
   }
 }
+
+/* Screen-reader-only text (13c.9): visible to assistive tech, hidden
+   visually. Every icon keeps a text alternative via this class. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

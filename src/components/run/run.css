@@ -98,6 +98,12 @@
   color: var(--ink-soft);
 }
 
+.blind-header-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .blind-header-stat strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -121,6 +127,9 @@
 }
 
 .charm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
@@ -135,6 +144,12 @@
   transition:
     background var(--dur-micro) var(--ease-out),
     translate var(--dur-micro) var(--ease-out);
+}
+
+/* 13c.5 — the charm icon (the primary signal; the name is the a11y text). */
+.charm-chip-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .charm-chip:hover {
