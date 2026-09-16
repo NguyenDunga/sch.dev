@@ -2,7 +2,6 @@
 export { Coin } from './coin'
 export type { CoinProps } from './coin'
 export { CoinShell } from './coin-shell'
-export { CoinFace } from './coin-face'
 export { CoinGlyph } from './coin-glyph'
 export { CoinBadges } from './coin-badges'
 export { CoinMotion } from './coin-motion'
