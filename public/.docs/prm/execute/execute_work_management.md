@@ -308,13 +308,15 @@ Net: a typical hand that discards once and has no Echo now costs **3 fewer inter
 
 ### M15 — README & Final Packaging → [wbs](../plan/plan_wbs-m15-readme.md)
 
+> **M15 (2026-09-17):** README, build verification, test suite, out-of-scope audit. 15.1–15.5 **Done**.
+
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 15.1 README install/run | Not started | | |
-| 15.2 README seed entry/share | Not started | | |
-| 15.3 Build playable end-to-end | Not started | | |
-| 15.4 `npm test` 100% | Not started | | |
-| 15.5 Out-of-scope audit | Not started | | |
+| 15.1 README install/run | Done | 2026-09-17 | Quick Start (install/dev/build/test/lint), How to Play, Project Structure, Tech Stack, Accessibility. |
+| 15.2 README seed entry/share | Done | 2026-09-17 | Seed Sharing section: copy/enter 6–8 char seed; no account or server. |
+| 15.3 Build playable end-to-end | Done | 2026-09-17 | `tsc -b && vite build` clean; 564 kB / 181 kB gzip; full 12-blind run playable. |
+| 15.4 `npm test` 100% | Done | 2026-09-17 | 423 tests / 33 files, all passing. |
+| 15.5 Out-of-scope audit | Done | 2026-09-17 | Zero matches for multiplayer, online, steam, hosting, localization, achievements, leaderboards, music. |
 
 ## Deliverables Produced
 
