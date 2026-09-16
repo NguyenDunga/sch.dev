@@ -1,0 +1,57 @@
+# M13c — Iconography: an Icon System for the Whole Game Board
+
+**Depends:** M13 (Juice), M13a (interaction overhaul — favored-face badge 13a.9), M13b (Motion migration) · **Files:** `src/lib/icons.tsx` (new — the registry), `src/components/icons/*` (new — the custom SVG set), `src/components/hand/{coin-disc,coin-badges}.tsx`, `src/components/charm-bar/{charm-chip,charm-bar}.tsx`, `src/components/shop/{offer-card,collection,descriptions.ts}.tsx`, `src/components/run/{action-bar,piles,blind-header}.tsx`, `src/components/juice/{choreography.ts,scoring-choreography.tsx}` (tier banner), `src/components/hand/coin.css`, `src/components/shop/shop.css` · **Source of truth:** [SDD UX](../../sdd/software_design_ux.md) §2 (Ceramic Tactile visual language), §3 (component states), §8 (colorblind-safe & a11y); [Component Design](../../sdd/software_design_component.md) C6 (hand/coin) / C8 (shop). Conventions: [overview](plan_wbs-overview.md).
+
+*Goal: replace the current **text-glyph** rendering across the entire game board with a lightweight, consistent **icon system**, so every coin face and every coin effect, charm, tier and action has its own distinct, recognizable icon. Today faces are letters (`H` / `T` / `?`), effects are cryptic single letters (`W`, `DS`, `C`, `E`, `M`, `R`, `$`, `J`, `↻`), and charms are name text — none of which read at a glance. Icons make the board legible instantly: a player should recognize a Double-Side coin, an Echo (re-toss), or a Weight-Heads coin by shape, not by decoding a letter.*
+
+**Boundary — presentation only.** This is a **UI/rendering** change: no `src/core/` or `src/state/` file is touched, no scoring, no balance, no types. The icon layer is a **lookup keyed by the existing union types** (`Face`, `CoinEffectKind`, `CharmId`, `TierId`, and named UI actions) — exactly the shape of today's `EFFECT_LABELS` map, just returning an icon instead of a letter. Every icon keeps a **text alternative** (an `aria-label` or adjacent visible text) and stays **colorblind-safe** — meaning is carried by the glyph *shape*, never by color alone (UX §8); color remains the secondary, redundant signal. The **Ceramic Tactile** aesthetic holds (UX §2): flat fills, ~2px `--ink` stroke, hard offsets, no gradients or blurred shadows. No canvas/WebGL — icons are inline SVG / DOM, so the jsdom test path is preserved. Reduced motion is unaffected (icons are static; no new motion is introduced — animation lives in M13/M13b).
+
+## Library decision (13c.1)
+
+The ask is "something simple and lightweight like Font Awesome." **`lucide-react` is already a dependency** (`^1.45.0`, used today for `Trash2` in the discard well) and is exactly that: a tree-shakeable, MIT-licensed, flat single-stroke icon set whose style already matches Ceramic Tactile. So the recommendation is:
+
+- **Base set → `lucide-react`** for the generic concepts (check/confirm, dice, refresh/reroll, exit, wallet/cash, target, gem, flame, magnet, repeat, layers, trash — already in use). No new dependency, minimal bundle cost (per-icon imports tree-shake).
+- **Custom set → a tiny local inline-SVG set** in `src/components/icons/` for the ~5 **game-specific** concepts a generic library can't express well: **Weight** (75/25), **Double-Side**, **Echo / re-toss**, **Jackpot coin**, and the **Heads / Tails coin faces** themselves (a themed coin glyph beats a generic circle). These are authored to the Ceramic Tactile stroke/fill so they sit beside the Lucide icons cleanly.
+- **Alternative (open decision):** if the Font Awesome *ecosystem* is preferred over Lucide, swap the base set for `@fortawesome/react-fontawesome` + `@fortawesome/free-solid-svg-icons`. Tradeoff: heavier, needs an icon-library registration step, and its filled style diverges more from the current single-stroke look. Pick one base set in 13c.1 and keep the registry (13c.2) identical either way.
+
+## Current state (what is text today)
+
+| Where | File | Today | Becomes |
+| --- | --- | --- | --- |
+| Coin face | `coin-disc.tsx` (`CoinDisc`, `FaceBadge`) | `H` / `T` / `?` letters | Heads / Tails / face-down icons (+ face color) |
+| Coin effects | `coin-badges.tsx` (`EFFECT_LABELS`) | `W DS C E M R $ J ↻N` | one icon per effect kind (Draw keeps `N`) |
+| Favored face | `coin-badges.tsx` (13a.9) | `FaceBadge` letter | face icon beside Weight / Double-Side |
+| Charms | `charm-chip.tsx` | name text | charm icon (+ name / tooltip) |
+| Tier banner | `scoring-choreography.tsx` / `choreography.ts` | tier name text | tier icon + name |
+| Actions / HUD | `action-bar.tsx`, `piles.tsx`, `blind-header.tsx`, shop | text buttons; `Trash2` only | icon + label on actions; pile/HUD icons |
+
+## Checkpoints
+
+- [ ] **13c.1 Choose & install the icon system.** Confirm the base set — **`lucide-react`** (already installed) — and scaffold `src/components/icons/` for the custom game-specific SVGs (Weight, Double-Side, Echo, Jackpot, Heads, Tails). Record the decision (Lucide vs the Font Awesome alternative above) here. *Accept:* base library confirmed present (or FA installed if chosen); the custom-icon folder exists with placeholders; `tsc -b && vite build` green; a bundle-size baseline noted in `execute_work_management.md`.
+
+- [ ] **13c.2 Central icon registry.** One module (`src/lib/icons.tsx`) is the single source of iconography, mirroring how `src/lib/motion.ts` is the single source of motion curves. It exports **exhaustive `Record`s** keyed by the existing unions — `Record<Face, IconDef>`, `Record<CoinEffectKind, IconDef>`, `Record<CharmId, IconDef>`, `Record<TierId, IconDef>` — plus a named-action map (`confirm`, `score`, `reroll`, `leave`, `handSize`, `cash`, `target`, `reward`, `deck`, `discard`). Each `IconDef` carries the icon component, a **required `label`** (a11y text), and an optional color token. Because the maps are typed over the unions, a missing effect/charm/tier is a compile error. *Accept:* every union is covered by an exhaustive record; adding a hypothetical new effect kind fails `tsc` until its icon is added; no runtime default/fallback letter needed.
+
+- [ ] **13c.3 Coin faces → icons** (`coin-disc.tsx`). Replace the `H` / `T` / `?` letters in `CoinDisc` and `FaceBadge` with the registry's Heads / Tails / face-down icons; keep the face **color as the secondary** signal and the shapes distinct (colorblind-safe, UX §8); keep `role="img"` + the existing aria-labels (`heads` / `tails` / `face-down coin`). The 3D toss faces (`toss-coin.tsx` `toss-face--heads/--tails`) and the 2D reduced-motion cross-fade both use the same icon. *Accept:* Heads vs Tails is distinguishable by shape alone; aria-labels unchanged; `toss-coin.test.tsx` / `hand-coin.test.tsx` green.
+
+- [ ] **13c.4 Coin effect badges → icons** (`coin-badges.tsx`). Replace `EFFECT_LABELS` with the registry icons for all nine effect kinds; **Draw** shows its icon + count (`N`); **Weight / Double-Side** keep the favored-face icon beside them (13a.9 preserved); keep `effectTitle` as the tooltip and the `coin-badge-group` structure. This flows automatically to every place `CoinBadges` renders — hand, play slot, discard ghost, drag copy, shop collection. *Accept:* each of the 9 kinds shows a distinct icon everywhere `CoinBadges` appears; favored face still visible; `coin-badges.test.tsx` updated to assert accessible names (not the old letters) and green.
+
+- [ ] **13c.5 Charms → icons** (`charm-chip.tsx`, `charm-bar.tsx`). Give each of the 5 charms (`plusChips`, `plusMult`, `extraHand`, `payday`, `jackpotFever`) an icon; keep the name as visible text or as the tooltip/aria-label (don't drop the name entirely — charms are less familiar than coins); preserve drag-to-reorder and the category. *Accept:* each charm has a distinct icon; the title/aria-label still names the charm + category; the charm-bar reorder tests green.
+
+- [ ] **13c.6 Tier icons in the scoring banner** (`choreography.ts` `bannerText` / `scoring-choreography.tsx`). Add a tier icon beside the banner name, escalating with tier rank (`threeSame` → `jackpot`), using the tier color tokens already defined (`TIER_COLOR_VAR`). Purely presentational — no number, timing, or beat change (UX §0). *Accept:* the banner shows its tier icon + name; the choreography still reads as escalating; `choreography.test.ts` (pure math) untouched; the juice/choreography tests green.
+
+- [ ] **13c.7 Actions, HUD & piles → icons** (`action-bar.tsx`, `piles.tsx`, `blind-header.tsx`, `offer-card.tsx`, shop chrome). Icon-label the primary actions and HUD: Confirm (check), Score (spark/target), Reroll (dice/refresh), Leave (exit), hand-size upgrade (hand+), cash (`$`/coin), blind target & reward (`blind-header`), the deck stack, and the discard well (keep `Trash2`). **Keep the visible text label on the core action buttons** (icon + text, not icon-only) for discoverability and a11y. *Accept:* run/shop chrome uses the registry icons; Confirm/Score/Reroll/Leave keep their text; `screens.smoke.test.tsx` / `shop.13a8.test.tsx` green.
+
+- [ ] **13c.8 Ceramic-Tactile styling pass** (`coin.css`, `shop.css`, the custom SVGs). Normalize the icons to the flat aesthetic (UX §2): one stroke width (~2px `--ink`), flat theme-token fills, a small size scale (badge / disc / banner), no gradients or blur; verify they read on both light contexts and hold at ~400px width with no layout shift vs the old text badges. Interactive icons keep ≥44px hit targets (UX §8). *Accept:* icons are visually consistent with the sticker-border coins; contrast holds in both contexts; the hand/play/collection rows don't reflow vs M13a.
+
+- [ ] **13c.9 A11y, colorblind & reduced-motion parity.** Sweep: every icon has a text alternative (aria-label or adjacent visible text); no meaning is carried by color alone — the glyph shape is the primary signal (UX §8); icons add no motion (reduced-motion path unchanged); keyboard and screen-reader flows are identical to M13a. *Accept:* an axe/manual pass shows every interactive icon is labeled; a colorblind (shape-distinct) check passes for faces + effects + tiers; the keyboard (13a.12) and reduced-motion (13.8) tests stay green.
+
+- [ ] **13c.10 Tests, cleanup & bundle.** Delete the dead text-glyph code (`EFFECT_LABELS`, the letter faces) now the registry covers them; migrate any test that queried by the old text (`getByText('W')`, tier name text, …) to query by accessible name/role; record the before/after bundle size (only tree-shaken icon imports ship). *Accept:* no orphaned text-glyph map remains; full `npm test` green; the bundle note is in `execute_work_management.md`.
+
+## Exit gate
+
+- [ ] All 13c checkpoints satisfied (or explicitly deferred with a note here).
+- [ ] `tsc --noEmit`, `npm run lint`, `npm test` all green; the engine (`src/core/`) and store (`src/state/`) suites are **untouched** and still 100% green (icons are pure presentation — no types, scoring, or balance changed).
+- [ ] Every coin face, coin effect, charm, tier, and primary action has a **distinct, colorblind-safe icon** across the whole game board — hand, play, toss, discard, collection, shop, and HUD.
+- [ ] Every icon has a **text alternative**; nothing relies on color alone (UX §8); reduced-motion and keyboard parity are unchanged.
+- [ ] **One icon registry** (`src/lib/icons.tsx`) is the single source of iconography; no scattered text-glyph maps remain; the Ceramic Tactile look is intact (UX §2).
+- [ ] Before/after bundle size recorded; `execute_work_management.md` M13c rows updated to Done with dates.
