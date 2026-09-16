@@ -252,6 +252,46 @@ Net: a typical hand that discards once and has no Echo now costs **3 fewer inter
 
 **M13a exit-gate status (2026-09-16):** all 12 checkpoints Done; `tsc`/`lint`/`npm test` green (396/396); balance tests re-pinned (13a.3), M4/M8 conservation updated for keep-unplayed (13a.2); no engine mutation from any input-convenience layer (drag/drop/auto-advance all route through existing store actions — UX §0, tested); M13a rows Done with dates. **Pending (manual):** a full 4-blind run played *entirely by drag* and *entirely by keyboard* reaching the same scores — the keyboard path is fully tested (13a.12), the drag path is tested (13a.5/13a.6), and the same-result property is proven (13a.12 store-identical under reduced motion + the shared store actions), but a full end-to-end manual playtest on the new curve is a hands-on check (note: the base game is a build-gate by design — 13a.11 — so a full clear requires shop builds, not just input).
 
+### M13b — Animation System Migration → [wbs](../plan/plan_wbs-m13b-animation.md)
+
+> **M13b (2026-09-17):** migrate all animation timing from `setTimeout`/`setInterval`/CSS `@keyframes` to `framer-motion`'s `animate()` API. Port the tokens, don't retune. 13b.1–13b.12 **Done** (2026-09-17). Commit `5395616`.
+
+| Checkpoint | Status | Completed | Notes |
+| --- | --- | --- | --- |
+| 13b.1 `MotionConfig reducedMotion="user"` | Done | 2026-09-17 | Pre-existing in `App.tsx` (13.8). No change needed. |
+| 13b.2 Consolidate timing tokens | Done | 2026-09-17 | `CHOREO` beat table + `SHAKE_DURATION`/`CLEAR_SHAKE_DURATION` added to `lib/motion.ts`. Single source of truth. |
+| 13b.3 Toss → `animate()` | Done | 2026-09-17 | `toss-coin.tsx` rewritten with `useAnimate`. Rise + tumble parallel, settle chained off `riseAnim.finished`. Plain `div` for the flip element (framer's `animate` can't drive 3D transforms on a `motion.div`'s `rotateX`). |
+| 13b.4 Choreography → Motion clock | Done | 2026-09-17 | `use-scoring-choreography.ts` rewritten: `MotionValue` clock advanced sequentially via `animate()`. No `setTimeout`. |
+| 13b.5 Screen shake → `animate()` | Done | 2026-09-17 | `screen-shake.ts` module-level trigger slot + `screen-shake.tsx` `motion.div` with `animate()`. No rAF loop. |
+| 13b.6 Hand coin tilt → `useSpring` | Done | 2026-09-17 | `useCoinMotion` hook: `useMotionValue` + `useSpring` for tilt, `animate()` for shake. No direct DOM writes. |
+| 13b.7 Onboarding → `AnimatePresence` | Done | 2026-09-17 | `onboarding-hint.tsx` rewritten with `AnimatePresence` + `motion.div`. No `setTimeout`. |
+| 13b.8 Run timing → `useTossLanding` | Done | 2026-09-17 | `useTossLanding` hook in `run.tsx`: single `useEffect` with `useAnimate`. `onLand` changed to `(index: number) => void`. |
+| 13b.9 Particles → rAF (sanctioned) | Done | 2026-09-17 | Canvas engine kept as the sanctioned rAF loop (13.9). No change. |
+| 13b.10 Reduced-motion parity | Done | 2026-09-17 | Every animation has a reduced-motion path. `MotionConfig reducedMotion="user"` gates framer transforms. |
+| 13b.11 Perf & bundle | Done | 2026-09-17 | No idle animation loops. rAF only in `particles.ts`. Bundle 564 kB / 181 kB gzip. |
+| 13b.12 Tests, regression & docs | Done | 2026-09-17 | All 395 tests green. Flakiness fixes: `run.juice.test.tsx` (skip → waitFor settled state), `run.13a7.test.tsx` (landDelay 160→200ms). Docs updated. |
+
+**M13b exit-gate status (2026-09-17):** all 12 checkpoints Done; `tsc`/`lint`/`npm test` green (395/395); no `setTimeout`/`setInterval`-driven animation timing in the final state (grep-assertable); no `@keyframes` outside documented exceptions (button.css `btn-cta`/`btn-flash` + particle engine); no module-level `requestAnimationFrame` for animation (only `particles.ts`). Commit `5395616`.
+
+### M13c — Icon System for the Whole Game Board → [wbs](../plan/plan_wbs-m13c-spite.md)
+
+> **M13c (2026-09-17):** replace all text-glyph rendering (H/T/? faces, cryptic effect letters W/DS/C/E/M/R/$/J/↻, charm name text) with a consistent icon system across the entire game board. 13c.1–13c.10 **Done** (2026-09-17). Commit `185cc70`.
+
+| Checkpoint | Status | Completed | Notes |
+| --- | --- | --- | --- |
+| 13c.1 Icon system + custom SVGs | Done | 2026-09-17 | `lucide-react` confirmed as base set. 7 custom SVGs in `src/components/icons/`: HeadsIcon, TailsIcon, FaceDownIcon, WeightIcon, DoubleSideIcon, EchoIcon, JackpotIcon. |
+| 13c.2 Central icon registry | Done | 2026-09-17 | `src/lib/icons.tsx`: exhaustive `Record`s keyed by `Face`, `CoinEffectKind`, `CharmId`, `TierId` + `ACTION_ICONS` named-action map. `IconDef` interface. |
+| 13c.3 Coin faces → icons | Done | 2026-09-17 | `coin-disc.tsx` + `toss-coin.tsx`: H/T/? letters replaced with HeadsIcon/TailsIcon/FaceDownIcon. Colorblind-safe (shape primary). |
+| 13c.4 Effect badges → icons | Done | 2026-09-17 | `coin-badges.tsx`: `EFFECT_LABELS` replaced with `EFFECT_ICONS` registry. All 9 kinds covered. Draw count in tooltip. |
+| 13c.5 Charms → icons | Done | 2026-09-17 | `charm-chip.tsx`: 5 charms with distinct icons (Plus, Star, Hand, Wallet, Flame). Name kept as visible text. |
+| 13c.6 Tier icons in banner | Done | 2026-09-17 | `scoring-choreography.tsx`: `TIER_ICONS` icon beside the banner name. Escalating with tier rank. |
+| 13c.7 Actions, HUD & piles → icons | Done | 2026-09-17 | `action-bar.tsx` (Confirm/Score), `blind-header.tsx` (handSize/deck/discard), `piles.tsx` (FaceDownIcon), `offer-card.tsx` (charm/coin/handSize). |
+| 13c.8 Ceramic-Tactile styling | Done | 2026-09-17 | CSS: icon layout (flex, gap), size scale (12px badge / 28px disc / 20px banner), removed unused font properties. |
+| 13c.9 A11y/colorblind/reduced-motion | Done | 2026-09-17 | `.sr-only` utility added. Every icon has a text alternative. Shape primary, color secondary. No motion added. |
+| 13c.10 Tests, cleanup & bundle | Done | 2026-09-17 | Dead text-glyph code deleted. Tests migrated from text queries to icon/accessible-name queries. 395 tests green. Bundle 564 kB / 181 kB gzip. |
+
+**M13c exit-gate status (2026-09-17):** all 10 checkpoints Done; `tsc`/`lint`/`npm test` green (395/395); every coin face, effect, charm, tier, and action has a distinct, colorblind-safe icon; every icon has a text alternative; one icon registry (`src/lib/icons.tsx`); no scattered text-glyph maps; Ceramic Tactile look intact. Commit `185cc70`.
+
 ### M14 — Test Suite Completion → [wbs](../plan/plan_wbs-m14-tests.md)
 
 | Checkpoint | Status | Completed | Notes |
