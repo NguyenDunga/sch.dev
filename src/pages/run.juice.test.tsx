@@ -257,7 +257,10 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
     flights.stop()
     expect(flights.seen.length).toBeGreaterThan(0) // the matched chips flew
-    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
+    // The ticker's count-up (a Motion animation) settles on the store's
+    // numbers; wait for it rather than asserting the instant the overlay
+    // disappears (the two are both rAF-driven and can be a frame apart).
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'), { timeout: 2000 })
 
     // The numbers come from the store (juice never mutates state, UX §0).
     const { lastScore, blindScore } = useRunStore.getState()

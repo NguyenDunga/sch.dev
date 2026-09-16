@@ -8,7 +8,7 @@
 // result). The component (DiscardGhostLayer) lives in discard-ghost.tsx.
 
 import type { Coin } from '@/core/types'
-import { DISCARD, EASING } from '@/lib/motion'
+import { DISCARD, DURATION, EASING } from '@/lib/motion'
 
 /** Viewport rect of the tapped coin (top-left + size). */
 export interface Rect {
@@ -46,7 +46,7 @@ export function ghostMotionProps(
     return {
       initial: { opacity: 1 },
       animate: { opacity: 0 },
-      transition: { duration: 0.16, ease: EASING.out },
+      transition: { duration: DURATION.quick / 1000, ease: EASING.out },
     }
   }
   return {

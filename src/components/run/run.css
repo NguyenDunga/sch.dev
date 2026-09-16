@@ -348,7 +348,6 @@
   position: fixed;
   top: 0.6rem;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -360,7 +359,8 @@
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
   pointer-events: none; /* never block input — only the close button is live */
-  animation: onboarding-in 0.4s ease-out;
+  /* centering translateX + the entrance/exit slide are Motion (13b.7,
+     onboarding-hint.tsx) — no CSS transform / @keyframes here. */
 }
 
 .onboarding-hint p {
@@ -395,24 +395,6 @@
 .onboarding-hint-close:focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
-}
-
-@keyframes onboarding-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-0.4rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* Reduced motion (UX §8): no entrance slide. */
-@media (prefers-reduced-motion: reduce) {
-  .onboarding-hint {
-    animation: none;
-  }
 }
 
 /* -- action bar ------------------------------------------------------------- */

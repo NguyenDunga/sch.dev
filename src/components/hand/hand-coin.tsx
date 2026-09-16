@@ -20,11 +20,11 @@
 // slot → hand, spring-soft) play instead. Reduced motion: quick fade, no
 // flight/stagger (UX §8).
 
-import { forwardRef, useRef } from 'react'
+import { forwardRef, useEffect } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useAnimate, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
-import { DEAL, EASING, SPRING } from '@/lib/motion'
+import { CHOREO, DEAL, DURATION, EASING, SPRING } from '@/lib/motion'
 import type { Coin } from '@/core/types'
 import { CoinBadges } from './coin-badges'
 import { CoinDisc } from './coin-disc'
@@ -72,7 +72,7 @@ const DEAL_FROM = { x: 140, y: -110, scale: 0.85 }
 function dealProps(dealIndex: number | undefined, reduceMotion: boolean) {
   if (dealIndex === undefined) return { initial: false, transition: undefined }
   if (reduceMotion) {
-    return { initial: { opacity: 0 }, transition: { duration: 0.16, ease: EASING.out } }
+    return { initial: { opacity: 0 }, transition: { duration: DURATION.quick / 1000, ease: EASING.out } }
   }
   return {
     initial: { x: DEAL_FROM.x, y: DEAL_FROM.y, opacity: 0, scale: DEAL_FROM.scale },
@@ -80,30 +80,44 @@ function dealProps(dealIndex: number | undefined, reduceMotion: boolean) {
   }
 }
 
-/** The hover tilt (UX §3): written straight to the DOM (no re-render per
- *  pointermove). Gated off under reduced motion (UX §8) and mid-drag. */
-function useCoinTilt(enabled: boolean, dragging: boolean) {
-  const tiltRef = useRef<HTMLDivElement>(null)
+/** The hover tilt (UX §3) + the 6th-pick shake, both Motion-driven (13b.6).
+ *  The tilt is a 3D rotation (rotateX/rotateY) eased by a spring — no direct
+ *  style writes, no re-render per pointermove (the targets are MotionValues).
+ *  The shake is a 3px keyframe run on `shakeKey` change (was a CSS
+ *  @keyframes + `key` remount). Gated off under reduced motion (UX §8) and
+ *  mid-drag. */
+function useCoinMotion(enabled: boolean, dragging: boolean, shaking: boolean, shakeKey: number) {
   const reduceMotion = useReducedMotion() ?? false
+  const rotateX = useMotionValue(0)
+  const rotateY = useMotionValue(0)
+  const shakeX = useMotionValue(0)
+  const springRotateX = useSpring(rotateX, SPRING.snappy)
+  const springRotateY = useSpring(rotateY, SPRING.snappy)
+  const [, animate] = useAnimate()
 
   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
-    const el = tiltRef.current
-    if (!el || !enabled || reduceMotion || dragging) return
+    if (!enabled || reduceMotion || dragging) return
     const rect = e.currentTarget.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
     const x = (e.clientX - rect.left) / rect.width - 0.5 // -0.5..0.5
     const y = (e.clientY - rect.top) / rect.height - 0.5
-    // The tilt is a 3D rotation (rotateX/rotateY) — the CSS `rotate`
-    // property takes a single angle, so it lives on `transform` (this div
-    // carries no other transforms; framer's are on the button).
-    el.style.transform = `rotateX(${(-y * MAX_TILT_DEG * 2).toFixed(2)}deg) rotateY(${(x * MAX_TILT_DEG * 2).toFixed(2)}deg)`
+    rotateX.set(-y * MAX_TILT_DEG * 2)
+    rotateY.set(x * MAX_TILT_DEG * 2)
   }
 
   const onPointerLeave = () => {
-    if (tiltRef.current) tiltRef.current.style.transform = ''
+    rotateX.set(0)
+    rotateY.set(0)
   }
 
-  return { tiltRef, onPointerMove, onPointerLeave, reduceMotion }
+  // The 6th-pick shake (3px, UX §3): a Motion keyframe run on shakeKey change.
+  useEffect(() => {
+    if (!shaking || reduceMotion) return
+    const a = animate(shakeX, [0, -3, 3, -3, 3, 0], { duration: CHOREO.shake.duration, ease: 'easeOut' })
+    return () => a.stop()
+  }, [shaking, shakeKey, reduceMotion, animate, shakeX])
+
+  return { springRotateX, springRotateY, shakeX, onPointerMove, onPointerLeave, reduceMotion }
 }
 
 /** The a11y label: position, selection state, effect kinds, the discard key. */
@@ -117,7 +131,7 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
   { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick, onDiscard, onHover, onHoverEnd },
   ref,
 ) {
-  const { tiltRef, onPointerMove, onPointerLeave, reduceMotion } = useCoinTilt(enabled, !!dragging)
+  const { springRotateX, springRotateY, shakeX, onPointerMove, onPointerLeave, reduceMotion } = useCoinMotion(enabled, !!dragging, shaking, shakeKey)
 
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
     // 13a.5: Ctrl/Cmd+click (toggle) and Shift+click (range) are selection gestures — they never pick.
@@ -159,14 +173,14 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
       aria-label={coinAriaLabel(index, enabled, !!selected, coin.effects)}
     >
       {/* The deal-flight layer: animates once on mount (fresh deal only).
-          Kept separate from the tilt div so the shake remount (key) never
-          replays the deal. */}
+          Kept separate from the tilt layer so the shake never replays the
+          deal. The tilt (rotateX/rotateY spring) + shake (x keyframes) are
+          Motion-driven (13b.6) — no direct style writes, no key remount. */}
       <motion.div className="hand-coin-deal" initial={initial} animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={transition}>
-        {/* key=shakeKey remounts the div so the shake animation restarts */}
-        <div key={shaking ? shakeKey : 0} ref={tiltRef} className={`hand-coin-tilt${shaking ? ' hand-coin-tilt--shake' : ''}`}>
+        <motion.div className="hand-coin-tilt" style={{ rotateX: springRotateX, rotateY: springRotateY, x: shakeX }}>
           <CoinDisc />
           <CoinBadges effects={coin.effects} />
-        </div>
+        </motion.div>
       </motion.div>
     </motion.button>
   )

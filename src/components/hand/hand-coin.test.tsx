@@ -5,10 +5,21 @@
 // UX §8). H/T carry a glyph, never color alone (colorblind-safe, UX §8).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import type { Coin } from '@/core/types'
 import { HandCoin } from './hand-coin'
 import { CoinDisc } from './coin-disc'
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** true if the transform carries a non-zero rotateX/rotateY (a tilt). The
+ *  tilt is Motion-driven (13b.6) — at rest the transform is identity
+ *  (rotateX(0deg) rotateY(0deg)), so "no tilt" = no non-zero rotation. */
+function hasNonZeroRotation(transform: string): boolean {
+  const rx = transform.match(/rotateX\((-?[\d.]+)deg\)/)
+  const ry = transform.match(/rotateY\((-?[\d.]+)deg\)/)
+  return (rx !== null && parseFloat(rx[1]) !== 0) || (ry !== null && parseFloat(ry[1]) !== 0)
+}
 
 /** A matchMedia stub for framer's useReducedMotion (same pattern as
  *  run.juice.test.tsx): motion-dom reads the media query once and subscribes
@@ -61,7 +72,7 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     expect(onPick.mock.calls[0][0]).toBeInstanceOf(HTMLElement)
   })
 
-  it('the hover tilt follows the pointer (normal motion)', () => {
+  it('the hover tilt follows the pointer (normal motion)', async () => {
     // jsdom rects are 0×0 (the tilt math divides by the width) — give the
     // button a real size.
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
@@ -71,17 +82,20 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     const btn = container.querySelector('button')!
     const tilt = container.querySelector('.hand-coin-tilt') as HTMLDivElement
     fireEvent.pointerMove(btn, { clientX: 10, clientY: 10 })
-    expect(tilt.style.transform).toContain('rotateX')
-    expect(tilt.style.transform).toContain('rotateY')
+    // The tilt is a spring (Motion, 13b.6) — it eases toward the pointer;
+    // wait for it to reach a non-zero rotation.
+    await waitFor(() => expect(hasNonZeroRotation(tilt.style.transform)).toBe(true), { timeout: 500 })
   })
 
-  it('reduced motion: no hover tilt (UX §8)', () => {
+  it('reduced motion: no hover tilt (UX §8)', async () => {
     reduced.setReduced(true)
     const { container } = render(<HandCoin coin={coin} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />)
     const btn = container.querySelector('button')!
     const tilt = container.querySelector('.hand-coin-tilt') as HTMLDivElement
     fireEvent.pointerMove(btn, { clientX: 10, clientY: 10 })
-    expect(tilt.style.transform).toBe('')
+    // Gated off under reduced motion: the transform stays identity (no tilt).
+    await wait(150)
+    expect(hasNonZeroRotation(tilt.style.transform)).toBe(false)
   })
 
   it('H/T carry a glyph + ARIA label, never color alone (colorblind-safe)', () => {

@@ -36,3 +36,18 @@ export const ECHO = {
   rise: 0.15,
   tumble: 0.26,
 } as const
+
+// Choreography beat durations (SDD UX §6) — the per-beat pop durations (s).
+export const CHOREO = {
+  chip: { duration: 0.3, stagger: 0.07 }, // chip pop
+  total: { duration: 0.22 }, // total pop (EASING.back)
+  tier: { duration: 0.12 }, // tier pop
+  cashFly: { duration: 0.35, stagger: 0.04 }, // cash fly
+  cashPop: { duration: 0.25, stagger: 0.08 }, // cash pop
+  skip: { duration: 0.25 }, // skip button
+  shake: { duration: 0.3 }, // hand-coin shake
+} as const
+
+// Screen-shake durations (ms) — the shakeScreen duration arg.
+export const SHAKE_DURATION = 300 as const // default
+export const CLEAR_SHAKE_DURATION = 350 as const // blind-clear (UX §7: 10px)

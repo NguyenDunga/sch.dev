@@ -3,30 +3,23 @@
 // site (choreography.ts `SHAKE_AMPLITUDE`); the decay is 250–350ms.
 // **Zero under prefers-reduced-motion** (UX §8) — the trigger is a no-op.
 //
-// Purely presentational (UX §0): it reads no state, never gates an action,
-// and the rAF loop runs only while a shake is active (no idle cost, UX §9).
+// 13b.5 — driven by a Motion keyframe animation on the ScreenShake wrapper,
+// not a module rAF loop. The wrapper registers a trigger; `shakeScreen()`
+// fires it. The decay is precomputed as a set of keyframes (amp · e^(−4t/T)
+// in a random direction), so the timing lives in Motion (a single declarative
+// animation), not a hand-rolled rAF loop.
+//
+// Purely presentational (UX §0): it reads no state, never gates an action.
 
+type ShakeTrigger = (opts: { amplitude: number; duration: number }) => void
 
-interface Shake {
-  amp: number
-  start: number
-  dur: number
-}
+import { SHAKE_DURATION } from '@/lib/motion'
 
-let shake: Shake | null = null
-let rafId: number | null = null
-let el: HTMLDivElement | null = null
+let trigger: ShakeTrigger | null = null
 
-/** Attach/detach the shaken element (the ScreenShake wrapper). */
-export function attachShakeEl(node: HTMLDivElement | null): void {
-  el = node
-  if (!node && rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
-    shake = null
-  } else if (node) {
-    node.style.transform = ''
-  }
+/** Register/unregister the shake trigger (the ScreenShake wrapper). */
+export function setShakeTrigger(fn: ShakeTrigger | null): void {
+  trigger = fn
 }
 
 /** Reduced motion (UX §8): the shake is zero. */
@@ -38,29 +31,5 @@ function reducedMotion(): boolean {
  *  (tier-scaled, UX §7), `duration` in ms (250–350). */
 export function shakeScreen(opts: { amplitude: number; duration?: number }): void {
   if (reducedMotion() || opts.amplitude <= 0) return
-  shake = { amp: opts.amplitude, start: performance.now(), dur: opts.duration ?? 300 }
-  startLoop()
+  trigger?.({ amplitude: opts.amplitude, duration: opts.duration ?? SHAKE_DURATION })
 }
-
-function startLoop(): void {
-  if (rafId === null) rafId = requestAnimationFrame(tick)
-}
-
-/** One frame: offset = amp · e^(−4t/T) in a random direction; the loop
- *  stops when the decay has run out (UX §7: exponential decay). */
-function tick(t: number): void {
-  rafId = null
-  if (!shake || !el) return
-  const e = (t - shake.start) / shake.dur
-  if (e >= 1) {
-    el.style.transform = ''
-    shake = null
-    return
-  }
-  const a = shake.amp * Math.exp(-4 * e)
-  const dx = (Math.random() * 2 - 1) * a
-  const dy = (Math.random() * 2 - 1) * a
-  el.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`
-  rafId = requestAnimationFrame(tick)
-}
-

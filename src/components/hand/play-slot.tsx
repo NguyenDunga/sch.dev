@@ -25,6 +25,9 @@ interface PlaySlotProps {
   onUnpick: () => void
   /** Buff phase: re-flip an unused Echo coin (provided only when allowed). */
   onReflip?: () => void
+  /** 13b.8: the tossed coin has landed (with its slot index) — drives the
+   *  projection / sfx / auto-score from the toss animation (no setTimeout). */
+  onLand?: (index: number) => void
   /** 13a.5: droppable ref for the slot root (reorder drop target). */
   slotRef?: (el: HTMLElement | null) => void
   /** 13a.5: a drag hovers over this slot (dashed ring). */
@@ -41,7 +44,7 @@ interface PlaySlotProps {
  *  phase an unused Echo coin is tappable to re-flip (12.6) — the TossCoin is
  *  keyed by face + echoUsed so it re-mounts (and re-animates, quick) when the
  *  re-flip resolves a new face. */
-function RevealedSlot({ slot, index, onReflip }: { slot: Extract<HandSlot, { kind: 'filled' }>; index: number; onReflip?: () => void }) {
+function RevealedSlot({ slot, index, onReflip, onLand }: { slot: Extract<HandSlot, { kind: 'filled' }>; index: number; onReflip?: () => void; onLand?: (index: number) => void }) {
   const coin = slot.coin
   const toss = (
     <TossCoin
@@ -50,6 +53,7 @@ function RevealedSlot({ slot, index, onReflip }: { slot: Extract<HandSlot, { kin
       index={index}
       effects={coin.effects}
       quick={slot.echoUsed}
+      onLand={onLand}
     />
   )
   if (onReflip) {
@@ -68,6 +72,7 @@ export function PlaySlot({
   revealed,
   onUnpick,
   onReflip,
+  onLand,
   slotRef,
   over,
   dragRef,
@@ -82,7 +87,7 @@ export function PlaySlot({
     )
   }
 
-  if (revealed) return <RevealedSlot slot={slot} index={index} onReflip={onReflip} />
+  if (revealed) return <RevealedSlot slot={slot} index={index} onReflip={onReflip} onLand={onLand} />
 
   const coin = slot.coin
 

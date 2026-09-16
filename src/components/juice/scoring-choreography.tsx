@@ -20,7 +20,7 @@ import { SHAKE_AMPLITUDE } from './choreography'
 import { shakeScreen } from './screen-shake'
 import { none, some } from '@/core/helpers'
 import type { CharmId, Score, TierId } from '@/core/types'
-import { EASING } from '@/lib/motion'
+import { CHOREO, DURATION, EASING, SHAKE_DURATION } from '@/lib/motion'
 import {
   bannerText,
   cashCoinCount,
@@ -84,7 +84,7 @@ function ChoreoCoins({ coins, matched, tierColor, beat, reduced }: ChoreoCoinsPr
                   ? { opacity: 1, scale: [0.5, 1.15, 1] }
                   : { opacity: 0.45, scale: [0.5, 1] }
             }
-            transition={reduced ? { duration: 0.16 } : { duration: 0.3, delay: i * 0.07, ease: EASING.back }}
+            transition={reduced ? { duration: DURATION.quick / 1000 } : { duration: CHOREO.chip.duration, delay: i * CHOREO.chip.stagger, ease: EASING.back }}
           >
             {c.face}
           </motion.span>
@@ -118,10 +118,10 @@ function TierBanner({ score, beat, tierColor, reduced }: TierBannerProps) {
           animate={exiting ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
           transition={
             exiting
-              ? { duration: 0.16, ease: EASING.out }
+              ? { duration: DURATION.quick / 1000, ease: EASING.out }
               : reduced
-                ? { duration: 0.16 }
-                : { duration: 0.22, ease: EASING.back }
+                ? { duration: DURATION.quick / 1000 }
+                : { duration: CHOREO.total.duration, ease: EASING.back }
           }
         >
           {bannerText(score)}
@@ -133,7 +133,7 @@ function TierBanner({ score, beat, tierColor, reduced }: TierBannerProps) {
           style={{ background: tierColor }}
           initial={{ opacity: 0.18 }}
           animate={{ opacity: 0 }}
-          transition={{ duration: 0.12, ease: EASING.out }}
+          transition={{ duration: CHOREO.tier.duration, ease: EASING.out }}
         />
       )}
     </>
@@ -167,7 +167,7 @@ function ChipFlight({ score, matched, charms, tierColor, targetRef }: ChipFlight
             style={{ background: tierColor ?? 'var(--primary)' }}
             initial={{ x: sx, y: cy, opacity: 1, scale: 1 }}
             animate={{ x: target.x - sx, y: target.y - cy, opacity: 0.7, scale: 0.55 }}
-            transition={{ duration: 0.35, delay: i * 0.04, ease: EASING.out }}
+            transition={{ duration: CHOREO.cashFly.duration, delay: i * CHOREO.cashFly.stagger, ease: EASING.out }}
           />
         )
       })}
@@ -195,7 +195,7 @@ function CashFlight({ coins, targetRef }: CashFlightProps) {
           className="choreo-cash-coin"
           initial={{ x: cx, y: cy, opacity: 1, scale: 0.6, rotate: -90 }}
           animate={{ x: target.x - cx, y: target.y - cy, opacity: 0.9, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.25, delay: i * 0.08, ease: EASING.back }}
+          transition={{ duration: CHOREO.cashPop.duration, delay: i * CHOREO.cashPop.stagger, ease: EASING.back }}
         >
           $
         </motion.span>
@@ -258,7 +258,7 @@ function BeatBursts({ beat, tierColor, tier, chipsRef, cashRef, chipTicks, cashT
     }
     // 13.6 — the resolve shake: amplitude scaled by tier (UX §7), zero
     // under reduced motion (the trigger is a no-op there, UX §8).
-    if (beat === 5 && tier) shakeScreen({ amplitude: SHAKE_AMPLITUDE[tier], duration: 300 })
+    if (beat === 5 && tier) shakeScreen({ amplitude: SHAKE_AMPLITUDE[tier], duration: SHAKE_DURATION })
     return () => {
       // Clear the pending ticks when the beat changes (no stale sounds).
       for (const t of beatTimers.current) window.clearTimeout(t)
@@ -275,7 +275,7 @@ function PrimaryFlash() {
       className="choreo-flash choreo-flash--primary"
       initial={{ opacity: 0.14 }}
       animate={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: EASING.out }}
+      transition={{ duration: CHOREO.skip.duration, ease: EASING.out }} // 250ms flash (one-off, UX §6)
     />
   )
 }

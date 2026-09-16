@@ -7,7 +7,7 @@
 //   - the × dismisses it (and persists the dismissal)
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { OnboardingHint } from './onboarding-hint'
@@ -50,10 +50,12 @@ describe('13a.10 — first-run onboarding hint', () => {
     expect(container.querySelector('.onboarding-hint')).toBeNull()
   })
 
-  it('the × dismisses it and the dismissal is persisted', () => {
+  it('the × dismisses it and the dismissal is persisted', async () => {
     render(<OnboardingHint />)
     fireEvent.click(screen.getByRole('button', { name: /dismiss hint/i }))
-    expect(screen.queryByRole('note')).toBeNull()
+    // The dismiss is a Motion exit (AnimatePresence, 13b.7) — wait for the
+    // banner to finish animating out.
+    await waitFor(() => expect(screen.queryByRole('note')).toBeNull(), { timeout: 1000 })
     expect(localStorage.getItem('fifty-fifty-onboarded')).toBe('1')
   })
 

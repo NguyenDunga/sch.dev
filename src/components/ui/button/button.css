@@ -1,7 +1,14 @@
 @theme {
     /* 50/50 button juice (button.tsx) — Ceramic Tactile (SDD UX §2–§3).
      * Shadows are hard offsets (zero blur) + a coral glow bloom; no blurred
-     * drop shadows (UX §2 shadow rule). */
+     * drop shadows (UX §2 shadow rule).
+     *
+     * 13b.12 deviation note: `btn-cta` (the CTA's infinite bob + glow breathe)
+     * and `btn-flash` (the one-shot flash sweep) are kept as CSS @keyframes —
+     * a deliberate exception to the "no @keyframes" rule. An infinite idle
+     * pulse is simpler and lighter in CSS than a framer-motion infinite
+     * animation (which would require a repeating `animate` on a motion.div).
+     * Both are disabled under prefers-reduced-motion (UX §8). */
     --animate-btn-cta: btn-cta 2.6s ease-in-out infinite;
     --animate-btn-flash: btn-flash 0.6s ease-out forwards;
 

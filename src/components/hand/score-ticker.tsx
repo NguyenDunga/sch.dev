@@ -4,7 +4,7 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import { TIERS } from '@/core/balance'
 import { isSome } from '@/core/helpers'
 import type { Option, Score } from '@/core/types'
-import { EASING } from '@/lib/motion'
+import { CHOREO, EASING } from '@/lib/motion'
 import type { Beat } from '@/components/juice/choreography'
 
 /** The active choreography beat (13.3): the run id (a remount key so each
@@ -88,7 +88,7 @@ function TickerMath({ chips, mult, total, choro, reduced, chipsRef }: TickerMath
         className="score-ticker-chips"
         ref={chipsRef}
         animate={chipsAnim}
-        transition={{ duration: 0.3, ease: EASING.out }}
+        transition={{ duration: CHOREO.chip.duration, ease: EASING.out }} // chip pop
       >
         <CountUp value={chips} active={!choro || beat >= 3} duration={dur ?? 0.45} instant={instant} />
       </motion.span>{' '}
@@ -96,7 +96,7 @@ function TickerMath({ chips, mult, total, choro, reduced, chipsRef }: TickerMath
       <motion.span
         className={`score-ticker-mult${choro && beat === 4 ? ' score-ticker-mult--flare' : ''}`}
         animate={multAnim}
-        transition={{ duration: 0.25, ease: EASING.out }}
+        transition={{ duration: CHOREO.skip.duration, ease: EASING.out }} // mult pop
       >
         <CountUp value={mult} active={!choro || beat >= 4} duration={dur ?? 0.2} instant={instant} />
       </motion.span>{' '}

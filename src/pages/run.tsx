@@ -17,7 +17,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { useReducedMotion } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
 import { BLINDS } from '@/core/balance'
 import { isFilled, none, some } from '@/core/helpers'
@@ -28,7 +27,6 @@ import { dropTargets, discardTargets, selectedInOrder, useCoinSelection, type Co
 import { CoinDnd, DiscardWellDrop, DraggableHandCoin, PlayDropZone, PlaySlotDnd } from '@/components/hand/coin-dnd.tsx'
 import { ScoreTicker } from '@/components/hand/score-ticker'
 import type { TossProjection } from '@/components/hand/score-ticker'
-import { landDelay } from '@/components/hand/toss'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
@@ -43,7 +41,6 @@ import { takeSnapshot } from '@/components/juice/choreography'
 import { useScoringChoreography } from '@/components/juice/use-scoring-choreography'
 import type { Beat, ChoroSeq, PlaySnapshot } from '@/components/juice/choreography'
 import { playSfx } from '@/components/juice/sfx'
-import { TOSS } from '@/lib/motion'
 
 /** { the previous hand/play ids, the deals computed from them }. */
 interface DealState {
@@ -123,22 +120,8 @@ function useDiscardGhost(wellRef: RefObject<HTMLDivElement | null>) {
 
 /** 13.7 — the staggered toss whoosh (UX §10): one per filled slot, ±5% rate,
  *  cleared on unmount (no leak). */
-function useTossSfx() {
-  const timers = useRef<number[]>([])
-  useEffect(() => {
-    const t = timers.current
-    return () => {
-      for (const id of t) window.clearTimeout(id)
-    }
-  }, [])
-  return (n: number) => {
-    for (let i = 0; i < n; i++) {
-      timers.current.push(
-        window.setTimeout(() => playSfx('toss', { rate: 1 + (Math.random() * 0.1 - 0.05) }), i * TOSS.stagger * 1000),
-      )
-    }
-  }
-}
+// 13b.8 — the whoosh is now played per-coin on landing (onLand, in
+// useTossLanding), so the staggered useTossSfx is gone.
 
 /** 6th-pick feedback (UX §3): play full → shake the tapped coin 3px + buzz. */
 function useShakeFeedback() {
@@ -318,7 +301,6 @@ function useHandFlow(
   const pickCoin = useRunStore((s) => s.pickCoin)
   const confirmPlay = useRunStore((s) => s.confirmPlay)
   const { shake, bump: onPlayFull } = useShakeFeedback()
-  const playToss = useTossSfx()
   const lastPick = useRef<{ id: number; t: number } | null>(null) // 13a.5 quick-play guard
   const hover = useHoveredCoin() // 13a.6 — the quick-discard hotspot's target
   const discardFlow = useDiscardFlow(hand, wellRef, selection, hover.hovered)
@@ -348,7 +330,7 @@ function useHandFlow(
   const handleConfirm = () => {
     selection.clear()
     confirmPlay()
-    playToss(play.filter(isFilled).length)
+    // 13b.8 — the whoosh sfx is played per-coin on landing (onLand), not here.
   }
 
   const dnd = usePlayRowDnd(hand, play, selection, pickOne, lastPick, onPlayFull, onUnpick, handleConfirm)
@@ -484,6 +466,9 @@ interface PlayAreaProps {
   registerRef: (i: number, el: HTMLButtonElement | null) => void
   onQuickDiscard: () => void
   getReflip: (i: number) => (() => void) | undefined
+  /** 13b.8: a tossed coin has landed (index) — drives the projection / sfx /
+   *  auto-score from the toss animation (no setTimeout). */
+  onLand: (i: number) => void
 }
 
 /** The play row (5 slots, a drop target — 13a.5) + the deck/discard-well
@@ -492,7 +477,7 @@ interface PlayAreaProps {
 function PlayArea({
   play, hand, revealed, canPick, shake, deals, wellRef, selection,
   onPick, onDiscard, onUnpick, onToggleSelect, onRangeSelect, onQuickPlay,
-  onHover, onHoverEnd, registerRef, onQuickDiscard, getReflip,
+  onHover, onHoverEnd, registerRef, onQuickDiscard, getReflip, onLand,
 }: PlayAreaProps) {
   return (
     <div className="play-area">
@@ -507,6 +492,7 @@ function PlayArea({
               canReorder={canPick}
               onUnpick={() => onUnpick(i, slot.kind === 'filled' ? slot.coin.id : -1)}
               onReflip={getReflip(i)}
+              onLand={onLand}
             />
           ))}
         </div>
@@ -595,76 +581,89 @@ function useUnpickSfx(unpickCoin: (i: number) => void) {
   }
 }
 
-/** 13a.1 — auto-advance buff → score when the buff phase has nothing for
- *  the player (no unused Echo re-flip in the play). Waits for the last
- *  tossed coin to land (stagger + rise) plus a short beat, then fires the
- *  same handleScore the button calls (snapshot + score). The explicit
- *  Score button stays as a fast-forward; a double score is a no-op (the
- *  store only scores from 'buff'). A hand with an available re-flip is
- *  never auto-scored (the player may want to re-flip first). */
-/** 13a.1/13a.7: a hand with nothing left to interact with scores itself —
- *  no available Echo re-flip (no Echo coins, or all of them already used).
- *  The delay waits for the last coin to land (the 13.2 stagger) + a beat to
- *  read the projected total (13a.7) before the choreography. The Score
- *  button remains the explicit fast-forward / early end. No store changes
- *  (UX §0). */
-function useAutoScore(handPhase: HandPhase, play: Play, onScore: () => void) {
-  const reflipAvailable = play.some((_, i) => canReflipAt(play, handPhase, i))
-  useEffect(() => {
-    if (handPhase !== 'buff' || reflipAvailable) return
-    const n = play.filter(isFilled).length
-    const delay = ((n - 1) * TOSS.stagger + TOSS.rise + 0.9) * 1000
-    const id = window.setTimeout(onScore, delay)
-    return () => window.clearTimeout(id)
-  }, [handPhase, reflipAvailable, play, onScore])
-}
-
-/** 13a.7 — the live projected score (chips × mult = total) as the tossed
- *  coins land. The store resolves the faces at confirm (the toss animation
- *  plays over 'buff', UX §0), so the projection is deterministic — the
- *  pipeline over the first `landed` coins (projectScore), matching the real
- *  score exactly (M13 §0). Null outside the buff phase (and for an empty
- *  play). */
-function useTossProjection(handPhase: HandPhase, play: Play, boss: Option<BossRuleId>, charms: CharmId[]): TossProjection | null {
-  const reduced = useReducedMotion() ?? false
+/** 13b.8 — the toss timing glue, driven by the toss animation's landing
+ *  events (no setTimeout / landDelay). Each coin fires `onLand(i)` when its
+ *  toss settles; from that single source of truth we:
+ *    - play the whoosh sfx (13.7) — one per landed coin
+ *    - advance the live projected total (13a.7) — `landed` counts the coins
+ *      that have settled (left→right, the 13.2 stagger)
+ *    - auto-score (13a.1/13a.7) — when every coin has landed AND no re-flip
+ *      is available, fire handleScore after a short beat to read the total.
+ *  The explicit Score button stays the fast-forward; a double score is a
+ *  no-op (the store only scores from 'buff'). A hand with an available
+ *  re-flip is never auto-scored (the player may want to re-flip first).
+ *  No store changes (UX §0). */
+function useTossLanding(
+  handPhase: HandPhase,
+  play: Play,
+  boss: Option<BossRuleId>,
+  charms: CharmId[],
+  onScore: () => void,
+): (TossProjection & { handleLand: (i: number) => void }) | null {
   const [landed, setLanded] = useState(0)
-  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const landedSetRef = useRef<Set<number>>(new Set())
   const inBuffRef = useRef(false)
+  const totalRef = useRef(0)
+  const autoScoreTimerRef = useRef<number | null>(null)
+  const onScoreRef = useRef(onScore)
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: keep the ref in sync with the latest onScore (stable useCallback).
+  onScoreRef.current = onScore
+  const reflipAvailableRef = useRef(false)
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: keep the ref in sync with the latest re-flip availability (checked on landing).
+  reflipAvailableRef.current = play.some((_, i) => canReflipAt(play, handPhase, i))
 
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach((t) => clearTimeout(t))
-    timersRef.current.clear()
+  const clearAutoScore = useCallback(() => {
+    if (autoScoreTimerRef.current !== null) {
+      clearTimeout(autoScoreTimerRef.current)
+      autoScoreTimerRef.current = null
+    }
   }, [])
 
-  // A fresh toss (the phase just became 'buff'): reset the landed count and
-  // schedule each coin's landing (left→right, the 13.2 stagger). Re-flips
-  // keep the phase 'buff' — no reset; the projection recomputes on the new
-  // face (the play prop changes).
+  // A fresh toss (the phase just became 'buff'): reset the landed count.
+  // Re-flips keep the phase 'buff' — no reset; the projection recomputes on
+  // the new face (the play prop changes) and the re-flipped coin re-lands.
   useEffect(() => {
     const inBuff = handPhase === 'buff'
     if (inBuff && !inBuffRef.current) {
       inBuffRef.current = true
       setLanded(0)
-      clearTimers()
-      let k = 0
-      play.forEach((slot, i) => {
-        if (slot.kind !== 'filled') return
-        k += 1
-        const at = k
-        const t = setTimeout(() => setLanded((cur) => Math.max(cur, at)), landDelay(i, reduced) * 1000)
-        timersRef.current.add(t)
-      })
+      landedSetRef.current = new Set()
+      totalRef.current = play.filter(isFilled).length
     }
-    if (!inBuff) inBuffRef.current = false
-  }, [handPhase, play, reduced, clearTimers])
+    if (!inBuff) {
+      inBuffRef.current = false
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate reset: the landed count is reset when the phase leaves 'buff'.
+      setLanded(0)
+      clearAutoScore()
+    }
+  }, [handPhase, play, clearAutoScore])
 
-  // Clear any pending landing timers on unmount.
-  useEffect(() => clearTimers, [clearTimers])
+  // A coin has landed (13b.8): whoosh sfx + advance the projection + the
+  // auto-score when every coin has settled and nothing is left to re-flip.
+  const handleLand = useCallback(
+    (i: number) => {
+      playSfx('toss', { rate: 1 + (Math.random() * 0.1 - 0.05) })
+      landedSetRef.current.add(i)
+      setLanded((cur) => Math.max(cur, i + 1))
+      const allLanded = totalRef.current > 0 && landedSetRef.current.size >= totalRef.current
+      if (allLanded && !reflipAvailableRef.current) {
+        clearAutoScore()
+        autoScoreTimerRef.current = window.setTimeout(() => {
+          autoScoreTimerRef.current = null
+          onScoreRef.current()
+        }, 900)
+      }
+    },
+    [clearAutoScore],
+  )
+
+  // Clear any pending auto-score on unmount.
+  useEffect(() => clearAutoScore, [clearAutoScore])
 
   if (handPhase !== 'buff') return null
   const total = play.filter(isFilled).length
   if (total === 0) return null
-  return { score: projectScore(play, boss, charms, landed), landed, total }
+  return { score: projectScore(play, boss, charms, landed), landed, total, handleLand }
 }
 
 /** 13a.5 — the keyboard shortcut set (locked 2026-09-15): number keys 1–9/
@@ -750,6 +749,8 @@ interface PlayAreaHostProps {
   registerRef: (i: number, el: HTMLButtonElement | null) => void
   onQuickDiscard: () => void
   getReflip: (i: number) => (() => void) | undefined
+  /** 13b.8: a tossed coin has landed (index). */
+  onLand: (i: number) => void
 }
 
 /** 13a.5 + 13a.6: the play area wrapped in the dnd context — a hand coin can
@@ -777,6 +778,7 @@ function PlayAreaHost({
   registerRef,
   onQuickDiscard,
   getReflip,
+  onLand,
 }: PlayAreaHostProps) {
   return (
     <CoinDnd hand={hand} onDropToPlay={onDropToPlay} onDropToDiscard={onDropToDiscard} onMovePlay={onMovePlay}>
@@ -800,6 +802,7 @@ function PlayAreaHost({
         registerRef={registerRef}
         onQuickDiscard={onQuickDiscard}
         getReflip={getReflip}
+        onLand={onLand}
       />
     </CoinDnd>
   )
@@ -860,18 +863,26 @@ export function RunScreen() {
   useAutoDraw()
   const flags = useRunFlags(handPhase, play)
   const choro = useScoringChoro(score)
-  useAutoScore(handPhase, play, choro.handleScore) // 13a.1/13a.7 — an idle buff never waits for a Score click
   useHandShortcuts(hand, play, handPhase, selection, flow.pickOne, flow.handleConfirm, choro.handleScore) // 13a.5
   const onBackgroundClick = useBackgroundClear(selection) // 13a.5 — empty-space click clears
   // 13a.7 — the live projected total (the boss rule applies, as in score()).
   const blind = BLINDS[blindIndex]
   const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
-  const projection = useTossProjection(handPhase, play, boss, charms)
+  // 13b.8 — the toss timing glue (projection + whoosh sfx + auto-score) is
+  // driven by the toss animation's landing events (onLand), not setTimeout.
+  const projection = useTossLanding(handPhase, play, boss, charms, choro.handleScore)
   return (
     <main className="run-screen" onClick={onBackgroundClick}>
       <RunTop onSave={save} />
       <OnboardingHint /> // 13a.10 — first-run hint (overlay, never blocks input)
       <CharmBar />
+       <ScoreTicker
+        score={lastScore}
+        projection={projection}
+        choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
+        chipsRef={choro.chipsRef}
+        cashRef={choro.cashRef}
+      />
       <PlayAreaHost
         play={play} hand={hand} revealed={flags.revealed} canPick={flags.canPick}
         shake={flow.shake} deals={deals} wellRef={wellRef} selection={selection}
@@ -879,13 +890,7 @@ export function RunScreen() {
         onDropToPlay={flow.handleDropToPlay} onDropToDiscard={flow.handleDropToDiscard} onMovePlay={flow.handleMovePlay}
         onQuickPlay={flow.handleQuickPlay} onHover={flow.onCoinHover} onHoverEnd={flow.onCoinHoverEnd}
         registerRef={flow.registerCoin} onQuickDiscard={flow.handleQuickDiscard} getReflip={flags.getReflip}
-      />
-      <ScoreTicker
-        score={lastScore}
-        projection={projection}
-        choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
-        chipsRef={choro.chipsRef}
-        cashRef={choro.cashRef}
+        onLand={projection ? projection.handleLand : () => {}}
       />
       <RunActions
         handPhase={handPhase}

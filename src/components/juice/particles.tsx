@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react'
 import { useRunStore } from '@/state/runStore'
 import { attachLayer, disposeParticles, emitConfetti } from './particles'
 import { CLEAR_SHAKE_AMPLITUDE } from './choreography'
+import { CLEAR_SHAKE_DURATION } from '@/lib/motion'
 import { shakeScreen } from './screen-shake'
 import { playSfx } from './sfx'
 
@@ -33,7 +34,7 @@ export function BlindClearConfetti() {
   useEffect(() => {
     if (prev.current === 'run' && phase === 'shop') {
       emitConfetti()
-      shakeScreen({ amplitude: CLEAR_SHAKE_AMPLITUDE, duration: 350 }) // UX §7: target-clear 10px
+      shakeScreen({ amplitude: CLEAR_SHAKE_AMPLITUDE, duration: CLEAR_SHAKE_DURATION }) // UX §7: target-clear 10px
       playSfx('winStinger') // 13.7 — the blind-clear stinger (UX §10)
     }
     prev.current = phase

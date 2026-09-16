@@ -112,16 +112,14 @@
 }
 
 /* the tilt layer: hover lift 4px / press 2px (CSS `translate`), pointer
-   tilt (CSS `transform: rotateX/rotateY`, written from JS), 120ms
-   spring-snappy feel. */
+   tilt (rotateX/rotateY) + the 6th-pick shake (x) are Motion-driven
+   (13b.6, hand-coin.tsx) — only the `translate` lift/press is CSS. */
 .hand-coin-tilt {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  transition:
-    translate 120ms var(--ease-out),
-    transform 120ms var(--ease-out);
+  transition: translate 120ms var(--ease-out);
 }
 
 .hand-coin:hover:not(:disabled) .hand-coin-tilt {
@@ -147,30 +145,6 @@
 .hand-coin:focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
-}
-
-/* 6th-pick shake (3px, UX §3) — runs once per shakeKey remount. */
-.hand-coin-tilt--shake {
-  animation: coin-shake 300ms var(--ease-out);
-}
-
-@keyframes coin-shake {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  20% {
-    translate: -3px 0;
-  }
-  40% {
-    translate: 3px 0;
-  }
-  60% {
-    translate: -3px 0;
-  }
-  80% {
-    translate: 3px 0;
-  }
 }
 
 /* empty hand slot placeholder (keeps the row layout stable). */
@@ -359,9 +333,5 @@
   }
   .hand-coin--selected .hand-coin-tilt {
     translate: none;
-  }
-  /* the 6th-pick shake is motion too (the error sfx still plays). */
-  .hand-coin-tilt--shake {
-    animation: none;
   }
 }

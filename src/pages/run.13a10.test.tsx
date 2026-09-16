@@ -7,7 +7,7 @@
 //   - a later run (flag set) never shows it again
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
@@ -61,10 +61,12 @@ describe('13a.10 — the first-run hint on the run screen', () => {
     expect(note.classList.contains('onboarding-hint')).toBe(true)
   })
 
-  it('dismissing the hint removes it for good (the flag is persisted)', () => {
+  it('dismissing the hint removes it for good (the flag is persisted)', async () => {
     mountRun()
     fireEvent.click(screen.getByRole('button', { name: /dismiss hint/i }))
-    expect(screen.queryByRole('note')).toBeNull()
+    // The dismiss is a Motion exit (AnimatePresence, 13b.7) — wait for the
+    // banner to finish animating out.
+    await waitFor(() => expect(screen.queryByRole('note')).toBeNull(), { timeout: 1000 })
     expect(localStorage.getItem('fifty-fifty-onboarded')).toBe('1')
     // A later run (same storage) never shows it again.
     cleanup()

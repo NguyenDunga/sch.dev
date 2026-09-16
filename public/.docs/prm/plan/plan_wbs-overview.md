@@ -1,8 +1,8 @@
 # WBS Overview: 50/50
 
-Work Breakdown Structure for the 50/50 build. The project is decomposed into **16 sequential milestones (M0–M15)**. Each milestone is self-contained and independently testable; each checkpoint is a single, unambiguous unit of work that traces back to a locked rule in the [Scope Statement](plan_scope-statement.md) or a draft value in the [Balance Baseline](plan_balance-baseline.md).
+Work Breakdown Structure for the 50/50 build. The project is decomposed into **17 sequential milestones (M0–M16)**. Each milestone is self-contained and independently testable; each checkpoint is a single, unambiguous unit of work that traces back to a locked rule in the [Scope Statement](plan_scope-statement.md) or a draft value in the [Balance Baseline](plan_balance-baseline.md).
 
-**Execution rule:** complete checkpoints **in order** within a milestone, and complete milestones **in order** (M0 → M15). Do not start a milestone until every checkpoint in the milestones it depends on is done and its exit gate passes. Dependencies are listed at the top of each milestone file.
+**Execution rule:** complete checkpoints **in order** within a milestone, and complete milestones **in order** (M0 → M16). Do not start a milestone until every checkpoint in the milestones it depends on is done and its exit gate passes. Dependencies are listed at the top of each milestone file.
 
 > **Status:** M0–M12 **Done** (plus the pre-M12 NASA quality gate). M13 (Juice) next. Checkboxes are checked off in each plan doc as checkpoints land; live status is tracked in [Direct & Manage Project Work](../execute/execute_work_management.md).
 
@@ -42,51 +42,6 @@ These apply to every milestone. **The [SDD](../../sdd/software_design_architecht
 | M13 | Juice (Animation & SFX) | M12 | [plan_wbs-m13-juice.md](plan_wbs-m13-juice.md) |
 | M14 | Test Suite Completion | M2–M11 | [plan_wbs-m14-tests.md](plan_wbs-m14-tests.md) |
 | M15 | README & Final Packaging | M12, M14 | [plan_wbs-m15-readme.md](plan_wbs-m15-readme.md) |
+| M16 | Deploy to GitHub Pages | M15 | [plan_wbs-m16-deploy.md](plan_wbs-m16-deploy.md) |
 
 ## Tree
-
-```
-50/50
-├── M0  Project Setup & Tooling      — scaffold, tooling, folders, dev/build/test green
-├── M1  Core Data Types              — Coin, CoinEffect(×9), Charm(×5), Tier(×6), HandPhase, RunState, BossRule, ShopOffer
-├── M2  Seeded RNG                   — createRng(seed), generateSeed(), determinism tests
-├── M3  Deck & Draw Pile            — deck.ts: build/shuffle/draw/discard/return (finite per blind)
-├── M4  Hand Phase State Machine     — Draw → Play → Toss → Buff → Score reducer
-├── M5  Pattern / Tier Matching      — matchTier(play, boss) → highest of 6 tiers | null
-├── M6  Scoring Pipeline             — tier → base → boosters → total → coin cash
-├── M7  Coin Effects (9)             — face / cash / draw-enchant / Echo / merge
-├── M8  Charms (5)                   — pool, ownership, left-to-right order
-├── M9  Shop                         — 5 offers, 1 free reroll, merge, remove, hand-size upgrade
-├── M10 Blind / Round / Boss         — 4 rounds × 3 blinds, targets, 4 boss rules
-├── M11 Save / Load                  — manual localStorage, resume at blind start
-├── M12 UI Screens                   — menu, run (draw/play/toss/buff/score), shop, game over
-├── M13 Juice                        — flip animation, ticker, confetti, SFX (no music)
-├── M14 Test Suite Completion        — full vitest green, determinism + boundary sweeps
-└── M15 README & Final Packaging     — install/run/seed docs, final audits, ship
-```
-
-## Traceability to Charter Objectives
-
-Every milestone maps to at least one [Charter](../init/init_project_charter.md) §2 objective.
-
-| Charter objective | Milestones |
-| --- | --- |
-| 1 — Complete 1-hour run | M3, M9, M10, M12, M15 |
-| 2 — Core loop fun & clear | M3, M4, M5, M6, M7, M8, M9, M12, M13 |
-| 3 — Reproducible, shareable runs | M2, M15 |
-| 4 — Persistence (save/resume) | M11 |
-| 5 — Core logic tested | M1, M2, M5, M6, M14 |
-| 6 — Ship on schedule | M0, M15 (all milestones roll up here) |
-
-## Mapping to Charter Key Milestones & Quality Gates
-
-The [Charter](../init/init_project_charter.md) §6 fixes four dated key milestones and the [Quality Gates](plan_quality-gates.md) are keyed to them. The M0–M15 build milestones roll up as follows (gate = the gate that must pass to exit the charter milestone):
-
-| Charter milestone (date) | Build milestones (M0–M15) | Gate to exit |
-| --- | --- | --- |
-| M1 — Scaffold (2026-09-19) | M0, M1 | tsc + ESLint + Prettier clean; vitest green |
-| M2 — Vertical slice (2026-09-22) | M2, M3, M4, M5, M6 | vitest green (RNG + scoring); playtest 5/5 (1 blind playable) |
-| M3 — Full 12-blind run (2026-09-26) | M7, M8, M9, M10, M11, M12 | vitest green (state); playtest 5/5; balance target |
-| M4 — Polish & done (2026-10-03) | M13, M14, M15 | all gates: 60fps, balance, full suite green |
-
-The frozen charter dates and the Quality Gates table are unchanged; this mapping is how the finer M0–M15 breakdown reports up to them.

@@ -1,132 +1,165 @@
-// Scoring choreography (13.3) — the 7-beat sequence machine. Starts when
-// lastScore changes (the store's score() is synchronous — the UI observes
-// the new lastScore and plays over it); a tap/key anywhere during beats
-// 1–6 skips to the settled end (beat 7). A stale lastScore at mount
-// (shop → run) never replays.
+// 13.3 — the scoring choreography state machine (UX §6).
 //
-// Purely presentational (UX §0): it never mutates state, never gates an
-// action. The numbers come from the store's Score; this hook only paces
-// the presentation.
+// A pure state machine over the 7-beat timeline (UX §6 table). `lastScore`
+// drives it: when a new scored result appears, the sequence starts at beat 1
+// and advances 2→7 on the beat durations (13.1 `beatDurations`). The
+// presentation layer (scoring-choreography.tsx) renders the per-beat
+// elements from the current beat.
+//
+// 13b.4 — the beats are driven by a single Motion timeline (useAnimate), not
+// a setTimeout chain: a clock motion value advances through the beats, with
+// each segment's length coming from the unchanged `beatDurations()` math.
+// The per-beat effects (banner, chip flight, mult, shake, resolve, cash) hang
+// off the beat state — driven by this sequence, not independent timers.
+//
+// Skip: any pointerdown / keydown (except the Score button, which is guarded
+// by the overlay's `beat < 7` gate) ends the sequence immediately — the
+// timeline stops and the state snaps to beat 7 (the settled state).
+//
+// Reduced motion (UX §8): the whole sequence runs at ~0.35× (the fast
+// durations from beatDurations) and the overlay drops the flights — but it
+// still runs (the beats still advance).
+//
+// The engine is untouched — this reads `lastScore` (already resolved by
+// `score()`) and only orchestrates the presentation (UX §0).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { RefObject } from 'react'
-import { useReducedMotion } from 'framer-motion'
+import { useAnimate, useMotionValue, useReducedMotion as useFramerReducedMotion } from 'framer-motion'
 import { isSome } from '@/core/helpers'
-import type { Option, Score } from '@/core/types'
+import type { Score } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import {
-  beatDurations,
-  cashCoinCount,
-  type Beat,
-  type BeatDurations,
-  type ChoroSeq,
-  type PlaySnapshot,
-} from './choreography'
+import { beatDurations, cashCoinCount, type ChoroSeq } from './choreography'
 
-interface ChoroState {
+export interface ChoroState {
   seq: ChoroSeq | null
-  beat: Beat
+  beat: number
   skipped: boolean
 }
 
-/** Arm the beat timers (2 → 7) at the given durations (beat 1 is the
- *  present); the timers are tracked in `timers` so a skip/unmount can
- *  clear them. A stale run id never advances the sequence (the `setBeat`
- *  closure guards it). */
-function scheduleBeats(
-  timers: Set<ReturnType<typeof setTimeout>>,
-  d: BeatDurations,
-  setBeat: (beat: Beat) => void,
-) {
-  const plan: [Beat, number][] = [
-    [2, d.banner],
-    [3, d.chips],
-    [4, d.mult],
-    [5, d.resolve],
-    [6, d.cash],
-    [7, d.settle],
-  ]
-  let at = d.reveal
-  for (const [beat, dur] of plan) {
-    const timer = setTimeout(() => {
-      timers.delete(timer)
-      setBeat(beat)
-    }, at)
-    timers.add(timer)
-    at += dur
-  }
-}
-
-/** A tap/key anywhere during the sequence skips it (UX §0/§6). */
-function useSkipListener(active: boolean, skip: () => void) {
-  useEffect(() => {
-    if (!active) return
-    const onDown = () => skip()
-    const onKey = () => skip()
-    window.addEventListener('pointerdown', onDown)
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [active, skip])
+export interface ScoringChoreography {
+  seq: ChoroSeq | null
+  beat: number
+  skipped: boolean
+  /** End the sequence now (skip). */
+  skip: () => void
+  /** True when the OS prefers reduced motion (the fast sequence). */
+  reduced: boolean
 }
 
 /**
- * The 7-beat sequence machine (13.3). Plays over lastScore:
- * reveal/match (1) → tier banner (2) → chips build (3) → mult flare (4) →
- * resolve (5) → cash fly (6) → settle (7, the end). The visual play
- * snapshot is read from `snapshotRef` at start (the caller captures it at
- * the Score tap, before the store empties the play).
+ * Drives the 7-beat choreography for the current `lastScore`. Returns the
+ * current beat (0 = idle, 1 = reveal, …, 7 = settled) and the sequence.
  */
-export function useScoringChoreography(snapshotRef: RefObject<PlaySnapshot | null>) {
+// eslint-disable-next-line max-lines-per-function -- the 7-beat timeline is a single cohesive unit; splitting it would obscure the beat-advancement logic.
+export function useScoringChoreography(snapshotRef: { current: unknown | null }): ScoringChoreography {
   const lastScore = useRunStore((s) => s.lastScore)
-  const reduced = useReducedMotion() ?? false
+  const reduced = useFramerReducedMotion() ?? false
   const [state, setState] = useState<ChoroState>({ seq: null, beat: 0, skipped: false })
-  const seenRef = useRef<Option<Score>>(lastScore)
-  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const seenRef = useRef(lastScore)
   const runIdRef = useRef(0)
+  const clock = useMotionValue(0)
+  const [, animate] = useAnimate()
+  const currentAnimRef = useRef<{ stop: () => void } | null>(null)
 
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach((t) => clearTimeout(t))
-    timersRef.current.clear()
+  /** Stop the running timeline (skip / a new score / unmount). */
+  const stop = useCallback(() => {
+    currentAnimRef.current?.stop()
+    currentAnimRef.current = null
   }, [])
 
   const start = useCallback(
     (score: Score) => {
-      clearTimers()
+      stop()
       runIdRef.current += 1
-      const runId = runIdRef.current
-      const seq: ChoroSeq = { runId, score, snapshot: snapshotRef.current }
+      const myRun = runIdRef.current
+      const seq: ChoroSeq = { runId: myRun, score, snapshot: snapshotRef.current }
       setState({ seq, beat: 1, skipped: false })
+
       const coins = seq.snapshot?.coins ?? []
       const d = beatDurations(score, coins.length, cashCoinCount(coins), reduced)
-      scheduleBeats(
-        timersRef.current,
-        d,
-        (beat) => setState((s) => (s.seq && s.seq.runId === runId ? { ...s, beat } : s)),
-      )
+
+      // The 7-beat timeline: advance the clock through the beats, each
+      // segment's length from beatDurations() (unchanged math). A stale
+      // runId (skip or a new score) ends the chain.
+      const setBeat = (beat: number) =>
+        setState((s) => (s.seq && s.seq.runId === myRun ? { ...s, beat } : s))
+      const isStale = () => runIdRef.current !== myRun
+
+      const run = async () => {
+        clock.set(0)
+        let acc = 0
+        const step = async (ms: number) => {
+          if (ms <= 0) return
+          acc += ms
+          const a = animate(clock, acc, { duration: ms / 1000, ease: 'linear' })
+          currentAnimRef.current = a
+          await a.finished
+        }
+        await step(d.reveal)
+        if (isStale()) return
+        setBeat(2)
+        await step(d.banner)
+        if (isStale()) return
+        setBeat(3)
+        await step(d.chips)
+        if (isStale()) return
+        setBeat(4)
+        await step(d.mult)
+        if (isStale()) return
+        setBeat(5)
+        await step(d.resolve)
+        if (isStale()) return
+        setBeat(6)
+        await step(d.cash)
+        if (isStale()) return
+        setBeat(7)
+      }
+      void run()
     },
-    [clearTimers, reduced, snapshotRef],
+    [stop, reduced, snapshotRef, animate, clock],
   )
 
+  // A new scored result starts a sequence; a cleared lastScore (a new run)
+  // resets to idle. `lastScore` is an Option — check `isSome`, not `.kind`.
   useEffect(() => {
-    if (!isSome(lastScore) || lastScore === seenRef.current) return
+    if (lastScore === seenRef.current) return
     seenRef.current = lastScore
+    if (!isSome(lastScore)) {
+      stop()
+      runIdRef.current += 1
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate reset: the choreography resets to idle when lastScore is cleared (a new run).
+      setState({ seq: null, beat: 0, skipped: false })
+      return
+    }
     start(lastScore.value)
-  }, [lastScore, start])
+  }, [lastScore, start, stop])
 
-  // Clear any pending beat timers on unmount.
-  useEffect(() => clearTimers, [clearTimers])
+  // Stop the timeline on unmount.
+  useEffect(() => stop, [stop])
 
-  /** Skip (13.4): snap to the settled end; the store's numbers are
-   *  untouched (score() set them before the sequence started). */
   const skip = useCallback(() => {
-    clearTimers()
+    // Invalidate the running timeline (its stale check ends the chain) and
+    // snap to the settled beat.
+    runIdRef.current += 1
+    stop()
     setState((s) => (s.seq && s.beat < 7 ? { ...s, beat: 7, skipped: true } : s))
-  }, [clearTimers])
+  }, [stop])
 
-  useSkipListener(Boolean(state.seq) && state.beat < 7, skip)
+  useSkipListener(skip)
 
   return { seq: state.seq, beat: state.beat, skipped: state.skipped, skip, reduced }
+}
+
+/** Any pointerdown / keydown skips the sequence (UX §6: "any input skips"). */
+function useSkipListener(skip: () => void): void {
+  useEffect(() => {
+    const onPointer = () => skip()
+    const onKey = () => skip()
+    window.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [skip])
 }

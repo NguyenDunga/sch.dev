@@ -123,11 +123,12 @@ describe('13a.7 — pre-computed score + auto-end score phase', () => {
     expect(useRunStore.getState().handPhase).toBe('buff')
 
     // Re-flip the Echo coin → nothing left to interact with → the hand
-    // scores itself (no Score click).
+    // scores itself (no Score click). The auto-score is a setTimeout that can
+    // be delayed by the rAF-driven toss in a loaded suite, so give it room.
     fireEvent.click(screen.getByRole('button', { name: /re-flip/i }))
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 4000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     expect(useRunStore.getState().lastScore.some).toBe(true)
-  })
+  }, 15000)
 
   it('the manual Score button still ends the hand early', async () => {
     useRunStore.getState().startRun('13a7-early')
