@@ -40,9 +40,9 @@
 
 ## Exit gate
 
-- [ ] All 13a checkpoints satisfied (or explicitly deferred with a note here).
-- [ ] `tsc --noEmit`, `npm run lint`, `npm test` all green; balance tests re-pinned to the balance-baseline tables (13a.3); M4/M8 conservation tests updated for keep-unplayed (13a.2).
-- [ ] A full 4-blind-per-round run is clearable end-to-end on the new curve, played **entirely by drag-and-drop** and **entirely by keyboard** (13a.12), both reaching the same scores.
-- [ ] Click-count per hand measurably reduced vs M12 (no Discard-mode toggle, no forced Score click on a no-Echo hand, auto-advance idle phases) — record before/after in `execute_work_management.md`.
-- [ ] No engine mutation from any input-convenience layer (drag, drop, auto-advance all route through existing store actions); every celebration still skippable (M13 §0).
-- [ ] `execute_work_management.md` M13a rows updated to Done with dates.
+- [x] All 13a checkpoints satisfied (or explicitly deferred with a note here). — all 12 Done (2026-09-15/16).
+- [x] `tsc --noEmit`, `npm run lint`, `npm test` all green; balance tests re-pinned to the balance-baseline tables (13a.3); M4/M8 conservation tests updated for keep-unplayed (13a.2). — 396/396, tsc + lint green (2026-09-16).
+- [ ] A full 4-blind-per-round run is clearable end-to-end on the new curve, played **entirely by drag-and-drop** and **entirely by keyboard** (13a.12), both reaching the same scores. — **Pending manual playtest.** The keyboard path is fully tested (13a.12), the drag path is tested (13a.5/13a.6), and the same-result property is proven (shared store actions, UX §0; 13a.12 store-identical under reduced motion) — but a full end-to-end hands-on playtest on the new curve is outstanding. Note: the base game is a build-gate by design (13a.11 — 0% full-run clear with no buys), so a full clear requires shop builds, not just input.
+- [x] Click-count per hand measurably reduced vs M12 (no Discard-mode toggle, no forced Score click on a no-Echo hand, auto-advance idle phases) — record before/after in `execute_work_management.md`. — recorded (M13a exit-gate note: −3 interactions/hand typical; multi-select N→1).
+- [x] No engine mutation from any input-convenience layer (drag, drop, auto-advance all route through existing store actions); every celebration still skippable (M13 §0). — drag/drop/auto-advance all call existing store actions (`pickCoin`/`discard`/`movePlayCoin`/`confirmPlay`/`score`); selection is render-state only; celebrations skippable (13.3). Tested (13a.5 “selecting mutates nothing”, juice skip tests).
+- [x] `execute_work_management.md` M13a rows updated to Done with dates. — all 13a.1–13a.12 Done (2026-09-15/16).
