@@ -13,7 +13,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { TossCoin } from './toss-coin'
-import { settleRotation } from './toss'
+import { settleRotation, landDelay } from './toss'
 
 /**
  * A matchMedia stub for framer's useReducedMotion: motion-dom's
@@ -70,6 +70,20 @@ describe('13.2 — settleRotation (lands on Slot.face)', () => {
     expect(settleRotation('T', 2)).toBe(900)
     expect(settleRotation('T', 1)).toBe(540)
     expect(settleRotation('T', 2) % 360).toBe(180)
+  })
+})
+
+describe('13a.7 — landDelay (when a coin first lands)', () => {
+  it('motion allowed: the arc rise after the left→right stagger (13.2)', () => {
+    // TOSS.rise = 0.4, TOSS.stagger = 0.05 → coin i lands at 0.4 + i*0.05.
+    expect(landDelay(0, false)).toBe(0.4)
+    expect(landDelay(1, false)).toBeCloseTo(0.45)
+    expect(landDelay(4, false)).toBeCloseTo(0.6)
+  })
+
+  it('reduced motion: every coin lands together at the cross-fade (160ms)', () => {
+    expect(landDelay(0, true)).toBe(0.16)
+    expect(landDelay(4, true)).toBe(0.16)
   })
 })
 

@@ -14,16 +14,21 @@
 // UI is a thin layer — it reads RunState and calls store actions; juice
 // never mutates state (UX §0).
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { useReducedMotion } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
-import { isFilled } from '@/core/helpers'
-import type { Coin, Hand, HandPhase, Play } from '@/core/types'
+import { BLINDS } from '@/core/balance'
+import { isFilled, none, some } from '@/core/helpers'
+import { projectScore } from '@/core/scoring'
+import type { BossRuleId, CharmId, Coin, Hand, HandPhase, Option, Play } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
 import { dropTargets, discardTargets, selectedInOrder, useCoinSelection, type CoinSelection } from '@/components/hand/coin-dnd'
 import { CoinDnd, DiscardWellDrop, DraggableHandCoin, PlayDropZone, PlaySlotDnd } from '@/components/hand/coin-dnd.tsx'
 import { ScoreTicker } from '@/components/hand/score-ticker'
+import type { TossProjection } from '@/components/hand/score-ticker'
+import { landDelay } from '@/components/hand/toss'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
@@ -595,15 +600,69 @@ function useUnpickSfx(unpickCoin: (i: number) => void) {
  *  Score button stays as a fast-forward; a double score is a no-op (the
  *  store only scores from 'buff'). A hand with an available re-flip is
  *  never auto-scored (the player may want to re-flip first). */
+/** 13a.1/13a.7: a hand with nothing left to interact with scores itself —
+ *  no available Echo re-flip (no Echo coins, or all of them already used).
+ *  The delay waits for the last coin to land (the 13.2 stagger) + a beat to
+ *  read the projected total (13a.7) before the choreography. The Score
+ *  button remains the explicit fast-forward / early end. No store changes
+ *  (UX §0). */
 function useAutoScore(handPhase: HandPhase, play: Play, onScore: () => void) {
   const reflipAvailable = play.some((_, i) => canReflipAt(play, handPhase, i))
   useEffect(() => {
     if (handPhase !== 'buff' || reflipAvailable) return
     const n = play.filter(isFilled).length
-    const delay = ((n - 1) * TOSS.stagger + TOSS.rise + 0.15) * 1000
+    const delay = ((n - 1) * TOSS.stagger + TOSS.rise + 0.9) * 1000
     const id = window.setTimeout(onScore, delay)
     return () => window.clearTimeout(id)
   }, [handPhase, reflipAvailable, play, onScore])
+}
+
+/** 13a.7 — the live projected score (chips × mult = total) as the tossed
+ *  coins land. The store resolves the faces at confirm (the toss animation
+ *  plays over 'buff', UX §0), so the projection is deterministic — the
+ *  pipeline over the first `landed` coins (projectScore), matching the real
+ *  score exactly (M13 §0). Null outside the buff phase (and for an empty
+ *  play). */
+function useTossProjection(handPhase: HandPhase, play: Play, boss: Option<BossRuleId>, charms: CharmId[]): TossProjection | null {
+  const reduced = useReducedMotion() ?? false
+  const [landed, setLanded] = useState(0)
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+  const inBuffRef = useRef(false)
+
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((t) => clearTimeout(t))
+    timersRef.current.clear()
+  }, [])
+
+  // A fresh toss (the phase just became 'buff'): reset the landed count and
+  // schedule each coin's landing (left→right, the 13.2 stagger). Re-flips
+  // keep the phase 'buff' — no reset; the projection recomputes on the new
+  // face (the play prop changes).
+  useEffect(() => {
+    const inBuff = handPhase === 'buff'
+    if (inBuff && !inBuffRef.current) {
+      inBuffRef.current = true
+      setLanded(0)
+      clearTimers()
+      let k = 0
+      play.forEach((slot, i) => {
+        if (slot.kind !== 'filled') return
+        k += 1
+        const at = k
+        const t = setTimeout(() => setLanded((cur) => Math.max(cur, at)), landDelay(i, reduced) * 1000)
+        timersRef.current.add(t)
+      })
+    }
+    if (!inBuff) inBuffRef.current = false
+  }, [handPhase, play, reduced, clearTimers])
+
+  // Clear any pending landing timers on unmount.
+  useEffect(() => clearTimers, [clearTimers])
+
+  if (handPhase !== 'buff') return null
+  const total = play.filter(isFilled).length
+  if (total === 0) return null
+  return { score: projectScore(play, boss, charms, landed), landed, total }
 }
 
 /** 13a.5 — the keyboard shortcut set (locked 2026-09-15): number keys 1–9/
@@ -786,6 +845,8 @@ export function RunScreen() {
   const play = useRunStore((s) => s.play)
   const handPhase = useRunStore((s) => s.handPhase)
   const lastScore = useRunStore((s) => s.lastScore)
+  const blindIndex = useRunStore((s) => s.blindIndex)
+  const charms = useRunStore((s) => s.charms)
   const unpickCoin = useRunStore((s) => s.unpickCoin)
   const score = useRunStore((s) => s.score)
   const save = useRunStore((s) => s.save)
@@ -797,9 +858,13 @@ export function RunScreen() {
   useAutoDraw()
   const flags = useRunFlags(handPhase, play)
   const choro = useScoringChoro(score)
-  useAutoScore(handPhase, play, choro.handleScore) // 13a.1 — a no-Echo buff never waits for a Score click
+  useAutoScore(handPhase, play, choro.handleScore) // 13a.1/13a.7 — an idle buff never waits for a Score click
   useHandShortcuts(hand, play, handPhase, selection, flow.pickOne, flow.handleConfirm, choro.handleScore) // 13a.5
   const onBackgroundClick = useBackgroundClear(selection) // 13a.5 — empty-space click clears
+  // 13a.7 — the live projected total (the boss rule applies, as in score()).
+  const blind = BLINDS[blindIndex]
+  const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
+  const projection = useTossProjection(handPhase, play, boss, charms)
   return (
     <main className="run-screen" onClick={onBackgroundClick}>
       <RunTop onSave={save} />
@@ -814,6 +879,7 @@ export function RunScreen() {
       />
       <ScoreTicker
         score={lastScore}
+        projection={projection}
         choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
         chipsRef={choro.chipsRef}
         cashRef={choro.cashRef}

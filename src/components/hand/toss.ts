@@ -4,6 +4,7 @@
 // and the math is unit-testable without a DOM.
 
 import type { Face } from '@/core/types'
+import { TOSS } from '@/lib/motion'
 
 /**
  * The final rotateX (deg) that lands the two-face disc on `face`: whole
@@ -13,4 +14,12 @@ import type { Face } from '@/core/types'
  */
 export function settleRotation(face: Face, spins: number): number {
   return spins * 360 + (face === 'T' ? 180 : 0)
+}
+
+/** 13a.7 — when (seconds) the coin in slot `index` first lands: the toss
+ *  arc's rise after the left→right stagger (13.2). Reduced motion (UX §8):
+ *  a single 2D cross-fade — every coin lands together at 160ms. Drives the
+ *  live projected score (the pattern emerges as the coins land). */
+export function landDelay(index: number, reduced: boolean): number {
+  return reduced ? 0.16 : index * TOSS.stagger + TOSS.rise
 }

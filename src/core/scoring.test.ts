@@ -3,7 +3,7 @@
 // Checkpoints 5.1–5.12 (plan_wbs-m5-tier-matching.md), 6.1–6.10 (plan_wbs-m6-scoring.md).
 
 import { describe, expect, it } from 'vitest'
-import { matchTier, resolveFace, scoreHand } from './scoring'
+import { matchTier, projectScore, resolveFace, scoreHand } from './scoring'
 import { filledSlot, none, some } from './helpers'
 import { createRng } from './rng'
 import type { Rng } from './rng'
@@ -482,5 +482,58 @@ describe('M7 — coin face effects (resolveFace)', () => {
     ])
     const s = scoreHand(p, noBoss, [], fakeRng([0.1, 0.1]))
     expect(s).toEqual({ kind: 'none', cash: TAX_PAYOUT * 2 })
+  })
+})
+
+// 13a.7 — the projected score (the deterministic pipeline over the first
+// `landed` tossed coins; the live pre-computed total as the coins land).
+describe('13a.7 projectScore', () => {
+  it('builds the pattern as coins land (first k of the play)', () => {
+    // HHHHH: 2 coins can't match a tier; 3 → triple-run; 4 → 4-in-a-row; 5 → jackpot.
+    expect(projectScore(play('HHHHH'), noBoss, [], 0)).toEqual({ kind: 'none', cash: 0 })
+    expect(projectScore(play('HHHHH'), noBoss, [], 1)).toEqual({ kind: 'none', cash: 0 })
+    expect(projectScore(play('HHHHH'), noBoss, [], 2)).toEqual({ kind: 'none', cash: 0 })
+    expect(projectScore(play('HHHHH'), noBoss, [], 3)).toEqual({ kind: 'scored', tier: 'tripleRun', chips: 20, mult: 2, total: 40, cash: 0 })
+    expect(projectScore(play('HHHHH'), noBoss, [], 4)).toEqual({ kind: 'scored', tier: 'fourRow', chips: 40, mult: 3, total: 120, cash: 0 })
+    expect(projectScore(play('HHHHH'), noBoss, [], 5)).toEqual({ kind: 'scored', tier: 'jackpot', chips: 50, mult: 4, total: 200, cash: 0 })
+  })
+
+  it('matches scoreHand\'s deterministic part exactly (chips × mult = total)', () => {
+    for (const s of ['HHTH.', 'HTHTH', 'HTTHH', 'HHHTH']) {
+      const real = scoreHand(play(s), noBoss, ['plusChips', 'plusMult'], freshRng())
+      const proj = projectScore(play(s), noBoss, ['plusChips', 'plusMult'], 5)
+      expect(real.kind).toBe('scored')
+      if (real.kind === 'scored') {
+        expect(proj).toEqual({ kind: 'scored', tier: real.tier, chips: real.chips, mult: real.mult, total: real.total, cash: 0 })
+      }
+    }
+  })
+
+  it('applies the boss tier rules (noJackpots demotes, noAlternating voids)', () => {
+    expect(projectScore(play('HHHHH'), boss('noJackpots'), [], 5).kind === 'scored' && projectScore(play('HHHHH'), boss('noJackpots'), [], 5).tier).toBe('fourSame')
+    expect(projectScore(play('HTHTH'), boss('noAlternating'), [], 5)).toEqual({ kind: 'none', cash: 0 })
+  })
+
+  it('counts only the landed coins, in slot order (empty slots skipped)', () => {
+    // H.H.H — the filled coins are slots 0/2/4; the first two are 'HH' (no tier),
+    // all three compact to HHH (triple-run) — matchTier reads the filled faces only.
+    expect(projectScore(play('H.H.H'), noBoss, [], 2)).toEqual({ kind: 'none', cash: 0 })
+    expect(projectScore(play('H.H.H'), noBoss, [], 3)).toEqual({ kind: 'scored', tier: 'tripleRun', chips: 20, mult: 2, total: 40, cash: 0 })
+  })
+
+  it('clamps `landed` to the filled count (over → all, under → 0)', () => {
+    expect(projectScore(play('HHTH.'), noBoss, [], 99)).toEqual(projectScore(play('HHTH.'), noBoss, [], 4))
+    expect(projectScore(play('HHTH.'), noBoss, [], -3)).toEqual({ kind: 'none', cash: 0 })
+  })
+
+  it('carries no coin cash (the Jackpot 25% roll is left to the real score)', () => {
+    const p = effectPlay([
+      ['H', [{ kind: 'jackpot' }]],
+      ['H', [{ kind: 'tax' }]],
+      ['H', []],
+    ])
+    // scoreHand rolls the jackpot (0.1 < 0.25 → pays); the projection never rolls.
+    expect(scoreHand(p, noBoss, [], fakeRng([0.1])).cash).toBe(JACKPOT_PAYOUT + TAX_PAYOUT)
+    expect(projectScore(p, noBoss, [], 3).cash).toBe(0)
   })
 })

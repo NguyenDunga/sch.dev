@@ -39,6 +39,20 @@
   color: var(--cash);
 }
 
+/* 13a.7 — the "projected" sticker (the live pre-computed total as the
+ *  coins land): a small flat label, muted (Ceramic Tactile, UX §2). */
+.score-ticker-projected {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  padding: 0.15rem 0.5rem;
+}
+
 /* 13.3 — choreography beats: the mult flare (color ramps toward hot) and
  * the resolve collide (inline-block so the transforms apply). */
 .score-ticker-chips,

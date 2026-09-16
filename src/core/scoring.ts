@@ -144,7 +144,10 @@ export function matchTier(play: Play, boss: Option<BossRuleId>): Option<TierId> 
  *                 passing its 25% roll (rng, never Math.random); paid to cash,
  *                 outside chips × mult
  */
-export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[], rng: Rng): Score {
+/** M6 steps 1–4 (tier → base → boosters → total) — the deterministic part of
+ *  the pipeline (no rng). `scoreHand` adds step 5 (coin cash) on top; the
+ *  13a.7 projection reuses this so auto and manual scores agree exactly. */
+function tierScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[]): { tier: TierId | null; chips: number; mult: number; total: number } {
   // 1. Tier (boss rules already applied inside matchTier)
   const tierOpt = matchTier(play, boss)
   const tier = tierOpt.some ? tierOpt.value : null
@@ -163,6 +166,11 @@ export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[
 
   // 4. Score
   const total = tier ? chips * mult : 0
+  return { tier, chips, mult, total }
+}
+
+export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[], rng: Rng): Score {
+  const { tier, chips, mult, total } = tierScore(play, boss, charms)
 
   // 5. Coin cash (per coin in the play; a merged coin carries both effects)
   let cash = 0
@@ -175,4 +183,20 @@ export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[
   }
 
   return tier ? { kind: 'scored', tier, chips, mult, total, cash } : { kind: 'none', cash }
+}
+
+/**
+ * 13a.7 — the projected score: the deterministic pipeline (M6 steps 1–4) over
+ *  the first `landed` tossed coins — the pattern that has emerged so far as
+ *  the coins land left→right. The play is locked (faces resolved at confirm),
+ *  so the projection is deterministic and matches the real score's
+ *  chips × mult = total exactly (M13 §0); only the coin cash (step 5 — the
+ *  Jackpot 25% roll) is left to the real score, so the projection's cash is 0.
+ *  `landed` clamps to the number of filled slots (0..n).
+ */
+export function projectScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[], landed: number): Score {
+  const filled = play.filter(isFilled)
+  const n = Math.max(0, Math.min(landed, filled.length))
+  const { tier, chips, mult, total } = tierScore(filled.slice(0, n), boss, charms)
+  return tier ? { kind: 'scored', tier, chips, mult, total, cash: 0 } : { kind: 'none', cash: 0 }
 }
