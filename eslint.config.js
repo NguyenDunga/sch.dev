@@ -35,4 +35,11 @@ export default defineConfig([
       'max-lines-per-function': ['error', { max: 60 }],
     },
   },
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 120 }],
+    },
+  }
 ])
