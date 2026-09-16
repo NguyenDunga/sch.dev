@@ -65,11 +65,11 @@ describe('BOSS_RULES', () => {
 })
 
 describe('CHARMS', () => {
-  it('5-charm pool with baseline categories and prices (Re-Toss removed 2026-09-13)', () => {
+  it('5-charm pool with baseline categories and prices (Re-Toss removed 2026-09-13; Extra Hand $10→$15 in 13a.11)', () => {
     expect(CHARMS.map((c) => [c.id, c.category, c.price])).toEqual([
       ['plusChips', 'scoring', 5],
       ['plusMult', 'scoring', 8],
-      ['extraHand', 'flip', 10],
+      ['extraHand', 'flip', 15],
       ['payday', 'economy', 5],
       ['jackpotFever', 'pattern', 12],
     ])

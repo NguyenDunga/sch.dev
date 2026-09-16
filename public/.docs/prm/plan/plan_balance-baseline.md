@@ -101,7 +101,7 @@ Cash effects (Tax, Jackpot) pay **cash** at score time, outside the chips × mul
 | --- | --- | --- | --- |
 | +Chips | Scoring booster | +10 chips per hand | $5 |
 | +Mult | Scoring booster | +1 mult per hand | $8 |
-| Extra Hand | Flip modifier | +1 hand per blind | $10 → *re-tune, now +1 of 4 = +25%; see WBS 13a.11* |
+| Extra Hand | Flip modifier | +1 hand per blind | **$15** (13a.11 playtest: $10→$15 — +1 of 4 hands ≈ +5–9pp clear rate on mid-difficulty blinds; the only charm that adds a full hand of EV) |
 | Payday | Economy | +$5 on blind clear | $5 |
 | Jackpot Fever | Pattern booster | Jackpot scores 2× (chips ×2 at its position in charm order) | $12 |
 
@@ -122,3 +122,4 @@ Scoring pipeline: see [Scope Statement](plan_scope-statement.md) → Scoring Pip
 | 2026-09-12 | Chance column corrected (M2.1): triple-run 18.75% / 3-same 37.5%, EV 58.4375 (was 25% / 31.25% / 60.0) — pinned by the exhaustive 32-hand test | Enumeration vs the locked tier priority |
 | 2026-09-14 | Pre-m13a baseline: 10 hands/blind; base deck **80** all-plain (10 × 8, all hands full); Short Fuse **8**; targets 300/500/800 … 1500/2400/3500; **all hand coins dumped to discard after scoring**; per-blind EV 584 @ 1.95× round-1 | 8-coin hand flow, no-wilds deck calc (Q&A round 4) |
 | 2026-09-15 | **m13a rebalance:** 4 hands/blind; base deck **24 = 16 plain + 8 Weight(Heads)**; Short Fuse **3**; targets **halved** (150/250/400 … 750/1200/1750); **keep-unplayed** (only played coins discarded); early-clear payout; mixed-deck odds (scripts `tmp/balance-m13a.mjs`) | Rebalance for a faster, weightier loop where upgrades matter (WBS m13a) |
+| 2026-09-16 | **13a.11 hand-economy re-tune:** Extra Hand **$10 → $15** (playtest: +1 hand ≈ +5–9pp clear rate on mid blinds, 1.4–3× on the hard ones — worth more than $10). Short Fuse **stays at 3 hands**: the round-2 boss (750) has a structural wall — 3×200 (max tier) = 600 < 750, so 3 hands can't clear it without boosters (4×200 = 800 is the only no-booster path); with a booster it's a jackpot-gate (1.3% with Jackpot-Fever + 4 Weight-H), not impossible. The boss's difficulty is set by the target, not the hand count. Playtest: `src/core/playtest-13a11.test.ts` | WBS 13a.11 — re-price so neither hand-economy option dominates |

@@ -47,7 +47,7 @@ export const BOSS_RULES: BossRule[] = [
 export const CHARMS: CharmDef[] = [
   { id: 'plusChips', name: '+Chips', category: 'scoring', price: 5 },
   { id: 'plusMult', name: '+Mult', category: 'scoring', price: 8 },
-  { id: 'extraHand', name: 'Extra Hand', category: 'flip', price: 10 },
+  { id: 'extraHand', name: 'Extra Hand', category: 'flip', price: 15 }, // 13a.11: $10 → $15 (playtest: +1 of 4 hands ≈ +5–9pp clear rate on mid blinds; the only charm that adds a full hand of EV)
   { id: 'payday', name: 'Payday', category: 'economy', price: 5 },
   { id: 'jackpotFever', name: 'Jackpot Fever', category: 'pattern', price: 12 },
 ]
