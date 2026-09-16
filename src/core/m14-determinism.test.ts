@@ -47,9 +47,9 @@ function runTrace(seed: string, blinds: number): object[] {
     // If the blind is over, leave the shop (or transition to next blind)
     if (store.getState().phase === 'shop') {
       const offers = store.getState().shop.offers.map((o) => ({
-        id: o.id,
         kind: o.kind,
-        label: 'label' in o ? o.label : undefined,
+        charm: 'charm' in o ? o.charm : undefined,
+        effect: 'effect' in o ? o.effect : undefined,
       }))
       trace.push({ type: 'shop', blind: b, offers })
       store.getState().leaveShop()

@@ -28,17 +28,17 @@ import { useAnimate, useMotionValue, useReducedMotion as useFramerReducedMotion 
 import { isSome } from '@/core/helpers'
 import type { Score } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import { beatDurations, cashCoinCount, type ChoroSeq } from './choreography'
+import { beatDurations, cashCoinCount, type Beat, type ChoroSeq, type PlaySnapshot } from './choreography'
 
 export interface ChoroState {
   seq: ChoroSeq | null
-  beat: number
+  beat: Beat
   skipped: boolean
 }
 
 export interface ScoringChoreography {
   seq: ChoroSeq | null
-  beat: number
+  beat: Beat
   skipped: boolean
   /** End the sequence now (skip). */
   skip: () => void
@@ -72,7 +72,7 @@ export function useScoringChoreography(snapshotRef: { current: unknown | null })
       stop()
       runIdRef.current += 1
       const myRun = runIdRef.current
-      const seq: ChoroSeq = { runId: myRun, score, snapshot: snapshotRef.current }
+      const seq: ChoroSeq = { runId: myRun, score, snapshot: snapshotRef.current as PlaySnapshot | null }
       setState({ seq, beat: 1, skipped: false })
 
       const coins = seq.snapshot?.coins ?? []
@@ -82,7 +82,7 @@ export function useScoringChoreography(snapshotRef: { current: unknown | null })
       // segment's length from beatDurations() (unchanged math). A stale
       // runId (skip or a new score) ends the chain.
       const setBeat = (beat: number) =>
-        setState((s) => (s.seq && s.seq.runId === myRun ? { ...s, beat } : s))
+        setState((s) => (s.seq && s.seq.runId === myRun ? { ...s, beat: beat as Beat } : s))
       const isStale = () => runIdRef.current !== myRun
 
       const run = async () => {

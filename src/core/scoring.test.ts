@@ -510,7 +510,8 @@ describe('13a.7 projectScore', () => {
   })
 
   it('applies the boss tier rules (noJackpots demotes, noAlternating voids)', () => {
-    expect(projectScore(play('HHHHH'), boss('noJackpots'), [], 5).kind === 'scored' && projectScore(play('HHHHH'), boss('noJackpots'), [], 5).tier).toBe('fourSame')
+    const s = projectScore(play('HHHHH'), boss('noJackpots'), [], 5)
+    expect(s.kind === 'scored' && s.tier).toBe('fourSame')
     expect(projectScore(play('HTHTH'), boss('noAlternating'), [], 5)).toEqual({ kind: 'none', cash: 0 })
   })
 

@@ -36,7 +36,7 @@ function Ghost({ ghost, onDone }: { ghost: DiscardGhost; onDone: (key: number) =
       style={{ left: ghost.from.x, top: ghost.from.y, width: ghost.from.w, height: ghost.from.h }}
       initial={initial}
       animate={animate}
-      transition={transition}
+      transition={transition as any}
       onAnimationComplete={() => onDone(ghost.key)}
     >
       <CoinDisc face={undefined} />

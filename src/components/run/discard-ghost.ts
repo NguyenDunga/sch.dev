@@ -37,7 +37,7 @@ export function ghostMotionProps(
 ): {
   initial: Record<string, number>
   animate: Record<string, number>
-  transition: { duration: number; ease: readonly number[] }
+  transition: { duration: number; ease: number[] }
 } {
   // End centered on the well: final top-left = well center − half the coin.
   const dx = to.x - from.w / 2 - from.x
@@ -46,12 +46,12 @@ export function ghostMotionProps(
     return {
       initial: { opacity: 1 },
       animate: { opacity: 0 },
-      transition: { duration: DURATION.quick / 1000, ease: EASING.out },
+      transition: { duration: DURATION.quick / 1000, ease: [...EASING.out] },
     }
   }
   return {
     initial: { x: 0, y: 0, opacity: 1, scale: 1 },
     animate: { x: dx, y: dy, opacity: 0, scale: 0.5 },
-    transition: { duration: DISCARD.duration, ease: EASING.out },
+    transition: { duration: DISCARD.duration, ease: [...EASING.out] },
   }
 }

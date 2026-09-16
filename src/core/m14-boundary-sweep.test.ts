@@ -11,7 +11,7 @@ import { matchTier, scoreHand } from './scoring'
 import { filledSlot, none, some } from './helpers'
 import { createRng } from './rng'
 import { TIERS } from './balance'
-import type { Face, Play, TierId } from './types'
+import type { CharmId, Face, Play, Score, TierId } from './types'
 
 /** Build a Play from a string: 'H'/'T' = tossed coin, '.' = empty slot. */
 function play(s: string): Play {
@@ -24,12 +24,23 @@ function play(s: string): Play {
 }
 
 const noBoss = none
-const noCharms: string[] = []
+const noCharms: CharmId[] = []
 const freshRng = () => createRng('m14-boundary')
 
 const tierValue = (id: TierId): number => {
   const t = TIERS.find((x) => x.id === id)!
   return t.chips * t.mult
+}
+
+/** Assert the score is 'scored' and return its total. */
+function scoredTotal(score: Score): number {
+  expect(score.kind).toBe('scored')
+  return (score as { kind: 'scored'; total: number }).total
+}
+
+/** Assert the score is 'none'. */
+function assertNone(score: Score): void {
+  expect(score.kind).toBe('none')
 }
 
 /** The expected tier for a play of N coins with a given face pattern. */
@@ -38,8 +49,7 @@ describe('M14.4 — Boundary sweep: coin count × tier', () => {
   describe('1 tossed coin', () => {
     it('no tier possible (n < 3)', () => {
       expect(matchTier(play('H'), noBoss)).toEqual(none)
-      const score = scoreHand(play('H'), noBoss, noCharms, freshRng())
-      expect(score.kind).toBe('none')
+      assertNone(scoreHand(play('H'), noBoss, noCharms, freshRng()))
     })
   })
 
@@ -47,14 +57,12 @@ describe('M14.4 — Boundary sweep: coin count × tier', () => {
   describe('2 tossed coins', () => {
     it('HH → no tier (n < 3)', () => {
       expect(matchTier(play('HH'), noBoss)).toEqual(none)
-      const score = scoreHand(play('HH'), noBoss, noCharms, freshRng())
-      expect(score.kind).toBe('none')
+      assertNone(scoreHand(play('HH'), noBoss, noCharms, freshRng()))
     })
 
     it('HT → no tier (n < 3)', () => {
       expect(matchTier(play('HT'), noBoss)).toEqual(none)
-      const score = scoreHand(play('HT'), noBoss, noCharms, freshRng())
-      expect(score.kind).toBe('none')
+      assertNone(scoreHand(play('HT'), noBoss, noCharms, freshRng()))
     })
   })
 
@@ -62,12 +70,10 @@ describe('M14.4 — Boundary sweep: coin count × tier', () => {
   describe('3 tossed coins', () => {
     it('HHH → tripleRun (run of 3)', () => {
       expect(matchTier(play('HHH'), noBoss)).toEqual(some('tripleRun'))
-      const score = scoreHand(play('HHH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('tripleRun'))
+      expect(scoredTotal(scoreHand(play('HHH'), noBoss, noCharms, freshRng()))).toBe(tierValue('tripleRun'))
     })
 
-    it('HHT → threeSame (H appears 3×? No — H appears 2, T appears 1 → none)', () => {
-      // HHT: H=2, T=1, maxCount=2, maxRun=2 → no tier
+    it('HHT → no tier (H=2, T=1, maxCount=2, maxRun=2)', () => {
       expect(matchTier(play('HHT'), noBoss)).toEqual(none)
     })
 
@@ -80,28 +86,20 @@ describe('M14.4 — Boundary sweep: coin count × tier', () => {
   describe('4 tossed coins', () => {
     it('HHHH → fourRow (run of 4)', () => {
       expect(matchTier(play('HHHH'), noBoss)).toEqual(some('fourRow'))
-      const score = scoreHand(play('HHHH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('fourRow'))
+      expect(scoredTotal(scoreHand(play('HHHH'), noBoss, noCharms, freshRng()))).toBe(tierValue('fourRow'))
     })
 
-    it('HHHT → fourSame (H appears 4×, not all adjacent? No — HHH is a run of 3, then T. maxRun=3, maxCount=4 → fourSame)', () => {
-      // HHHT: H=3, T=1, maxCount=3, maxRun=3 → tripleRun (run of 3)
-      // Wait: H=3 not 4. Let me re-check: H,H,H,T → H count = 3, T count = 1
-      // maxCount = 3, maxRun = 3 → tripleRun
+    it('HHHT → tripleRun (run of 3 Hs, maxCount=3)', () => {
       expect(matchTier(play('HHHT'), noBoss)).toEqual(some('tripleRun'))
+      expect(scoredTotal(scoreHand(play('HHHT'), noBoss, noCharms, freshRng()))).toBe(tierValue('tripleRun'))
     })
 
-    it('HHHTH → fourSame (H appears 4×, not adjacent)', () => {
-      // This is 5 slots. For 4 coins: H,H,H,T is 4. Let's use HHTH (4 coins)
-      // HHTH: H=3, T=1, maxCount=3, maxRun=2 → threeSame
+    it('HHTH → threeSame (H=3, maxRun=2)', () => {
       expect(matchTier(play('HHTH'), noBoss)).toEqual(some('threeSame'))
+      expect(scoredTotal(scoreHand(play('HHTH'), noBoss, noCharms, freshRng()))).toBe(tierValue('threeSame'))
     })
 
-    it('HHHT → tripleRun (run of 3 Hs)', () => {
-      expect(matchTier(play('HHHT'), noBoss)).toEqual(some('tripleRun'))
-    })
-
-    it('HTHH → fourSame? No: H=3, T=1, maxRun=2 → threeSame', () => {
+    it('HTHH → threeSame (H=3, maxRun=2)', () => {
       expect(matchTier(play('HTHH'), noBoss)).toEqual(some('threeSame'))
     })
   })
@@ -110,75 +108,63 @@ describe('M14.4 — Boundary sweep: coin count × tier', () => {
   describe('5 tossed coins', () => {
     it('HHHHH → jackpot', () => {
       expect(matchTier(play('HHHHH'), noBoss)).toEqual(some('jackpot'))
-      const score = scoreHand(play('HHHHH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('jackpot'))
+      expect(scoredTotal(scoreHand(play('HHHHH'), noBoss, noCharms, freshRng()))).toBe(tierValue('jackpot'))
     })
 
     it('HHHHT → fourRow (run of 4 Hs)', () => {
       expect(matchTier(play('HHHHT'), noBoss)).toEqual(some('fourRow'))
-      const score = scoreHand(play('HHHHT'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('fourRow'))
+      expect(scoredTotal(scoreHand(play('HHHHT'), noBoss, noCharms, freshRng()))).toBe(tierValue('fourRow'))
     })
 
     it('HTHTH → alternating', () => {
       expect(matchTier(play('HTHTH'), noBoss)).toEqual(some('alternating'))
-      const score = scoreHand(play('HTHTH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('alternating'))
+      expect(scoredTotal(scoreHand(play('HTHTH'), noBoss, noCharms, freshRng()))).toBe(tierValue('alternating'))
     })
 
-    it('HHHTH → fourSame (H appears 4×, maxRun=3)', () => {
+    it('HHHTH → fourSame (H=4, maxRun=3)', () => {
       expect(matchTier(play('HHHTH'), noBoss)).toEqual(some('fourSame'))
-      const score = scoreHand(play('HHHTH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('fourSame'))
+      expect(scoredTotal(scoreHand(play('HHHTH'), noBoss, noCharms, freshRng()))).toBe(tierValue('fourSame'))
     })
 
     it('HHHTT → tripleRun (run of 3 Hs)', () => {
       expect(matchTier(play('HHHTT'), noBoss)).toEqual(some('tripleRun'))
-      const score = scoreHand(play('HHHTT'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('tripleRun'))
+      expect(scoredTotal(scoreHand(play('HHHTT'), noBoss, noCharms, freshRng()))).toBe(tierValue('tripleRun'))
     })
 
-    it('HHTTH → threeSame (H appears 3×)', () => {
+    it('HHTTH → threeSame (H=3)', () => {
       expect(matchTier(play('HHTTH'), noBoss)).toEqual(some('threeSame'))
-      const score = scoreHand(play('HHTTH'), noBoss, noCharms, freshRng())
-      expect(score.total).toBe(tierValue('threeSame'))
+      expect(scoredTotal(scoreHand(play('HHTTH'), noBoss, noCharms, freshRng()))).toBe(tierValue('threeSame'))
     })
 
-    it('HTHTT → no tier (H=2, T=3, maxCount=3 → threeSame? T=3 → threeSame)', () => {
-      // HTHTT: H=2, T=3, maxCount=3, maxRun=2 → threeSame
+    it('HTHTT → threeSame (T=3)', () => {
       expect(matchTier(play('HTHTT'), noBoss)).toEqual(some('threeSame'))
     })
   })
 
   // ── Full pipeline: scoreHand with charms ────────────────────────────
   describe('scoreHand pipeline with charms', () => {
-    it('plusCharm boosts chips: tripleRun + plusChips', () => {
-      const base = tierValue('tripleRun')
+    it('plusChips boosts chips: tripleRun + plusChips', () => {
       const tier = TIERS.find((t) => t.id === 'tripleRun')!
       const boosted = (tier.chips + 10) * tier.mult
-      const score = scoreHand(play('HHH'), noBoss, ['plusChips'], freshRng())
-      expect(score.total).toBe(boosted)
-      expect(boosted).toBeGreaterThan(base)
+      expect(scoredTotal(scoreHand(play('HHH'), noBoss, ['plusChips'], freshRng()))).toBe(boosted)
+      expect(boosted).toBeGreaterThan(tierValue('tripleRun'))
     })
 
     it('plusMult boosts mult: tripleRun + plusMult', () => {
       const tier = TIERS.find((t) => t.id === 'tripleRun')!
       const boosted = tier.chips * (tier.mult + 1)
-      const score = scoreHand(play('HHH'), noBoss, ['plusMult'], freshRng())
-      expect(score.total).toBe(boosted)
+      expect(scoredTotal(scoreHand(play('HHH'), noBoss, ['plusMult'], freshRng()))).toBe(boosted)
     })
 
     it('jackpotFever doubles chips on jackpot only', () => {
       const tier = TIERS.find((t) => t.id === 'jackpot')!
       const boosted = tier.chips * 2 * tier.mult
-      const score = scoreHand(play('HHHHH'), noBoss, ['jackpotFever'], freshRng())
-      expect(score.total).toBe(boosted)
+      expect(scoredTotal(scoreHand(play('HHHHH'), noBoss, ['jackpotFever'], freshRng()))).toBe(boosted)
     })
 
     it('jackpotFever does NOT boost non-jackpot tiers', () => {
       const tier = TIERS.find((t) => t.id === 'tripleRun')!
-      const score = scoreHand(play('HHH'), noBoss, ['jackpotFever'], freshRng())
-      expect(score.total).toBe(tier.chips * tier.mult) // unchanged
+      expect(scoredTotal(scoreHand(play('HHH'), noBoss, ['jackpotFever'], freshRng()))).toBe(tier.chips * tier.mult)
     })
   })
 

@@ -39,9 +39,9 @@ export function OnboardingHint() {
           role="note"
           aria-label="Getting started"
           style={{ x: '-50%' }}
-          initial={reduceMotion ? false : { opacity: 0, y: SLIDE_Y }}
+          initial={reduceMotion ? (false as unknown as { opacity: number; y: number }) : { opacity: 0, y: SLIDE_Y }}
           animate={{ opacity: 1, y: 0 }}
-          exit={reduceMotion ? false : { opacity: 0, y: SLIDE_Y }}
+          exit={reduceMotion ? (false as unknown as { opacity: number; y: number }) : { opacity: 0, y: SLIDE_Y }}
           transition={{ duration: DURATION.slow / 1000, ease: EASING.out }}
         >
           <p>{HINT_TEXT}</p>

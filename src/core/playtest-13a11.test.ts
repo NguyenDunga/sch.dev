@@ -44,7 +44,7 @@ import {
 import { isFilled, none, some, emptyHand } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
-import type { BossRuleId, CharmId, Coin, Option, Play, TierId } from '@/core/types'
+import type { BossRuleId, CharmId, Coin, Face, HandSlot, Option, TierId } from '@/core/types'
 
 const RUNS = 150 // full-run context: seeds per variant
 const BLIND_RUNS = 200 // isolated blind cells: seeds per cell
@@ -58,9 +58,9 @@ const BUILD_RUNS = 300 // round-2 boss with-build cells: seeds per cell
 function faceProbs(coin: Coin): [number, number, number] {
   const fx = (k: Coin['effects'][number]['kind']) => coin.effects.find((e) => e.kind === k)
   const magnetic = fx('magnetic')
-  const doubleSide = fx('doubleSide')
+  const doubleSide = fx('doubleSide') as { kind: 'doubleSide'; favored: Face } | undefined
   const chaos = fx('chaos')
-  const weight = fx('weight')
+  const weight = fx('weight') as { kind: 'weight'; favored: Face } | undefined
   const reverse = fx('reverse')
   // Base P(H) when no left-dependent odds effect applies.
   let base: number
@@ -335,7 +335,7 @@ describe('13a.11 — EV math cross-checks (the sim must match the real pipeline)
     for (const coin of coins) {
       const table = faceProbs(coin)
       for (let ctx = 0; ctx < 3; ctx++) {
-        const left = ctx === 0 ? none : ctx === 1 ? some('H') : some('T')
+        const left = ctx === 0 ? none : ctx === 1 ? some<Face>('H') : some<Face>('T')
         const rng = createRng(`mc-${coin.id}-${ctx}`)
         let h = 0
         for (let i = 0; i < N; i++) if (resolveFace(rng, coin, left) === 'H') h++
@@ -363,9 +363,14 @@ describe('13a.11 — EV math cross-checks (the sim must match the real pipeline)
     const N = 20000
     let total = 0
     for (let i = 0; i < N; i++) {
-      const play: Play[] = []
+      const play: HandSlot[] = []
       for (let j = 0; j < hand.length; j++) {
-        const face = resolveFace(rng, hand[j], j === 0 ? none : some(play[j - 1].face))
+        let prevFace: Option<Face> = none
+        if (j > 0) {
+          const p = play[j - 1]
+          if (p.kind === 'filled') prevFace = some<Face>(p.face)
+        }
+        const face = resolveFace(rng, hand[j], prevFace)
         play.push({ kind: 'filled', coin: hand[j], face, echoUsed: false })
       }
       const s = scoreHand(play, none, [], rng)
