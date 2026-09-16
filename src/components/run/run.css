@@ -1,7 +1,8 @@
 /*
  * Run screen (C6) — layout + the blind header, charm bar, action bar, and
- * discard mode. Ceramic Tactile (SDD UX §2–§3): flat panels, 1px --line
- * borders, chunky radii, no blurred shadows.
+ * the 13a.6 drop zones (discard well + the corner quick-discard hotspot).
+ * Ceramic Tactile (SDD UX §2–§3): flat panels, 1px --line borders, chunky
+ * radii, no blurred shadows.
  */
 
 .run-screen {
@@ -274,15 +275,67 @@
   pointer-events: none;
 }
 
-/* discard mode: the hand coins take on a red tint (tap to discard). */
-.hand-row--discard .hand-coin .coin-disc {
-  outline: 2px dashed var(--danger);
-  outline-offset: 3px;
+/* the discard well drop target (13a.6): a dashed ring while a coin hovers
+   over it (the well itself is the 13.1 sunk circle + count). */
+
+.discard-well-drop {
+  border-radius: var(--r-md);
 }
 
-.hand-row--discard .hand-coin .coin-badge {
-  background: var(--danger);
-  color: var(--surface);
+.discard-well-drop--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 4px;
+}
+
+/* -- hand zone (13a.6): the hand row + the corner quick-discard hotspot -- */
+
+.hand-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.hand-zone .hand-row {
+  flex: 1;
+}
+
+/* the corner quick-discard hotspot (13a.6): hover a coin, then this — the
+   hovered coin (or the whole selection) is discarded. Sticker style (UX §2). */
+
+.quick-discard {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem; /* ≥44px hit target (UX §3) */
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background var(--dur-micro) var(--ease-out),
+    translate var(--dur-micro) var(--ease-out);
+}
+
+.quick-discard:hover {
+  background: color-mix(in srgb, var(--danger) 15%, var(--surface));
+  translate: 0 -2px;
+}
+
+.quick-discard:active {
+  translate: 0 1px;
+}
+
+.quick-discard:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* -- action bar ------------------------------------------------------------- */
@@ -296,9 +349,13 @@
   padding-bottom: 0.5rem;
 }
 
-/* Reduced motion (UX §8): no hover lift on the charm chips. */
+/* Reduced motion (UX §8): no hover lift on the charm chips / quick-discard. */
 @media (prefers-reduced-motion: reduce) {
   .charm-chip:hover {
+    translate: none;
+  }
+  .quick-discard:hover,
+  .quick-discard:active {
     translate: none;
   }
 }

@@ -89,19 +89,39 @@ export function dropTargets(hand: Hand, play: Play, dropped: number, selected: S
   return list.slice(0, Math.max(0, room))
 }
 
-/** A routed dnd-kit drag end (13a.5). */
+/** The selected filled coins in hand order (13a.6). */
+export function selectedInOrder(hand: Hand, selected: Set<number>): number[] {
+  const list: number[] = []
+  hand.forEach((s, i) => {
+    if (s.kind === 'filled' && selected.has(i)) list.push(i)
+  })
+  return list
+}
+
+/** The hand indices a discard drop should discard (13a.6): if the dropped
+ *  coin is selected, the WHOLE selection (in hand order); else just the
+ *  dropped coin. Discard is unlimited — no cap (unlike dropTargets). */
+export function discardTargets(hand: Hand, dropped: number, selected: Set<number>): number[] {
+  if (selected.has(dropped) && selected.size > 0) return selectedInOrder(hand, selected)
+  return [dropped]
+}
+
+/** A routed dnd-kit drag end (13a.5 + 13a.6). */
 export type DropRoute =
   | { kind: 'pick'; handIndex: number }
   | { kind: 'move'; from: number; to: number }
+  | { kind: 'discard'; handIndex: number }
   | null
 
-/** Route a dnd-kit drag end (13a.5): a hand coin dropped on the play row (or
- *  any slot) picks it; a play coin dropped on a slot reorders the row. */
+/** Route a dnd-kit drag end: a hand coin dropped on the play row (or any
+ *  slot) picks it (13a.5); a hand coin dropped on the discard well
+ *  discards it (13a.6); a play coin dropped on a slot reorders the row. */
 export function routeDrop(activeId: unknown, overId: unknown): DropRoute {
   const a = String(activeId)
   const o = String(overId)
-  if (a.startsWith('hand-') && (o === 'play-row' || o.startsWith('slot-'))) {
-    return { kind: 'pick', handIndex: Number(a.slice('hand-'.length)) }
+  if (a.startsWith('hand-')) {
+    if (o === 'discard-well') return { kind: 'discard', handIndex: Number(a.slice('hand-'.length)) }
+    if (o === 'play-row' || o.startsWith('slot-')) return { kind: 'pick', handIndex: Number(a.slice('hand-'.length)) }
   }
   if (a.startsWith('play-') && o.startsWith('slot-')) {
     return { kind: 'move', from: Number(a.slice('play-'.length)), to: Number(o.slice('slot-'.length)) }

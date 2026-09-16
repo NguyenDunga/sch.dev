@@ -17,14 +17,15 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
-import { useState } from 'react'
-import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
+import { useCallback, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent, ReactNode, RefObject } from 'react'
 import type { Coin, Hand, HandSlot } from '@/core/types'
 import { routeDrop } from './coin-dnd'
 import { CoinBadges } from './coin-badges'
 import { CoinDisc } from './coin-disc'
 import { HandCoin } from './hand-coin'
 import { PlaySlot } from './play-slot'
+import { DiscardWell } from '@/components/run/piles'
 
 const DRAG_ID_PREFIX = 'hand-'
 
@@ -32,13 +33,16 @@ interface CoinDndProps {
   hand: Hand
   /** A hand coin was dropped on the play row: pick it (or its whole selection). */
   onDropToPlay: (handIndex: number) => void
+  /** 13a.6: a hand coin was dropped on the discard well: discard it (or its
+   *  whole selection). */
+  onDropToDiscard: (handIndex: number) => void
   /** 13a.5: a play coin was dropped on a slot: reorder the row. */
   onMovePlay: (from: number, to: number) => void
   children: ReactNode
 }
 
 /** The dnd context + the pointer-followed drag overlay. */
-export function CoinDnd({ hand, onDropToPlay, onMovePlay, children }: CoinDndProps) {
+export function CoinDnd({ hand, onDropToPlay, onDropToDiscard, onMovePlay, children }: CoinDndProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
@@ -51,6 +55,7 @@ export function CoinDnd({ hand, onDropToPlay, onMovePlay, children }: CoinDndPro
     if (!e.over) return
     const route = routeDrop(e.active.id, e.over.id)
     if (route?.kind === 'pick') onDropToPlay(route.handIndex)
+    else if (route?.kind === 'discard') onDropToDiscard(route.handIndex)
     else if (route?.kind === 'move') onMovePlay(route.from, route.to)
   }
 
@@ -86,6 +91,19 @@ export function PlayDropZone({ children }: { children: ReactNode }) {
   return (
     <div ref={setNodeRef} className={`play-drop-zone${isOver ? ' play-drop-zone--over' : ''}`}>
       {children}
+    </div>
+  )
+}
+
+/** 13a.6: the discard well as an always-live drop target (dashed ring while
+ *  a coin hovers over it). Dropping a hand coin on it discards — the store
+ *  does the move (`discard`, the same action the other paths call); the
+ *  discard ghost plays the flight (13.1). */
+export function DiscardWellDrop({ wellRef }: { wellRef: RefObject<HTMLDivElement | null> }) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'discard-well' })
+  return (
+    <div ref={setNodeRef} className={`discard-well-drop${isOver ? ' discard-well-drop--over' : ''}`}>
+      <DiscardWell wellRef={wellRef} />
     </div>
   )
 }
@@ -140,27 +158,40 @@ interface DraggableHandCoinProps {
   onToggleSelect: () => void
   /** Shift+click: range-select from the last anchor to this coin. */
   onRangeSelect: () => void
+  /** 13a.6: per-coin discard control (the D key while the coin is focused).
+   *  The store does the move (`discard`). */
+  onDiscard?: (el: HTMLElement) => void
+  /** 13a.6: the pointer entered this coin (the quick-discard hotspot tracks
+   *  the hovered coin). */
+  onHover?: () => void
+  /** 13a.6: the pointer left this coin. */
+  onHoverEnd?: () => void
+  /** 13a.6: register this coin's element (the discard ghost's flight origin). */
+  registerRef?: (el: HTMLButtonElement | null) => void
 }
 
 /** A hand coin with dnd-kit drag wired in: press-drag to the play row picks
- *  it (or its whole selection). Plain click still picks; Ctrl/Cmd+click and
- *  Shift+click drive the multi-select instead. */
+ *  it (or its whole selection); press-drag to the discard well discards it
+ *  (13a.6). Plain click still picks; Ctrl/Cmd+click and Shift+click drive
+ *  the multi-select instead; D (focused) discards (13a.6). */
 export function DraggableHandCoin({
-  coin,
-  index,
-  enabled,
-  shaking,
-  shakeKey,
-  dealIndex,
-  selected,
-  onPick,
-  onToggleSelect,
-  onRangeSelect,
+  coin, index, enabled, shaking, shakeKey, dealIndex, selected,
+  onPick, onToggleSelect, onRangeSelect, onDiscard, onHover, onHoverEnd, registerRef,
 }: DraggableHandCoinProps) {
   const { listeners, setNodeRef, isDragging } = useDraggable({
     id: `${DRAG_ID_PREFIX}${index}`,
     disabled: !enabled,
   })
+
+  // The dnd-kit node ref + the coin-element registry (ghost origin) share
+  // one callback ref.
+  const ref = useCallback(
+    (el: HTMLButtonElement | null) => {
+      setNodeRef(el)
+      registerRef?.(el)
+    },
+    [setNodeRef, registerRef],
+  )
 
   const onSelectClick = (e: ReactMouseEvent<HTMLButtonElement>): boolean => {
     if (e.ctrlKey || e.metaKey) {
@@ -177,7 +208,7 @@ export function DraggableHandCoin({
 
   return (
     <HandCoin
-      ref={setNodeRef}
+      ref={ref}
       coin={coin}
       index={index}
       enabled={enabled}
@@ -189,6 +220,9 @@ export function DraggableHandCoin({
       dragProps={listeners}
       onSelectClick={onSelectClick}
       onPick={onPick}
+      onDiscard={onDiscard}
+      onHover={onHover}
+      onHoverEnd={onHoverEnd}
     />
   )
 }

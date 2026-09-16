@@ -12,7 +12,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, renderHook } from '@testing-library/react'
-import { dropTargets, routeDrop, useCoinSelection } from './coin-dnd'
+import { discardTargets, dropTargets, routeDrop, selectedInOrder, useCoinSelection } from './coin-dnd'
 import { DraggableHandCoin } from './coin-dnd.tsx'
 import type { Coin, Hand, HandSlot, Play } from '@/core/types'
 
@@ -103,6 +103,30 @@ describe('dropTargets', () => {
   })
 })
 
+describe('discardTargets (13a.6)', () => {
+  it('a plain drop discards just the dropped coin', () => {
+    expect(discardTargets(hand(8), 3, new Set())).toEqual([3])
+  })
+
+  it('a selected drop discards the whole selection (in hand order)', () => {
+    const sel = new Set([5, 1, 3])
+    expect(discardTargets(hand(8), 3, sel)).toEqual([1, 3, 5])
+  })
+
+  it('a dropped coin NOT in the selection discards just itself', () => {
+    expect(discardTargets(hand(8), 3, new Set([1, 2]))).toEqual([3])
+  })
+
+  it('unlimited — no cap (unlike dropTargets)', () => {
+    expect(discardTargets(hand(8), 0, new Set([0, 1, 2, 3, 4, 5, 6, 7]))).toHaveLength(8)
+  })
+
+  it('selectedInOrder skips empty slots', () => {
+    const h: Hand = [...hand(3), { kind: 'empty' }, slot(9), slot(10)]
+    expect(selectedInOrder(h, new Set([4, 1, 0]))).toEqual([0, 1, 4])
+  })
+})
+
 describe('routeDrop', () => {
   it('a hand coin dropped on the play row → pick', () => {
     expect(routeDrop('hand-3', 'play-row')).toEqual({ kind: 'pick', handIndex: 3 })
@@ -112,12 +136,20 @@ describe('routeDrop', () => {
     expect(routeDrop('hand-0', 'slot-2')).toEqual({ kind: 'pick', handIndex: 0 })
   })
 
+  it('a hand coin dropped on the discard well → discard (13a.6)', () => {
+    expect(routeDrop('hand-2', 'discard-well')).toEqual({ kind: 'discard', handIndex: 2 })
+  })
+
   it('a play coin dropped on a slot → move', () => {
     expect(routeDrop('play-4', 'slot-1')).toEqual({ kind: 'move', from: 4, to: 1 })
   })
 
   it('a play coin dropped on the play row (itself) → nothing', () => {
     expect(routeDrop('play-2', 'play-row')).toBeNull()
+  })
+
+  it('a play coin dropped on the discard well → nothing (only hand coins discard)', () => {
+    expect(routeDrop('play-1', 'discard-well')).toBeNull()
   })
 
   it('a hand coin dropped on the hand / elsewhere → nothing', () => {
@@ -177,5 +209,51 @@ describe('DraggableHandCoin click routing', () => {
     expect(onRangeSelect).toHaveBeenCalledTimes(1)
     expect(onPick).not.toHaveBeenCalled()
     expect(onToggleSelect).not.toHaveBeenCalled()
+  })
+
+  it('the D key discards the focused coin (13a.6 per-coin control)', () => {
+    const onDiscard = vi.fn()
+    const onPick = vi.fn()
+    render(
+      <DraggableHandCoin
+        coin={coin(1)}
+        index={0}
+        enabled
+        shaking={false}
+        shakeKey={0}
+        selected={false}
+        onPick={onPick}
+        onToggleSelect={() => {}}
+        onRangeSelect={() => {}}
+        onDiscard={onDiscard}
+      />,
+    )
+    const btn = document.querySelector('.hand-coin')!
+    fireEvent.keyDown(btn, { key: 'd' })
+    expect(onDiscard).toHaveBeenCalledTimes(1)
+    expect(onPick).not.toHaveBeenCalled()
+    // uppercase D too; and D never picks
+    fireEvent.keyDown(btn, { key: 'D' })
+    expect(onDiscard).toHaveBeenCalledTimes(2)
+  })
+
+  it('D does nothing when the coin is disabled (not the play phase)', () => {
+    const onDiscard = vi.fn()
+    render(
+      <DraggableHandCoin
+        coin={coin(1)}
+        index={0}
+        enabled={false}
+        shaking={false}
+        shakeKey={0}
+        selected={false}
+        onPick={() => {}}
+        onToggleSelect={() => {}}
+        onRangeSelect={() => {}}
+        onDiscard={onDiscard}
+      />,
+    )
+    fireEvent.keyDown(document.querySelector('.hand-coin')!, { key: 'd' })
+    expect(onDiscard).not.toHaveBeenCalled()
   })
 })

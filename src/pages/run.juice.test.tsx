@@ -94,14 +94,15 @@ describe('13.1 — run screen piles + discard ghost', () => {
     expect(screen.getByRole('img', { name: 'Discard pile, 0 coins' })).toBeTruthy()
   })
 
-  it('discarding a coin spawns a ghost and moves the coin to the discard pile', async () => {
+  it('discarding a coin (per-coin D key) spawns a ghost and moves the coin to the discard pile', async () => {
     useRunStore.getState().startRun('juice-discard')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
 
-    // Enter discard mode, then tap the first hand coin.
-    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
-    fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    // 13a.6 — the keyboard discard path: focus the coin, press D.
+    const coin = screen.getAllByRole('button', { name: /pick coin/i })[0]
+    coin.focus()
+    fireEvent.keyDown(coin, { key: 'd' })
 
     // The coin left the hand; the discard pile grew.
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(7)
@@ -128,8 +129,10 @@ describe('13.1 — run screen piles + discard ghost', () => {
     })
     render(<RunScreen />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
-    fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
+    // 13a.6 — the keyboard discard path: focus the coin, press D.
+    const coin = screen.getAllByRole('button', { name: /pick coin/i })[0]
+    coin.focus()
+    fireEvent.keyDown(coin, { key: 'd' })
 
     // The Draw-2 coin is gone; a full hand has one empty slot, so only one
     // of the two redraws lands (the store logic is covered in handFlow.test):

@@ -21,7 +21,7 @@
 // flight/stagger (UX §8).
 
 import { forwardRef, useRef } from 'react'
-import type { MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { DEAL, EASING, SPRING } from '@/lib/motion'
@@ -50,6 +50,14 @@ interface HandCoinProps {
   /** 13a.5: Ctrl/Cmd+click / Shift+click routing — true = handled (no pick). */
   onSelectClick?: (e: ReactMouseEvent<HTMLButtonElement>) => boolean
   onPick: (el: HTMLElement) => void
+  /** 13a.6: per-coin discard control — the D key while the coin is focused
+   *  (the keyboard path to `discard` for no-pointer users). */
+  onDiscard?: (el: HTMLElement) => void
+  /** 13a.6: the pointer entered this coin (the quick-discard hotspot tracks
+   *  the hovered coin). */
+  onHover?: () => void
+  /** 13a.6: the pointer left this coin. */
+  onHoverEnd?: () => void
 }
 
 /** Max tilt in degrees (UX §3: max 8°). */
@@ -98,23 +106,37 @@ function useCoinTilt(enabled: boolean, dragging: boolean) {
   return { tiltRef, onPointerMove, onPointerLeave, reduceMotion }
 }
 
-/** The a11y label: position, selection state, effect kinds. */
-function coinAriaLabel(index: number, selected: boolean, effects: Coin['effects']): string {
+/** The a11y label: position, selection state, effect kinds, the discard key. */
+function coinAriaLabel(index: number, enabled: boolean, selected: boolean, effects: Coin['effects']): string {
   const fx = effects.length ? ` (${effects.map((e) => e.kind).join(', ')})` : ''
-  return `Pick coin ${index + 1}${selected ? ' (selected)' : ''}${fx}`
+  const discard = enabled ? ', press D to discard' : ''
+  return `Pick coin ${index + 1}${selected ? ' (selected)' : ''}${fx}${discard}`
 }
 
 export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function HandCoin(
-  { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick },
+  { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick, onDiscard, onHover, onHoverEnd },
   ref,
 ) {
   const { tiltRef, onPointerMove, onPointerLeave, reduceMotion } = useCoinTilt(enabled, !!dragging)
 
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    // 13a.5: Ctrl/Cmd+click (toggle) and Shift+click (range) are selection
-    // gestures — they never pick. A plain click picks (the fallback).
+    // 13a.5: Ctrl/Cmd+click (toggle) and Shift+click (range) are selection gestures — they never pick.
     if (onSelectClick?.(e)) return
     onPick(e.currentTarget)
+  }
+
+  /** 13a.6: the per-coin discard control — D while the coin is focused (the global shortcuts ignore D). */
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if ((e.key === 'd' || e.key === 'D') && enabled) {
+      e.preventDefault()
+      onDiscard?.(e.currentTarget)
+    }
+  }
+
+  /** 13a.6: the pointer left — reset the tilt AND end the hover tracking. */
+  const handlePointerLeave = () => {
+    onPointerLeave()
+    onHoverEnd?.()
   }
 
   const { initial, transition } = dealProps(dealIndex, reduceMotion)
@@ -126,25 +148,20 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
       layoutId={`coin-${coin.id}`}
       layout
       transition={{ layout: SPRING.soft }}
-      className={`hand-coin${enabled ? '' : ' hand-coin--disabled'}${selected ? ' hand-coin--selected' : ''}${
-        dragging ? ' hand-coin--dragging' : ''
-      }`}
+      className={handCoinClass(enabled, !!selected, !!dragging)}
       disabled={!enabled}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       onPointerMove={onPointerMove}
-      onPointerLeave={onPointerLeave}
+      onPointerLeave={handlePointerLeave}
+      onPointerEnter={() => onHover?.()}
       {...dragProps}
-      aria-label={coinAriaLabel(index, !!selected, coin.effects)}
+      aria-label={coinAriaLabel(index, enabled, !!selected, coin.effects)}
     >
       {/* The deal-flight layer: animates once on mount (fresh deal only).
           Kept separate from the tilt div so the shake remount (key) never
           replays the deal. */}
-      <motion.div
-        className="hand-coin-deal"
-        initial={initial}
-        animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-        transition={transition}
-      >
+      <motion.div className="hand-coin-deal" initial={initial} animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={transition}>
         {/* key=shakeKey remounts the div so the shake animation restarts */}
         <div key={shaking ? shakeKey : 0} ref={tiltRef} className={`hand-coin-tilt${shaking ? ' hand-coin-tilt--shake' : ''}`}>
           <CoinDisc />
@@ -154,3 +171,10 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
     </motion.button>
   )
 })
+
+/** The hand coin's class name (the state set, UX §3). */
+function handCoinClass(enabled: boolean, selected: boolean, dragging: boolean): string {
+  return `hand-coin${enabled ? '' : ' hand-coin--disabled'}${selected ? ' hand-coin--selected' : ''}${
+    dragging ? ' hand-coin--dragging' : ''
+  }`
+}
