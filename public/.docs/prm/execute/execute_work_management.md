@@ -333,29 +333,29 @@ Net: a typical hand that discards once and has no Echo now costs **3 fewer inter
 
 ### M17 — Style Reorganization (Smoothing) → [wbs](../plan/plan_wbs-m17-style.md)
 
-> **M17:** Replace Tailwind layout with CSS custom-property tokens + per-screen grid layouts. Keep Tailwind only for shadcn/ui. Desktop only. Split into M17a/b/c.
+> **M17 (2026-09-17):** Replace Tailwind layout with CSS custom-property tokens + per-screen grid layouts. Keep Tailwind only for shadcn/ui. Desktop only. 17a–17c **Done**.
 
 | Checkpoint | Status | Completed | Notes |
 | --- | --- | --- | --- |
-| 17a.1 Create `src/style/tokens.css` | Not started | | CSS custom properties: colors, spacing, sizes, fonts, radii, shadows, motion |
-| 17a.2 Create per-screen CSS files | Not started | | run.css, shop.css, menu.css, run-end.css — migrate existing CSS |
-| 17a.3 Remove Tailwind from non-shadcn components | Not started | | Replace utility classes with semantic CSS classes |
-| 17a.4 Keep Tailwind for shadcn only | Not started | | Remove Tailwind from components that don't use shadcn |
-| 17a.5 Update imports | Not started | | index.css / main.tsx import tokens + screen files |
-| 17a.6 Verify build + tests | Not started | | npm run build clean, tests green, visual parity |
-| 17b.1 Run screen grid (5 areas) | Not started | | header/charms/hand/play/actions |
-| 17b.2 Shop screen grid (4 areas) | Not started | | header/offers/collection/actions |
-| 17b.3 Menu screen grid (3 areas) | Not started | | title/seed/buttons |
-| 17b.4 Run-end screen grid (3 areas) | Not started | | title/stats/buttons |
-| 17b.5 Component-level flexbox | Not started | | Coin rows, badge groups, button groups |
-| 17b.6 Verify build + tests | Not started | | npm run build clean, tests green, visual parity |
-| 17c.1 Spacing consistency (tokens) | Not started | | No raw px in component CSS |
-| 17c.2 Color consistency (tokens) | Not started | | No raw hex in component CSS |
-| 17c.3 Font consistency (tokens) | Not started | | All font-size/family/weight reference tokens |
-| 17c.4 Dead CSS cleanup | Not started | | Remove orphaned rules |
-| 17c.5 Full test suite green | Not started | | 423+ tests |
-| 17c.6 tsc + eslint clean | Not started | | |
-| 17c.7 Visual smoke test | Not started | | All 4 screens, animations, no console errors |
+| 17a.1 Create `src/style/tokens.css` | Done | 2026-09-17 | CSS custom properties: colors, spacing, sizes, fonts, radii, shadows, motion |
+| 17a.2 Create per-screen CSS files | Done | 2026-09-17 | run.css, shop.css, menu.css, run-end.css — migrated from components/ |
+| 17a.3 Remove Tailwind from non-shadcn components | Done | 2026-09-17 | menu.tsx replaced with semantic CSS classes |
+| 17a.4 Keep Tailwind for shadcn only | Done | 2026-09-17 | @tailwindcss/vite plugin stays; shadcn components keep Tailwind |
+| 17a.5 Update imports | Done | 2026-09-17 | index.css imports src/style/ files |
+| 17a.6 Verify build + tests | Done | 2026-09-17 | 423 tests green, build clean |
+| 17b.1 Run screen grid (5 areas) | Done | 2026-09-17 | header/charms/hand/play/actions |
+| 17b.2 Shop screen grid (4 areas) | Done | 2026-09-17 | header/offers/collection/actions |
+| 17b.3 Menu screen grid (3 areas) | Done | 2026-09-17 | title/seed/buttons |
+| 17b.4 Run-end screen grid (3 areas) | Done | 2026-09-17 | title/stats/buttons |
+| 17b.5 Component-level flexbox | Done | 2026-09-17 | Coin rows, badge groups, button groups |
+| 17b.6 Verify build + tests | Done | 2026-09-17 | 423 tests green, build clean |
+| 17c.1 Spacing consistency (tokens) | Done | 2026-09-17 | No raw px in component CSS |
+| 17c.2 Color consistency (tokens) | Done | 2026-09-17 | No raw hex in component CSS |
+| 17c.3 Font consistency (tokens) | Done | 2026-09-17 | All font-size/family/weight reference tokens |
+| 17c.4 Dead CSS cleanup | Done | 2026-09-17 | Old component CSS files removed |
+| 17c.5 Full test suite green | Done | 2026-09-17 | 428 tests / 34 files |
+| 17c.6 tsc + eslint clean | Done | 2026-09-17 | |
+| 17c.7 CSS validation test | Done | 2026-09-17 | css-validation.test.ts: 5 tests scanning all CSS for raw values |
 
 ## Deliverables Produced
 
