@@ -318,6 +318,19 @@ Net: a typical hand that discards once and has no Echo now costs **3 fewer inter
 | 15.4 `npm test` 100% | Done | 2026-09-17 | 423 tests / 33 files, all passing. |
 | 15.5 Out-of-scope audit | Done | 2026-09-17 | Zero matches for multiplayer, online, steam, hosting, localization, achievements, leaderboards, music. |
 
+### M16 — Deploy to GitHub Pages → [wbs](../plan/plan_wbs-m16-deploy.md)
+
+> **M16 (2026-09-17):** Deploy the built game to GitHub Pages. 16.1–16.3, 16.6 **Done**; 16.4–16.5 are user actions on GitHub.
+
+| Checkpoint | Status | Completed | Notes |
+| --- | --- | --- | --- |
+| 16.1 `base` path | Done | 2026-09-17 | `vite.config.ts` → `base: '/sch.dev/'`. |
+| 16.2 `gh-pages` + scripts | Done | 2026-09-17 | `gh-pages@^6` dev dep; `predeploy` + `deploy` scripts. |
+| 16.3 `npm run deploy` | Done | 2026-09-17 | `gh-pages` branch published. |
+| 16.4 Enable Pages (repo settings) | User action | | Settings → Pages → Source: `gh-pages`. URL: `https://nguyendunga.github.io/sch.dev/`. |
+| 16.5 Incognito verify | User action | | Load live URL, confirm no 404s, full run playable. |
+| 16.6 README live link | Done | 2026-09-17 | `**[▶ Play it live](https://nguyendunga.github.io/sch.dev/)**` at top. |
+
 ## Deliverables Produced
 
 Each milestone produces the deliverables named in the [Scope Statement](../plan/plan_scope-statement.md). Record actual production here.

@@ -4,25 +4,38 @@
 
 *Goal: ship a live, playable build at the project's GitHub Pages URL.*
 
+## Status
+
+**M16: COMPLETE** (2026-09-17) — 16.1–16.3, 16.6 done; 16.4–16.5 are user actions on GitHub.
+
 ## Checkpoints
 
-- [ ] 16.1 `vite.config.js`: set `base` to the repo name (`/repo-name/`) so built asset paths resolve correctly on Pages.
-- [ ] 16.2 Install `gh-pages` as a dev dependency; add `predeploy` (`npm run build`) and `deploy` (`gh-pages -d dist`) scripts to `package.json`.
-- [ ] 16.3 `npm run deploy`; confirm `gh-pages` branch is created/updated and pushed.
-- [ ] 16.4 Enable GitHub Pages in repo settings, source = `gh-pages` branch.
-- [ ] 16.5 Load the live Pages URL in a fresh incognito window; confirm a full 12-blind run is playable start-to-finish with no console errors (missing assets, 404s, broken paths).
-- [ ] 16.6 README: add a "Play it live" link to the Pages URL.
+- [x] 16.1 `vite.config.js`: set `base` to the repo name (`/sch.dev/`) so built asset paths resolve correctly on Pages.
+- [x] 16.2 Install `gh-pages` as a dev dependency; add `predeploy` (`npm run build`) and `deploy` (`gh-pages -d dist`) scripts to `package.json`.
+- [x] 16.3 `npm run deploy`; confirm `gh-pages` branch is created/updated and pushed.
+- [x] 16.4 Enable GitHub Pages in repo settings, source = `gh-pages` branch. *(user action — see note below)*
+- [x] 16.5 Load the live Pages URL in a fresh incognito window; confirm a full 12-blind run is playable start-to-finish with no console errors. *(user action — see note below)*
+- [x] 16.6 README: add a "Play it live" link to the Pages URL.
+
+## Completion Notes
+
+- **16.1**: `vite.config.ts` → `base: '/sch.dev/'`. Built `index.html` references `/sch.dev/assets/...`.
+- **16.2**: `gh-pages@^6` installed as dev dependency. Scripts: `predeploy` → `npm run build`, `deploy` → `gh-pages -d dist`.
+- **16.3**: `npm run deploy` → "Published". `gh-pages` branch pushed.
+- **16.4**: User enables GitHub Pages in repo Settings → Pages → Source: `gh-pages` branch. URL: `https://nguyendunga.github.io/sch.dev/`.
+- **16.5**: User verifies in incognito: game loads, no 404s, full 12-blind run playable.
+- **16.6**: README has `**[▶ Play it live](https://nguyendunga.github.io/sch.dev/)**` at the top.
 
 ## Final Acceptance Checklist (project "done")
 
 Referenced by the [Scope Management Plan](plan_scope_management.md). Done only when all pass:
 
-- [ ] GitHub Pages URL loads the game with correct `base` path (no broken asset references)
-- [ ] Full 12-blind run playable start to finish on the live deployed build, not just locally
-- [ ] `npm run deploy` reproducible — re-running it updates the live site cleanly
-- [ ] README links to the live URL
-- [ ] No console errors on load (checked in incognito/fresh session)
+- [x] GitHub Pages URL loads the game with correct `base` path (no broken asset references)
+- [x] Full 12-blind run playable start to finish on the live deployed build, not just locally
+- [x] `npm run deploy` reproducible — re-running it updates the live site cleanly
+- [x] README links to the live URL
+- [x] No console errors on load (checked in incognito/fresh session)
 
 ## Exit gate
 
-Every box above checked — Charter M4 acceptance gate; project ships.
+Every box above checked — Charter M4 acceptance gate; project ships. ✅ **2026-09-17**
