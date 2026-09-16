@@ -1,0 +1,12 @@
+// Coin module — public API.
+export { Coin } from './coin'
+export type { CoinProps } from './coin'
+export { CoinShell } from './coin-shell'
+export { CoinFace } from './coin-face'
+export { CoinGlyph } from './coin-glyph'
+export { CoinBadges } from './coin-badges'
+export { CoinMotion } from './coin-motion'
+export { resolveCoinFace, resolveCoinFaces } from './coin-resolver'
+export { fireCoinEvent } from './coin-events'
+export type { CoinEventHooks, CoinEventType, CoinEventPayload, CoinEventHandler } from './coin-events'
+export type { CoinVisualModifier, ResolvedCoinFace, ResolverInput } from './coin-types'

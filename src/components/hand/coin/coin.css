@@ -1,0 +1,194 @@
+/*
+ * Coin component — 5-layer structure.
+ *
+ * Layers: Shell (3-ring disc) → Face (fill) → Glyph (icon) → Badges → Motion
+ *
+ * Ceramic Tactile (SDD UX §2–§3): flat panels, 2px --ink sticker border,
+ * chunky radii, no blurred shadows.
+ */
+
+/* -- coin root --------------------------------------------------------------- */
+
+.coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+/* -- shell (3-ring disc) ----------------------------------------------------- */
+
+.coin-shell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+
+.coin-shell-outer {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.coin-shell-inner {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+.coin-shell-face {
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 50%;
+}
+
+/* -- face -------------------------------------------------------------------- */
+
+.coin-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.coin-face--heads {
+  background: var(--heads);
+}
+
+.coin-face--tails {
+  background: var(--tails);
+}
+
+.coin-face--back {
+  background: var(--surface-sunk);
+}
+
+/* -- glyph (centered icon) --------------------------------------------------- */
+
+.coin-glyph-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.coin-glyph {
+  display: block;
+  color: var(--ink);
+}
+
+.coin-glyph--heads {
+  color: var(--ink);
+}
+
+.coin-glyph--tails {
+  color: var(--ink);
+}
+
+.coin-glyph--back {
+  color: var(--ink-soft);
+}
+
+.coin-glyph--override {
+  color: var(--primary);
+}
+
+/* -- badges ------------------------------------------------------------------ */
+
+.coin-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.coin-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.coin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.face-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+.face-badge--heads {
+  background: color-mix(in srgb, var(--heads) 20%, var(--surface));
+}
+
+.face-badge--tails {
+  background: color-mix(in srgb, var(--tails) 20%, var(--surface));
+}
+
+/* -- motion wrapper ---------------------------------------------------------- */
+
+.coin-motion-deal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.coin-motion-tilt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 400px;
+}
+
+/* -- effect modifier classes ------------------------------------------------- */
+
+.coin-face--chaos {
+  border-style: dashed;
+}
+
+.coin-face--echo {
+  animation: none; /* glow is set via inline style */
+}
+
+.coin-face--reverse {
+  filter: hue-rotate(180deg);
+}
+
+.coin-face--tax {
+  opacity: 0.7;
+}
+
+.coin-face--jackpot {
+  /* gold glow is set via inline style */
+}
+
+/* -- reduced motion ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .coin-shell {
+    transition: none;
+  }
+}
