@@ -63,7 +63,145 @@
   border-radius: var(--r-sm);
 }
 
-/* -- offer cards ------------------------------------------------------------ */
+/* -- collection (13a.8: the visual anchor — the deck the player builds) ---- */
+
+.collection {
+  width: 100%;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-hard-sm);
+  box-sizing: border-box;
+}
+
+.collection--empty {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+.collection-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.collection-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.collection-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.collection-hint {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.5rem;
+}
+
+.collection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  background: var(--surface-sunk);
+  border: 2px solid var(--line);
+  border-radius: var(--r-sm);
+  box-sizing: border-box;
+}
+
+/* the drag handle (the disc) — ≥44px hit target (UX §3). */
+.collection-item-handle {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  border-radius: 50%;
+  touch-action: none;
+}
+
+.collection-item-handle:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+.collection-item-handle:active {
+  cursor: grabbing;
+}
+
+.collection-item--source {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+/* a coin is being dropped on this tile (the merge target ring). */
+.collection-item--over {
+  border-color: var(--secondary);
+  border-style: dashed;
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+.collection-item--dragging {
+  opacity: 0.4;
+}
+
+/* the pointer-followed overlay copy. */
+.collection-item--drag {
+  width: 6.5rem;
+  box-shadow: var(--shadow-hard);
+  background: var(--surface);
+}
+
+.collection-item-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* -- offers (13a.8: grouped by kind, category color per card) -------------- */
+
+.offer-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.offer-section-label {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
 
 .offer-grid {
   display: grid;
@@ -87,6 +225,17 @@
     box-shadow var(--dur-micro) var(--ease-out);
 }
 
+/* the category color (a persistent top stripe — charm / coin / hand size). */
+.offer-card--charm {
+  border-top: 4px solid var(--tier-four-row);
+}
+.offer-card--coin {
+  border-top: 4px solid var(--tier-alternating);
+}
+.offer-card--handSize {
+  border-top: 4px solid var(--tier-jackpot);
+}
+
 .offer-card:hover {
   translate: 0 -2px;
   box-shadow: var(--shadow-hard);
@@ -101,6 +250,15 @@
 }
 .offer-card--handSize:hover {
   box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-jackpot) 45%, transparent);
+}
+
+/* the affordable state (13a.8): an unaffordable offer dims. */
+.offer-card--poor {
+  opacity: 0.65;
+}
+
+.offer-card-price--poor {
+  color: var(--danger);
 }
 
 .offer-card-name {
@@ -132,68 +290,33 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* -- collection ------------------------------------------------------------- */
-
-.collection {
-  width: 100%;
-  padding: 0.7rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-sizing: border-box;
-}
-
-.collection--empty {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  font-style: italic;
-  text-align: center;
-  padding: 1rem;
-}
-
-.collection-hint {
-  font-size: 0.75rem;
-  color: var(--ink-soft);
-  margin: 0 0 0.5rem;
-}
-
-.collection-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
-  gap: 0.5rem;
-}
-
-.collection-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.5rem;
-  background: var(--surface-sunk);
-  border: 2px solid var(--line);
-  border-radius: var(--r-sm);
-  box-sizing: border-box;
-}
-
-.collection-item--source {
-  border-color: var(--secondary);
-  box-shadow: 0 0 0 2px var(--secondary);
-}
-
-.collection-item-actions {
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-}
-
-/* -- leave ------------------------------------------------------------------ */
+/* -- leave (13a.8: fixed primary actions) ---------------------------------- */
 
 .shop-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  width: 100%;
   display: flex;
-  justify-content: center;
-  padding-bottom: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0 0.75rem;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.shop-footer-nudge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cash);
+  margin: 0;
+}
+
+.shop-footer-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 /* Reduced motion (UX §8): no hover lift on the offer cards (the glow ring

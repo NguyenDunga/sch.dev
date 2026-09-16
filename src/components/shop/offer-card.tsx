@@ -42,15 +42,18 @@ export function OfferCard({ offer, cash, charms, handSize, onBuy }: OfferCardPro
   const price = offerPrice(offer)
   const owned = offer.kind === 'charm' && charms.includes(offer.charm)
   const atCap = offer.kind === 'handSize' && handSize >= HAND_SIZE_CAP
-  const disabled = cash < price || owned || atCap
+  // 13a.8: the affordable state — an unaffordable offer dims (the Buy button
+  // is already disabled; the store also re-rejects).
+  const poor = !owned && !atCap && cash < price
+  const buyDisabled = cash < price || owned || atCap
 
   return (
-    <div className={`offer-card offer-card--${offer.kind}`}>
+    <div className={`offer-card offer-card--${offer.kind}${poor ? ' offer-card--poor' : ''}`}>
       <span className="offer-card-name">{offerName(offer)}</span>
       <span className="offer-card-desc">{offerDescription(offer, handSize)}</span>
       <div className="offer-card-foot">
-        <span className="offer-card-price">${price}</span>
-        <Button size="sm" disabled={disabled} sfx="buy" onClick={() => onBuy(offer)}>
+        <span className={`offer-card-price${poor ? ' offer-card-price--poor' : ''}`}>${price}</span>
+        <Button size="sm" disabled={buyDisabled} sfx="buy" onClick={() => onBuy(offer)}>
           {owned ? 'Owned' : atCap ? 'Max' : 'Buy'}
         </Button>
       </div>
