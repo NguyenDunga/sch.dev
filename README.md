@@ -1,5 +1,7 @@
 # 50/50
 
+**[▶ Play it live](https://nguyendunga.github.io/sch.dev/)**
+
 A Balatro-style coin-toss roguelike. Match patterns with tossed coins to score chips × mult across 12 escalating blinds. Build your deck with charms, special coins, and shop upgrades.
 
 **Single-player, local, no account. Fully deterministic — share a seed to replay any run.**
