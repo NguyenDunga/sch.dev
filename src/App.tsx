@@ -10,6 +10,7 @@ import { MenuScreen } from '@/pages/menu'
 import { RunScreen } from '@/pages/run'
 import { ShopScreen } from '@/pages/shop'
 import { RunEndScreen } from '@/pages/run-end'
+import { DebugCoinPage } from '@/pages/debug-coin'
 import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles.tsx'
 import { ScreenShake } from '@/components/juice/screen-shake.tsx'
 
@@ -53,6 +54,12 @@ function JuiceLayer() {
 }
 
 export default function App() {
+  // Debug routes (dev-only): /debug/coin
+  const path = window.location.pathname
+  if (path === '/debug/coin' || path.endsWith('/debug/coin')) {
+    return <DebugCoinPage />
+  }
+
   return (
     // 13.8 — reduced motion (UX §8): `reducedMotion="user"` makes framer
     // disable every transform/layout animation (deal flights, pick springs,
