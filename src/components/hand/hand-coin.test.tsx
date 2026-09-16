@@ -96,5 +96,17 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     expect(t.textContent).toBe('T')
     expect(h.getAttribute('aria-label')).toBe('heads')
     expect(t.getAttribute('aria-label')).toBe('tails')
+    // 13a.9 — the face color is part of the signal (glyph + color, never
+    // color alone): the disc class keys off the full face word.
+    expect(h.classList.contains('coin-disc--heads')).toBe(true)
+    expect(t.classList.contains('coin-disc--tails')).toBe(true)
+  })
+
+  it('13a.9 — a Weight coin shows its favored face on the badge', () => {
+    const { container } = render(
+      <HandCoin coin={{ id: 2, effects: [{ kind: 'weight', favored: 'H' }] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
+    )
+    expect(container.querySelector('.coin-badge')?.textContent).toBe('W')
+    expect(container.querySelector('.face-badge--heads')?.textContent).toBe('H')
   })
 })

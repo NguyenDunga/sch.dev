@@ -67,6 +67,14 @@
     color var(--dur-micro) var(--ease-out);
 }
 
+/* 13a.9 — one effect + its favored-face badge (Weight / Double-Side), so the
+   tooltip covers both. */
+.coin-badge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
 /* face badge (12.4): H/T pill in the face color — glyph primary, color
    secondary (colorblind-safe). */
 .face-badge {

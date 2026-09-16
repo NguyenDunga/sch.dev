@@ -30,7 +30,7 @@
 
 ### Added checkpoints (m13a scope-completion)
 
-- [ ] **13a.9 Show each coin's favored face.** The balance headline finding: **75/25 coins only add value if the player can see which face they favor** and deliberately collect same-face coins. A Weight/Double-Side coin must show its favored face (H/T) on its badge everywhere it appears — hand, play, collection, shop offer. Without this, the mixed starter deck (13a.3) plays like plain 50/50. *Accept:* a Weight(H) coin is visually distinguishable from a Weight(T) coin at a glance; the badge reads on the ceramic theme in both light contexts; colorblind-safe (glyph + shape, not color alone — UX §8).
+- [x] **13a.9 Show each coin's favored face.** The balance headline finding: **75/25 coins only add value if the player can see which face they favor** and deliberately collect same-face coins. A Weight/Double-Side coin must show its favored face (H/T) on its badge everywhere it appears — hand, play, collection, shop offer. Without this, the mixed starter deck (13a.3) plays like plain 50/50. *Accept:* a Weight(H) coin is visually distinguishable from a Weight(T) coin at a glance; the badge reads on the ceramic theme in both light contexts; colorblind-safe (glyph + shape, not color alone — UX §8).
 
 - [ ] **13a.10 First-run onboarding hint.** The new drag/drop/multi-select model (13a.5–13a.7) is discoverable by power users but opaque to a first-timer. Add a lightweight, dismissible first-run coach layer: "drag coins to play · drag to the bin to discard · match a pattern to score." Show once (localStorage flag), never blocks input, skippable. *Accept:* appears on the first run only; dismiss persists; no layout shift; respects reduced-motion.
 

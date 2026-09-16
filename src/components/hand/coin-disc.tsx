@@ -7,6 +7,11 @@
 
 import type { Face } from '@/core/types'
 
+/** The face's class suffix (the CSS keys off the full word). */
+function faceClass(face: Face): string {
+  return face === 'H' ? 'heads' : 'tails'
+}
+
 /**
  * The coin disc. `face === undefined` → face-down back (the FACE_DOWN
  * placeholder in the store is never shown — the UI passes undefined until
@@ -22,7 +27,7 @@ export function CoinDisc({ face }: { face?: Face }) {
   }
   const label = face === 'H' ? 'heads' : 'tails'
   return (
-    <span className={`coin-disc coin-disc--${face.toLowerCase()}`} role="img" aria-label={label}>
+    <span className={`coin-disc coin-disc--${faceClass(face)}`} role="img" aria-label={label}>
       {face}
     </span>
   )
@@ -35,6 +40,6 @@ export function CoinDisc({ face }: { face?: Face }) {
  */
 export function FaceBadge({ face }: { face: Face }) {
   return (
-    <span className={`face-badge face-badge--${face.toLowerCase()}`}>{face}</span>
+    <span className={`face-badge face-badge--${faceClass(face)}`}>{face}</span>
   )
 }
