@@ -338,6 +338,83 @@
   outline-offset: 2px;
 }
 
+/* -- first-run onboarding hint (13a.10) -------------------------------------- */
+/* A sticker banner at the top of the viewport explaining the three core
+   gestures. An overlay (position: fixed) so showing/dismissing it never
+   shifts the layout, and pointer-events: none so it never blocks input —
+   only the × button is live (UX §3: 44px hit target). */
+
+.onboarding-hint {
+  position: fixed;
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(92vw, 34rem);
+  padding: 0.35rem 0.35rem 0.35rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  pointer-events: none; /* never block input — only the close button is live */
+  animation: onboarding-in 0.4s ease-out;
+}
+
+.onboarding-hint p {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.onboarding-hint-close {
+  pointer-events: auto; /* the one live control */
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; /* UX §3 hit target */
+  height: 44px;
+  padding: 0;
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.onboarding-hint-close:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.onboarding-hint-close:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@keyframes onboarding-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Reduced motion (UX §8): no entrance slide. */
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-hint {
+    animation: none;
+  }
+}
+
 /* -- action bar ------------------------------------------------------------- */
 
 .action-bar {

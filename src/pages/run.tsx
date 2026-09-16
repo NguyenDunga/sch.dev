@@ -32,6 +32,7 @@ import { landDelay } from '@/components/hand/toss'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
+import { OnboardingHint } from '@/components/run/onboarding-hint'
 import { CharmBar } from '@/components/charm-bar/charm-bar'
 import { Deck } from '@/components/run/piles'
 import { DiscardGhostLayer, type DiscardGhost } from '@/components/run/discard-ghost'
@@ -868,6 +869,7 @@ export function RunScreen() {
   return (
     <main className="run-screen" onClick={onBackgroundClick}>
       <RunTop onSave={save} />
+      <OnboardingHint /> // 13a.10 — first-run hint (overlay, never blocks input)
       <CharmBar />
       <PlayAreaHost
         play={play} hand={hand} revealed={flags.revealed} canPick={flags.canPick}
