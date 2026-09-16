@@ -1,0 +1,341 @@
+/*
+ * Shop screen — grid layout + component styles.
+ * 4-row grid: header / offers / collection / actions.
+ * Ceramic Tactile (SDD UX §2–§3): flat panels, 1px --line borders, chunky
+ * radii, no blurred shadows.
+ */
+
+.shop-screen {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "header"
+    "offers"
+    "collection"
+    "actions";
+  gap: var(--sp-4);
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  box-sizing: border-box;
+}
+
+.shop-reward {
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-reward-bonus {
+  color: var(--cash);
+  font-weight: 700;
+}
+
+/* -- header area ----------------------------------------------------------- */
+
+.shop-header {
+  grid-area: header;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.shop-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.shop-cash {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cash);
+  font-variant-numeric: tabular-nums;
+  padding: 0.3rem 0.7rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-sm);
+}
+
+/* -- offers area ----------------------------------------------------------- */
+
+.offer-section {
+  grid-area: offers;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.offer-section-label {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.offer-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-hard-sm);
+  box-sizing: border-box;
+  transition:
+    translate var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out);
+}
+
+.offer-card--charm {
+  border-top: 4px solid var(--tier-four-row);
+}
+.offer-card--coin {
+  border-top: 4px solid var(--tier-alternating);
+}
+.offer-card--handSize {
+  border-top: 4px solid var(--tier-jackpot);
+}
+
+.offer-card:hover {
+  translate: 0 -2px;
+  box-shadow: var(--shadow-hard);
+}
+
+.offer-card--charm:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-four-row) 40%, transparent);
+}
+.offer-card--coin:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-alternating) 40%, transparent);
+}
+.offer-card--handSize:hover {
+  box-shadow: var(--shadow-hard), 0 0 0 3px color-mix(in srgb, var(--tier-jackpot) 45%, transparent);
+}
+
+.offer-card--poor {
+  opacity: 0.65;
+}
+
+.offer-card-price--poor {
+  color: var(--danger);
+}
+
+.offer-card-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.offer-card-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.offer-card-desc {
+  font-size: var(--text-xs);
+  line-height: 1.2;
+  color: var(--ink-soft);
+  flex: 1;
+}
+
+.offer-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.offer-card-price {
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--cash);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- collection area ------------------------------------------------------- */
+
+.collection {
+  grid-area: collection;
+  width: 100%;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-hard-sm);
+  box-sizing: border-box;
+}
+
+.collection--empty {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  font-style: italic;
+  text-align: center;
+  padding: var(--sp-4);
+}
+
+.collection-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: 0.6rem;
+}
+
+.collection-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.collection-count {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.collection-hint {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.5rem;
+}
+
+.collection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--sp-2);
+}
+
+.collection-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  background: var(--surface-sunk);
+  border: 2px solid var(--line);
+  border-radius: var(--r-sm);
+  box-sizing: border-box;
+}
+
+.collection-item-handle {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  border-radius: 50%;
+  touch-action: none;
+}
+
+.collection-item-handle:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+.collection-item-handle:active {
+  cursor: grabbing;
+}
+
+.collection-item--source {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+.collection-item--over {
+  border-color: var(--secondary);
+  border-style: dashed;
+  box-shadow: 0 0 0 2px var(--secondary);
+}
+
+.collection-item--dragging {
+  opacity: 0.4;
+}
+
+.collection-item--drag {
+  width: 6.5rem;
+  box-shadow: var(--shadow-hard);
+  background: var(--surface);
+}
+
+.collection-item-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* -- actions area ---------------------------------------------------------- */
+
+.shop-footer {
+  grid-area: actions;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.6rem 0 0.75rem;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.shop-footer-nudge {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--cash);
+  margin: 0;
+}
+
+.shop-footer-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+/* -- reduced motion -------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-card:hover {
+    translate: none;
+  }
+}

@@ -1,0 +1,122 @@
+/*
+ * Menu screen — grid layout.
+ * 3-row grid: title / seed / buttons.
+ * Ceramic Tactile (SDD UX §2–§3).
+ */
+
+.menu-screen {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "title"
+    "seed"
+    "buttons";
+  place-items: center;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--sp-6);
+  box-sizing: border-box;
+  gap: var(--sp-8);
+}
+
+.menu-title {
+  grid-area: title;
+  text-align: center;
+}
+
+.menu-title h1 {
+  font-family: var(--font-heading);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.menu-title p {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.menu-seed {
+  grid-area: seed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  max-width: 20rem;
+}
+
+.menu-seed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.menu-seed-input {
+  height: 2.75rem;
+  min-width: 0;
+  flex: 1;
+  border-radius: var(--r-md);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  padding: 0 var(--sp-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  box-sizing: border-box;
+}
+
+.menu-seed-input::placeholder {
+  font-family: var(--font-sans);
+  color: var(--ink-soft);
+}
+
+.menu-seed-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary), 0 0 0 5px var(--bg);
+}
+
+.menu-seed-dice {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--dur-micro) var(--ease-out);
+}
+
+.menu-seed-dice:hover {
+  background: var(--surface-sunk);
+}
+
+.menu-seed-dice:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.menu-seed-error {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--danger);
+  margin: 0;
+}
+
+.menu-buttons {
+  grid-area: buttons;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  max-width: 20rem;
+}

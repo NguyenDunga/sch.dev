@@ -14,7 +14,7 @@ import { OnboardingHint } from './onboarding-hint'
 
 /** The run.css contract (the test env never loads the stylesheet): the
  *  banner must be pointer-transparent, only the × live. */
-const RUN_CSS = readFileSync('src/components/run/run.css', 'utf8')
+const RUN_CSS = readFileSync('src/style/run.css', 'utf8')
 const onboardingCss = (() => {
   const start = RUN_CSS.indexOf('.onboarding-hint {')
   if (start === -1) throw new Error('run.css: .onboarding-hint rule not found')

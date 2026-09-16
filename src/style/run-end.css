@@ -1,23 +1,28 @@
 /*
- * Run-end screen (C9) — the win/lose summary. Ceramic Tactile (SDD UX §2–§3):
- * flat panels, 1px --line borders, chunky radii, no blurred shadows.
+ * Run-end screen — grid layout.
+ * 3-row grid: title / stats / buttons.
+ * Ceramic Tactile (SDD UX §2–§3).
  */
 
 .run-end {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "title"
+    "stats"
+    "buttons";
+  place-items: center;
   min-height: 100dvh;
   width: 100%;
   max-width: 28rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--sp-4);
   box-sizing: border-box;
-  justify-content: center;
+  gap: var(--sp-6);
 }
 
 .run-end-head {
+  grid-area: title;
   text-align: center;
 }
 
@@ -30,19 +35,20 @@
 
 .run-end-sub {
   margin-top: 0.4rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 
-/* -- run summary ------------------------------------------------------------ */
+/* -- stats area ------------------------------------------------------------- */
 
 .run-summary {
+  grid-area: stats;
   width: 100%;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.9rem 1rem;
+  gap: var(--sp-2);
+  padding: 0.9rem var(--sp-4);
   background: var(--surface);
   border: 2px solid var(--ink);
   border-radius: var(--r-lg);
@@ -54,11 +60,11 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--sp-4);
 }
 
 .run-summary-row dt {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-soft);
 }
@@ -85,8 +91,11 @@
   color: var(--ink);
 }
 
+/* -- buttons area ----------------------------------------------------------- */
+
 .run-end-actions {
+  grid-area: buttons;
   display: flex;
-  gap: 0.75rem;
+  gap: var(--sp-3);
   justify-content: center;
 }

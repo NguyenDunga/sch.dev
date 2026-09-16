@@ -1,29 +1,35 @@
 /*
- * Run screen (C6) — layout + the blind header, charm bar, action bar, and
- * the 13a.6 drop zones (discard well + the corner quick-discard hotspot).
+ * Run screen — grid layout + component styles.
+ * 5-row grid: header / charms / hand / play / actions.
  * Ceramic Tactile (SDD UX §2–§3): flat panels, 1px --line borders, chunky
  * radii, no blurred shadows.
  */
 
 .run-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  grid-template-areas:
+    "header"
+    "charms"
+    "hand"
+    "play"
+    "actions";
+  gap: var(--sp-4);
   min-height: 100dvh;
   width: 100%;
   max-width: 46rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--sp-4);
   box-sizing: border-box;
 }
 
-/* -- blind header ----------------------------------------------------------- */
+/* -- header area ----------------------------------------------------------- */
 
 .run-top {
+  grid-area: header;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sp-2);
   width: 100%;
 }
 
@@ -36,8 +42,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.6rem 1rem;
+  gap: var(--sp-4);
+  padding: 0.6rem var(--sp-4);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
@@ -51,7 +57,7 @@
 }
 
 .blind-header-round {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -60,7 +66,7 @@
 
 .blind-header-name {
   font-family: var(--font-heading);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--ink);
 }
@@ -68,13 +74,13 @@
 .blind-header-score {
   display: flex;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: var(--sp-1);
   font-family: var(--font-heading);
   font-variant-numeric: tabular-nums;
 }
 
 .blind-header-value {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   color: var(--ink);
 }
@@ -84,7 +90,7 @@
 }
 
 .blind-header-target {
-  font-size: 1rem;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--ink-soft);
 }
@@ -94,7 +100,7 @@
   flex-direction: column;
   gap: 0.1rem;
   text-align: right;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
 }
 
@@ -109,19 +115,20 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* -- charm bar (C7) --------------------------------------------------------- */
+/* -- charms area ----------------------------------------------------------- */
 
 .charm-bar {
+  grid-area: charms;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: var(--sp-2);
   justify-content: center;
   min-height: 2rem;
   padding: 0.3rem;
 }
 
 .charm-bar--empty {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
   font-style: italic;
 }
@@ -129,12 +136,12 @@
 .charm-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
+  gap: var(--sp-2);
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1;
   min-height: 2.75rem; /* ≥44px hit target (SDD UX §3) */
-  padding: 0.4rem 0.6rem;
+  padding: var(--sp-2) 0.6rem;
   border-radius: var(--r-sm);
   background: var(--surface);
   border: 2px solid var(--ink);
@@ -146,7 +153,6 @@
     translate var(--dur-micro) var(--ease-out);
 }
 
-/* 13c.5 — the charm icon (the primary signal; the name is the a11y text). */
 .charm-chip-icon {
   display: block;
   flex-shrink: 0;
@@ -185,130 +191,14 @@
   background: color-mix(in srgb, var(--tier-jackpot) 22%, var(--surface));
 }
 
-/* -- play area -------------------------------------------------------------- */
-
-.play-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  flex: 1;
-  justify-content: center;
-}
-
-/* -- piles (13.1): deck + discard well flanking the hand row -------------- */
-
-.piles-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.deck {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.deck-stack {
-  position: relative;
-  width: 2.75rem;
-  height: 2.75rem;
-}
-
-.deck-disc {
-  position: absolute;
-  inset: 0;
-}
-
-.deck-disc--2 {
-  translate: 3px 3px;
-}
-
-.deck-disc--1 {
-  translate: 1.5px 1.5px;
-}
-
-/* the top disc is the raised sticker element — hard offset only (UX §2). */
-.deck-disc--top {
-  box-shadow: var(--shadow-hard-sm);
-}
-
-.discard-well {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.discard-well-hole {
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 9999px;
-  border: 2px dashed var(--line);
-  background: var(--surface-sunk);
-  color: var(--ink-soft);
-}
-
-.pile-count {
-  font-family: var(--font-heading);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1rem;
-  min-width: 1.5rem;
-  padding: 0 0.3rem;
-  text-align: center;
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-
-/* -- discard ghost (13.1) ---------------------------------------------------
- * fixed overlay (portaled to <body>): the ghost coin flies from the tapped
- * coin's viewport rect to the well center + fades, 180ms ease-out. */
-
-.discard-ghost-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.discard-ghost {
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  pointer-events: none;
-}
-
-/* the discard well drop target (13a.6): a dashed ring while a coin hovers
-   over it (the well itself is the 13.1 sunk circle + count). */
-
-.discard-well-drop {
-  border-radius: var(--r-md);
-}
-
-.discard-well-drop--over {
-  outline: 3px dashed var(--primary);
-  outline-offset: 4px;
-}
-
-/* -- hand zone (13a.6): the hand row + the corner quick-discard hotspot -- */
+/* -- hand area ------------------------------------------------------------- */
 
 .hand-zone {
+  grid-area: hand;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: var(--sp-3);
   width: 100%;
 }
 
@@ -316,20 +206,17 @@
   flex: 1;
 }
 
-/* the corner quick-discard hotspot (13a.6): hover a coin, then this — the
-   hovered coin (or the whole selection) is discarded. Sticker style (UX §2). */
-
 .quick-discard {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  min-height: 2.75rem; /* ≥44px hit target (UX §3) */
-  padding: 0.4rem 0.7rem;
+  min-height: 2.75rem; /* ≥44px hit target (SDD UX §3) */
+  padding: var(--sp-2) 0.7rem;
   border-radius: var(--r-sm);
   background: var(--surface);
   border: 2px solid var(--ink);
   color: var(--ink);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
@@ -353,11 +240,131 @@
   outline-offset: 2px;
 }
 
-/* -- first-run onboarding hint (13a.10) -------------------------------------- */
-/* A sticker banner at the top of the viewport explaining the three core
-   gestures. An overlay (position: fixed) so showing/dismissing it never
-   shifts the layout, and pointer-events: none so it never blocks input —
-   only the × button is live (UX §3: 44px hit target). */
+/* -- play area ------------------------------------------------------------- */
+
+.play-area {
+  grid-area: play;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  flex: 1;
+  justify-content: center;
+}
+
+/* piles (13.1): deck + discard well flanking the hand row */
+
+.piles-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.deck-stack {
+  position: relative;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.deck-disc {
+  position: absolute;
+  inset: 0;
+}
+
+.deck-disc--2 {
+  translate: 3px 3px;
+}
+
+.deck-disc--1 {
+  translate: 1.5px 1.5px;
+}
+
+.deck-disc--top {
+  box-shadow: var(--shadow-hard-sm);
+}
+
+.discard-well {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.discard-well-hole {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 9999px;
+  border: 2px dashed var(--line);
+  background: var(--surface-sunk);
+  color: var(--ink-soft);
+}
+
+.pile-count {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1rem;
+  min-width: 1.5rem;
+  padding: 0 0.3rem;
+  text-align: center;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* discard ghost (13.1) */
+
+.discard-ghost-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.discard-ghost {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.discard-well-drop {
+  border-radius: var(--r-md);
+}
+
+.discard-well-drop--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 4px;
+}
+
+/* -- actions area ---------------------------------------------------------- */
+
+.action-bar {
+  grid-area: actions;
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: center;
+  align-items: center;
+  min-height: 3rem;
+  padding-bottom: var(--sp-2);
+}
+
+/* -- onboarding hint (13a.10) ---------------------------------------------- */
 
 .onboarding-hint {
   position: fixed;
@@ -366,16 +373,14 @@
   z-index: 50;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sp-2);
   max-width: min(92vw, 34rem);
   padding: 0.35rem 0.35rem 0.35rem 0.9rem;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
-  pointer-events: none; /* never block input — only the close button is live */
-  /* centering translateX + the entrance/exit slide are Motion (13b.7,
-     onboarding-hint.tsx) — no CSS transform / @keyframes here. */
+  pointer-events: none;
 }
 
 .onboarding-hint p {
@@ -387,12 +392,12 @@
 }
 
 .onboarding-hint-close {
-  pointer-events: auto; /* the one live control */
+  pointer-events: auto;
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px; /* UX §3 hit target */
+  width: 44px;
   height: 44px;
   padding: 0;
   background: var(--surface-sunk);
@@ -412,18 +417,8 @@
   outline-offset: 2px;
 }
 
-/* -- action bar ------------------------------------------------------------- */
+/* -- reduced motion -------------------------------------------------------- */
 
-.action-bar {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  align-items: center;
-  min-height: 3rem;
-  padding-bottom: 0.5rem;
-}
-
-/* Reduced motion (UX §8): no hover lift on the charm chips / quick-discard. */
 @media (prefers-reduced-motion: reduce) {
   .charm-chip:hover {
     translate: none;

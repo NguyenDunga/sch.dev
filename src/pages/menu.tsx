@@ -15,7 +15,7 @@ const SEED_MAX = 8
 
 function SeedInput({ seed, onChange }: { seed: string; onChange: (seed: string) => void }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="menu-seed-row">
       <label htmlFor="seed" className="sr-only">
         Seed
       </label>
@@ -27,13 +27,13 @@ function SeedInput({ seed, onChange }: { seed: string; onChange: (seed: string) 
         placeholder="seed (6–8 chars, blank = random)"
         autoComplete="off"
         spellCheck={false}
-        className="h-11 min-w-0 flex-1 rounded-md border-2 border-ink bg-surface px-3 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-soft focus-visible:ring-3 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+        className="menu-seed-input"
       />
       <Button
         type="button"
         variant="outline"
         size="icon-lg"
-        className="size-11 shrink-0"
+        className="menu-seed-dice"
         aria-label="Random seed"
         title="Random seed"
         onClick={() => onChange(generateSeed())}
@@ -64,23 +64,23 @@ export function MenuScreen() {
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-8 p-6">
-      <div className="text-center">
-        <h1 className="font-heading text-5xl font-bold">50/50</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Toss 5 coins. Score the pattern. Clear the blind.
-        </p>
+    <main className="menu-screen">
+      <div className="menu-title">
+        <h1>50/50</h1>
+        <p>Toss 5 coins. Score the pattern. Clear the blind.</p>
       </div>
 
-      <form onSubmit={onSubmit} className="flex w-full max-w-xs flex-col gap-3">
+      <form onSubmit={onSubmit} className="menu-seed">
         <SeedInput seed={seed} onChange={setSeed} />
 
         {invalid && (
-          <p className="text-xs font-semibold text-danger" role="alert">
+          <p className="menu-seed-error" role="alert">
             Seed must be 6–8 characters.
           </p>
         )}
+      </form>
 
+      <div className="menu-buttons">
         <Button type="submit" size="xl" pulse disabled={invalid}>
           New Run
         </Button>
@@ -90,7 +90,7 @@ export function MenuScreen() {
             Resume
           </Button>
         )}
-      </form>
+      </div>
     </main>
   )
 }

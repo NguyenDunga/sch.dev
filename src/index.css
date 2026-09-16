@@ -3,94 +3,24 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/fredoka";
+
+/* Design tokens + per-screen layouts */
+@import "./style/tokens.css";
+@import "./style/run.css";
+@import "./style/shop.css";
+@import "./style/menu.css";
+@import "./style/run-end.css";
+
+/* Component-level styles (kept in their folders) */
 @import "./components/ui/button/button.css";
 @import "./components/hand/coin.css";
 @import "./components/hand/toss-coin.css";
 @import "./components/hand/score-ticker.css";
 @import "./components/juice/choreo.css";
-@import "./components/run/run.css";
-@import "./components/shop/shop.css";
-@import "./components/run/run-end.css";
 
 /*
  * 50/50 — "Ceramic Tactile" theme (SDD UX §2).
  *
- * Warm paper ground, matte ceramic coins, one bold coral accent, chunky
- * rounded panels. Flat, not realistic: depth comes from flat color blocking,
- * thick borders, and a single hard offset — NOT blurred drop shadows.
- *
- * Shadow rule (explicit): no blurred drop shadows anywhere. Depth = a single
- * hard offset block (zero blur) on raised sticker elements only, plus a glow
- * ring (0 0 0 3px / soft bloom) on hit/selection.
- */
-:root {
-  /* -- palette ------------------------------------------------------------- */
-  --bg: #f4efe6; /* app background (warm paper) */
-  --surface: #fbf8f2; /* cards, panels */
-  --surface-sunk: #eae3d6; /* wells, empty slots */
-  --ink: #2b2724; /* primary text + bold borders */
-  --ink-soft: #6b635a; /* secondary text */
-  --line: #ded5c5; /* soft panel borders */
-  --primary: #f0654a; /* coral — primary actions */
-  --primary-press: #e24e34;
-  --secondary: #2fa79b; /* teal — secondary/info */
-  --heads: #e8b04b; /* coin face H (gold) */
-  --tails: #6c8cb5; /* coin face T (slate-blue) */
-  --cash: #3e9c6b; /* money */
-  --danger: #d9534f; /* loss / invalid */
-
-  /* tier colors (tier banners / highlights) */
-  --tier-jackpot: #e8b04b;
-  --tier-four-row: #8b6fc7;
-  --tier-alternating: #2fa79b;
-  --tier-four-same: #4a82c4;
-  --tier-triple-run: #5aa469;
-  --tier-three-same: #9a9086;
-
-  /* -- radii (chunky) -------------------------------------------------------- */
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 22px;
-
-  /* -- borders ----------------------------------------------------------------
-   * interactive "sticker" elements: 2px --ink · panels: 1px --line */
-
-  /* -- shadow rule (no blurred drop shadows) ----------------------------------
-   * hard offset (zero blur) on raised sticker elements; glow ring on
-   * hit/selection. */
-  --shadow-hard: 3px 3px 0 var(--ink);
-  --shadow-hard-sm: 2px 2px 0 var(--ink);
-  --shadow-hard-lg: 5px 5px 0 var(--ink);
-  --glow-ring: 0 0 0 3px;
-
-  /* -- motion (CSS side; springs live in src/lib/motion.ts for framer-motion) -
-   * durations: micro 90 · quick 160 · base 240 · slow 400 (ms) */
-  --dur-micro: 90ms;
-  --dur-quick: 160ms;
-  --dur-base: 240ms;
-  --dur-slow: 400ms;
-
-  /* -- shadcn semantic tokens → Ceramic Tactile --------------------------------- */
-  --background: var(--bg);
-  --foreground: var(--ink);
-  --card: var(--surface);
-  --card-foreground: var(--ink);
-  --popover: var(--surface);
-  --popover-foreground: var(--ink);
-  --primary-foreground: #ffffff;
-  --secondary-foreground: #ffffff;
-  --muted: var(--surface-sunk);
-  --muted-foreground: var(--ink-soft);
-  --accent: var(--surface-sunk);
-  --accent-foreground: var(--ink);
-  --destructive: var(--danger);
-  --border: var(--line);
-  --input: var(--line);
-  --ring: var(--primary);
-  --radius: var(--r-md);
-}
-
-/*
  * Static theme values (fonts + motion easings). Emits the CSS vars to :root
  * and the font-* / ease-* utilities.
  *

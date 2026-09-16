@@ -4,7 +4,7 @@
 // discard-ghost.ts). The layer is pointer-events: none (never blocks input)
 // and each ghost removes itself when its animation completes.
 
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion, type Transition } from 'framer-motion'
 import { ghostMotionProps, type DiscardGhost } from './discard-ghost'
 import { CoinBadges } from '@/components/hand/coin-badges'
 import { CoinDisc } from '@/components/hand/coin-disc'
@@ -36,7 +36,7 @@ function Ghost({ ghost, onDone }: { ghost: DiscardGhost; onDone: (key: number) =
       style={{ left: ghost.from.x, top: ghost.from.y, width: ghost.from.w, height: ghost.from.h }}
       initial={initial}
       animate={animate}
-      transition={transition as any}
+      transition={transition as unknown as Transition}
       onAnimationComplete={() => onDone(ghost.key)}
     >
       <CoinDisc face={undefined} />

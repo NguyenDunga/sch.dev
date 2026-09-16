@@ -186,7 +186,7 @@ describe('13a.12 — hit targets ≥44px (UX §3)', () => {
 
   it('coins, slots, and controls are all ≥ 2.75rem (44px)', () => {
     const coin = 'src/components/hand/coin.css'
-    const run = 'src/components/run/run.css'
+    const run = 'src/style/run.css'
     // 1rem = 16px, so 2.75rem = 44px (the UX §3 minimum).
     expect(cssRem(coin, 'coin-disc', 'width')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(coin, 'coin-disc', 'height')).toBeGreaterThanOrEqual(2.75)
