@@ -11,20 +11,23 @@ export type Option<T> = { some: true; value: T } | { some: false }
 export type DrawCount = 1 | 2 | 3
 
 // Coin effects as a tagged union: each variant carries exactly its own data. A Weight coin always
-// has a favoured face; Heads/Tails force a fixed face; Face-Down is a hand-visual-only effect
-// (no core change — the coin still resolves H/T on the toss). (Replaces the old `effects:
+// has a favoured face; Heads/Tails force a fixed face. (Replaces the old `effects:
 // CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
+//
+// Note: face-down is NOT an effect — it is a constant *state* (like H/T): every coin in hand is
+// face-down (the face is hidden until the toss). The face-down back is a per-effect visual (see
+// each effect config's `facedown` back), not a buyable effect.
 export type CoinEffect =
   | { kind: 'weight'; favored: Face }
-  | { kind: 'heads' } | { kind: 'tails' } | { kind: 'facedown' }
+  | { kind: 'heads' } | { kind: 'tails' }
   | { kind: 'chaos' } | { kind: 'echo' } | { kind: 'magnetic' } | { kind: 'reverse' }
   | { kind: 'tax' } | { kind: 'jackpot' }
   | { kind: 'draw'; count: DrawCount }
 export type CoinEffectKind = CoinEffect['kind']
 
 // Shop catalog id (Draw sold as 3 tiers). At purchase a Draw-N id → { kind: 'draw'; count: N },
-// and Weight rolls its favoured face into the effect variant. Heads/Tails/Face-Down are fixed.
-export type CoinEffectId = 'weight' | 'heads' | 'tails' | 'facedown' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
+// and Weight rolls its favoured face into the effect variant. Heads/Tails are fixed.
+export type CoinEffectId = 'weight' | 'heads' | 'tails' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
 
 export interface Coin { id: number; effects: CoinEffect[] }                   // effects carry their own params — no shared optional
 

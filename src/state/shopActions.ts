@@ -61,7 +61,7 @@ function nextCoinId(deck: RunState['deck']): number {
 }
 
 /** A catalog id → the purchased coin's effect variant (M9.4): Weight rolls its
- *  favoured face via the rng; Heads/Tails/Face-Down are fixed; Draw-N → { kind: 'draw', count: N }. */
+ *  favoured face via the rng; Heads/Tails are fixed; Draw-N → { kind: 'draw', count: N }. */
 function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
   switch (effectId) {
     case 'weight':

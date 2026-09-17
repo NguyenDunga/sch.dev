@@ -1,0 +1,90 @@
+@import "./coin/coin.css";
+@import "./toss-coin/toss-coin.css";
+@import "./score-ticker/score-ticker.css";
+@import "./hand-coin/hand-coin.css";
+@import "./play-slot/play-slot.css";
+
+
+
+/* -- rows --------------------------------------------------------------------- */
+
+.play-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.hand-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* -- 13a.5: multi-select + drag ------------------------------------------------ */
+
+/* selected: lifted 6px + a hard coral ring on the coin (UX §3 — the visible
+   selected state; ring + lift, not color alone). */
+.hand-coin--selected .coin {
+  translate: 0 -6px;
+}
+
+.hand-coin--selected .coin-shell {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* dragging: the original dims — the DragOverlay copy follows the pointer. */
+.hand-coin--dragging {
+  opacity: 0.35;
+}
+
+/* the drag overlay copy (dnd-kit positions it; no pointer events). */
+.coin-drag-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+/* the play row drop target: a dashed ring while a coin hovers over it. */
+.play-drop-zone {
+  border-radius: var(--r-md);
+}
+
+.play-drop-zone--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 4px;
+}
+
+/* 13a.5: an individual slot under a dragged coin (reorder drop target). */
+.play-slot--over {
+  outline: 3px dashed var(--primary);
+  outline-offset: 2px;
+}
+
+/* 13a.5: the original play coin dims while its drag copy is in flight. */
+.play-slot--dragging {
+  opacity: 0.35;
+}
+
+/* the selection count hint (action bar). */
+.selection-hint {
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion (UX §8): no press/selected lift (the hover pick-up is
+   already disabled for `.coin` in coin/coin.css). The selected ring stays. */
+@media (prefers-reduced-motion: reduce) {
+  .hand-coin:active:not(:disabled) .coin,
+  .play-slot--reflip:hover,
+  .play-slot--reflip:active {
+    translate: none;
+  }
+  .hand-coin--selected .coin {
+    translate: none;
+  }
+}

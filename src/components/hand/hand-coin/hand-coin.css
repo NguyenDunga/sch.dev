@@ -1,0 +1,58 @@
+
+/*
+ * Hand / play-slot interaction styles.
+ *
+ * The coin visual itself (the 5-layer coin: shell, face, glyph, motion) is
+ * hand/coin/coin.css — these rules only style the interactive wrappers
+ * (the hand-coin button, the play slots, the rows, the dnd states).
+ *
+ * Transform layers (they compose, never fight):
+ *   - motion.button  → framer `transform` (shared layoutId pick/unpick)
+ *   - .coin          → CSS `translate` (hover pick-up / press, coin/coin.css)
+ *   - shake (x keyframes, Motion-driven, coin/coin-motion.tsx)
+ */
+
+/* -- hand coin ---------------------------------------------------------------- */
+
+.hand-coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+
+/* Press: the coin depresses 2px (the hover pick-up is `.coin:hover` in
+   coin/coin.css; the 6th-pick shake is Motion-driven, coin/coin-motion.tsx). */
+.hand-coin:active:not(:disabled) .coin {
+  translate: 0 2px;
+}
+
+/* A disabled coin never lifts (`.coin:hover` is ungated). */
+.hand-coin:disabled .coin:hover {
+  translate: none;
+}
+
+.hand-coin--disabled,
+.hand-coin:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.6;
+}
+
+.hand-coin:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* empty hand slot placeholder (keeps the row layout stable). */
+.hand-slot--empty {
+  width: 4rem;
+  height: 5.2rem;
+  border-radius: 9999px;
+  border: 2px dashed var(--line);
+}

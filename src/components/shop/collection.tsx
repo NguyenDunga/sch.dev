@@ -22,7 +22,7 @@ import { useState } from 'react'
 import { REMOVE_COIN_COST } from '@/core/balance'
 import type { Coin } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import { CoinDisc } from '@/components/hand/coin-disc'
+import { Coin as CoinVisual } from '@/components/hand/coin'
 import { Button } from '@/components/ui/button'
 
 interface CollectionProps {
@@ -101,7 +101,7 @@ export function Collection({ coins }: CollectionProps) {
           {dragCoin ? (
             <li className="collection-item collection-item--drag">
               <span className="collection-item-disc">
-                <CoinDisc face={undefined} effects={dragCoin.effects} />
+                <CoinVisual face={undefined} effects={dragCoin.effects} size={56} />
               </span>
             </li>
           ) : null}
@@ -148,7 +148,7 @@ function MergeTile({ coin, cash, isSource, merging, onMerge, onCancel, onRemove 
         {...listeners}
       >
         <span className="collection-item-disc">
-          <CoinDisc face={undefined} effects={coin.effects} />
+          <CoinVisual face={undefined} effects={coin.effects} size={56} />
         </span>
       </span>
       <div className="collection-item-actions">

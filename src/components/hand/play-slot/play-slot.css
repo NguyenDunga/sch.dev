@@ -1,0 +1,76 @@
+
+/* -- play slot ---------------------------------------------------------------- */
+
+.play-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 4rem;
+  min-height: 5.2rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-md);
+}
+
+/* empty = a sunk well (dashed, sunken fill). */
+.play-slot--empty {
+  justify-content: center;
+  background: var(--surface-sunk);
+  border: 2px dashed var(--line);
+  border-radius: 9999px;
+}
+
+.play-slot-index {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+.play-slot--filled {
+  cursor: pointer;
+}
+
+/* Echo re-flip (12.6): a transparent wrapper button around the settled toss
+   coin — tapping it re-tosses that one coin (quick single-axis). */
+.play-slot--reflip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 4rem;
+  min-height: 5.2rem;
+  padding: 0.25rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.play-slot--reflip:hover {
+  translate: 0 -2px;
+}
+
+.play-slot--reflip:active {
+  translate: 0 1px;
+}
+
+.play-slot--reflip:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.play-slot--disabled,
+.play-slot:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.75;
+}
+
+.play-slot:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}

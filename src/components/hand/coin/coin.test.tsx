@@ -10,7 +10,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import { Coin } from './coin'
-import { resolveCoinFace, resolveCoinFaces } from './coin-resolver'
+import { resolveCoinFace, resolveCoinFaces } from './resolver/resolver'
 import { fireCoinEvent } from './coin-events'
 import type { CoinEffect } from '@/core/types'
 
@@ -32,7 +32,6 @@ describe('Coin — render coverage', () => {
       { kind: 'weight', favored: 'H' },
       { kind: 'heads' },
       { kind: 'tails' },
-      { kind: 'facedown' },
       { kind: 'chaos' },
       { kind: 'echo' },
       { kind: 'magnetic' },

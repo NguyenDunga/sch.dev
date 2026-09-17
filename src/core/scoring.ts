@@ -15,7 +15,6 @@
 //   weight     75/25 toward its favoured face
 //   heads      100/0 — always lands H
 //   tails      100/0 — always lands T
-//   facedown   hand-visual only (no odds-stage entry; the coin still resolves H/T)
 //   chaos      uniform random 0–100% odds on every flip
 //   magnetic   75/25 toward the left neighbour's face (no bias if left is empty)
 //   reverse    inverts the rolled face (applied after the odds stage)

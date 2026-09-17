@@ -3,12 +3,11 @@
 
 import type { CharmId, CoinEffectId } from '@/core/types'
 
-/** One-line coin-effect descriptions (the 13 catalog entries). */
+/** One-line coin-effect descriptions (the 12 catalog entries). */
 export const COIN_DESCRIPTIONS: Record<CoinEffectId, string> = {
   weight: '75% chance of a favoured face (rolled at purchase)',
   heads: 'Always lands on Heads',
   tails: 'Always lands on Tails',
-  facedown: 'Special face-down display in hand (no gameplay change)',
   chaos: 'Random face every toss',
   echo: 'Re-flip once during the buff',
   magnetic: '75% chance to match the left coin',

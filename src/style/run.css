@@ -272,10 +272,12 @@
   position: relative;
   width: 2.75rem;
   height: 2.75rem;
+  pointer-events: none; /* decorative — never the hover pick-up lift */
 }
 
 .deck-disc {
   position: absolute;
+  border-radius: 9999px;
   inset: 0;
 }
 

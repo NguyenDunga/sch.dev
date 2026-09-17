@@ -45,9 +45,6 @@ import {
   FaCircleHalfStroke,
   FaCircleXmark,
   FaCircleMinus,
-  FaEye,
-  FaEyeSlash,
-  FaEyeDropper,
   FaArrowLeft,
   FaHandPointLeft,
   FaLeftRight,
@@ -57,7 +54,8 @@ import {
   FaUserGroup,
   FaPeopleGroup,
   FaRotateLeft,
-  FaPencil,
+  FaScaleUnbalancedFlip,
+  FaCopy,
 } from 'react-icons/fa6'
 import type { Face, CoinEffectKind, CharmId, TierId } from '@/core/types'
 
@@ -136,11 +134,6 @@ export const EFFECT_FACE_CONFIGS: Record<CoinEffectKind, EffectFaceConfig> = {
     T: { icon: withIcon(FaCircleXmark), color: '#7d9cc5' },
     facedown: { icon: withIcon(FaCircleMinus), color: '#9a9188' },
   },
-  facedown: {
-    H: { icon: withIcon(FaEye), color: '#c98a20' },
-    T: { icon: withIcon(FaEyeSlash), color: '#4a6a95' },
-    facedown: { icon: withIcon(FaEyeDropper), color: '#6a6158' },
-  },
   chaos: {
     H: { icon: withIcon(FaShuffle), color: '#e0a030' },
     T: { icon: withIcon(FaDice), color: '#6888b0' },
@@ -174,8 +167,19 @@ export const EFFECT_FACE_CONFIGS: Record<CoinEffectKind, EffectFaceConfig> = {
   draw: {
     H: { icon: withIcon(FaRotateLeft), color: '#b8860b' },
     T: { icon: withIcon(FaHand), color: '#3a5a85' },
-    facedown: { icon: withIcon(FaPencil), color: '#4f463d' },
+    facedown: { icon: withIcon(FaCopy), color: '#4f463d' },
   },
+}
+
+/**
+ * Weight face-down glyphs (by favoured face): the scale tips toward the
+ * favoured side — a hint of which face the coin favors while face-down.
+ * Weight is the only effect whose face-down glyph depends on a parameter
+ * (its `favored` face).
+ */
+export const WEIGHT_FACEDOWN: Record<Face, { icon: ComponentType<IconProps>; color: string }> = {
+  H: { icon: withIcon(FaScaleUnbalancedFlip), color: '#8a8178' },
+  T: { icon: withIcon(FaScaleUnbalanced), color: '#8a8178' },
 }
 
 // -- Coin effect badges ----------------------------------------------------------
@@ -184,7 +188,6 @@ export const EFFECT_ICONS: Record<CoinEffectKind, IconDef> = {
   weight: { icon: withIcon(FaScaleBalanced), label: 'Weight (75/25)', short: 'Weight' },
   heads: { icon: withIcon(FaCircle), label: 'Heads (always H)', short: 'Heads' },
   tails: { icon: withIcon(FaCircleDot), label: 'Tails (always T)', short: 'Tails' },
-  facedown: { icon: withIcon(FaCircleQuestion), label: 'Face-down display', short: 'Face-Down' },
   chaos: { icon: withIcon(FaShuffle), label: 'Chaos', short: 'Chaos' },
   echo: { icon: withIcon(FaRepeat), label: 'Echo (re-toss once)', short: 'Echo' },
   magnetic: { icon: withIcon(FaMagnet), label: 'Magnetic', short: 'Magnetic' },

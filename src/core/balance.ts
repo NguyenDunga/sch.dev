@@ -57,7 +57,6 @@ export const COIN_EFFECTS: CoinDef[] = [
   { effect: 'weight', name: 'Weight', price: 5 },
   { effect: 'heads', name: 'Heads', price: 8 },
   { effect: 'tails', name: 'Tails', price: 8 },
-  { effect: 'facedown', name: 'Face-Down', price: 5 },
   { effect: 'chaos', name: 'Chaos', price: 6 },
   { effect: 'echo', name: 'Echo', price: 7 },
   { effect: 'magnetic', name: 'Magnetic', price: 6 },

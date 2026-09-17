@@ -38,6 +38,12 @@ export interface ResolvedCoinFace {
 export interface ResolverInput {
   face: Face | undefined
   effects: CoinEffect[]
+  /**
+   * A face to pre-display on the face-down back (e.g. a Magnetic coin
+   * pre-displays its left neighbour's known face). Only applies when
+   * `face === undefined`; overrides the per-effect back.
+   */
+  predisplayFace?: Face
 }
 
 /** The resolver output: a fully resolved visual state. */

@@ -24,9 +24,10 @@ import { projectScore } from '@/core/scoring'
 import type { BossRuleId, CharmId, Coin, Hand, HandPhase, Option, Play } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
 import { dropTargets, discardTargets, selectedInOrder, useCoinSelection, type CoinSelection } from '@/components/hand/coin-dnd'
-import { CoinDnd, DiscardWellDrop, DraggableHandCoin, PlayDropZone, PlaySlotDnd } from '@/components/hand/coin-dnd.tsx'
-import { ScoreTicker } from '@/components/hand/score-ticker'
-import type { TossProjection } from '@/components/hand/score-ticker'
+import { CoinDnd, DiscardWellDrop, DraggableHandCoin, PlayDropZone, PlaySlotDnd } from '@/components/hand/coin-dnd'
+import { knownFace } from '@/components/hand/coin'
+import { ScoreTicker } from '@/components/hand/score-ticker/score-ticker'
+import type { TossProjection } from '@/components/hand/score-ticker/score-ticker'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
@@ -483,18 +484,28 @@ function PlayArea({
     <div className="play-area">
       <PlayDropZone>
         <div className="play-row">
-          {play.map((slot, i) => (
-            <PlaySlotDnd
-              key={i}
-              index={i}
-              slot={slot}
-              revealed={revealed}
-              canReorder={canPick}
-              onUnpick={() => onUnpick(i, slot.kind === 'filled' ? slot.coin.id : -1)}
-              onReflip={getReflip(i)}
-              onLand={onLand}
-            />
-          ))}
+          {play.map((slot, i) => {
+            // Magnetic pre-display: a face-down Magnetic coin pre-displays its
+            // immediate left neighbour's known face (a hint about what it'll
+            // likely match). Only the immediate left neighbour counts.
+            const isMagnetic = slot.kind === 'filled' && slot.coin.effects.some((e) => e.kind === 'magnetic')
+            const left = play[i - 1]
+            const predisplayFace =
+              isMagnetic && left?.kind === 'filled' ? knownFace(left.coin.effects) : undefined
+            return (
+              <PlaySlotDnd
+                key={i}
+                index={i}
+                slot={slot}
+                revealed={revealed}
+                canReorder={canPick}
+                predisplayFace={predisplayFace}
+                onUnpick={() => onUnpick(i, slot.kind === 'filled' ? slot.coin.id : -1)}
+                onReflip={getReflip(i)}
+                onLand={onLand}
+              />
+            )
+          })}
         </div>
       </PlayDropZone>
       <div className="piles-row">

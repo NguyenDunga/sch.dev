@@ -185,11 +185,14 @@ describe('13a.12 — hit targets ≥44px (UX §3)', () => {
   }
 
   it('coins, slots, and controls are all ≥ 2.75rem (44px)', () => {
-    const coin = 'src/components/hand/coin.css'
+    const coin = 'src/components/hand/play-slot/play-slot.css'
     const run = 'src/style/run.css'
-    // 1rem = 16px, so 2.75rem = 44px (the UX §3 minimum).
-    expect(cssRem(coin, 'coin-disc', 'width')).toBeGreaterThanOrEqual(2.75)
-    expect(cssRem(coin, 'coin-disc', 'height')).toBeGreaterThanOrEqual(2.75)
+    // The new 5-layer coin is sized inline (coin.tsx default `size`, px):
+    // ≥44px (the UX §3 minimum; 1rem = 16px, so 2.75rem = 44px).
+    const coinSrc = readFileSync('src/components/hand/coin/coin.tsx', 'utf8')
+    const sizeMatch = coinSrc.match(/size = (\d+)/)
+    expect(sizeMatch).toBeTruthy()
+    expect(parseInt(sizeMatch![1], 10)).toBeGreaterThanOrEqual(44)
     expect(cssRem(coin, 'play-slot', 'min-height')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(run, 'quick-discard', 'min-height')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(run, 'charm-chip', 'min-height')).toBeGreaterThanOrEqual(2.75)

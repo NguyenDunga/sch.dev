@@ -9,7 +9,8 @@
 // only (no blurred shadows).
 
 import type { RefObject } from 'react'
-import { FACE_DOWN_ICON, ACTION_ICONS } from '@/lib/icons'
+import { ACTION_ICONS } from '@/lib/icons'
+import { Coin } from '@/components/hand/coin'
 import { useRunStore } from '@/state/runStore'
 
 /** The draw pile: a small stack of face-down discs + its count. */
@@ -18,11 +19,9 @@ export function Deck() {
   return (
     <div className="deck" role="img" aria-label={`Draw pile, ${count} coins`}>
       <div className="deck-stack" aria-hidden>
-        <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--2" />
-        <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--1" />
-        <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--top">
-          <FACE_DOWN_ICON.icon size={16} strokeWidth={2} aria-hidden />
-        </span>
+        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--2" />
+        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--1" />
+        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--top" />
       </div>
       <span className="pile-count">{count}</span>
     </div>

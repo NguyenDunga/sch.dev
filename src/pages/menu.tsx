@@ -73,7 +73,7 @@ export function MenuScreen() {
         <p>Toss 5 coins. Score the pattern. Clear the blind.</p>
       </div>
 
-      <form onSubmit={onSubmit} className="menu-seed">
+      <form id="new-run-form" onSubmit={onSubmit} className="menu-seed">
         <SeedInput seed={seed} onChange={setSeed} />
 
         {invalid && (
@@ -84,7 +84,9 @@ export function MenuScreen() {
       </form>
 
       <div className="menu-buttons">
-        <Button type="submit" size="xl" pulse disabled={invalid}>
+        {/* The button lives outside the form (the .menu-buttons row) — the
+            `form` attribute associates it, so the click submits the form. */}
+        <Button form="new-run-form" type="submit" size="xl" pulse disabled={invalid}>
           New Run
         </Button>
 

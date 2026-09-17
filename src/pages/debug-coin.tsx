@@ -5,8 +5,8 @@
 
 import { useState } from 'react'
 import { Coin } from '@/components/hand/coin'
-import { HandCoin } from '@/components/hand/hand-coin'
-import { PlaySlot } from '@/components/hand/play-slot'
+import { HandCoin } from '@/components/hand/hand-coin/hand-coin'
+import { PlaySlot } from '@/components/hand/play-slot/play-slot'
 import type { CoinEffect, Face, HandSlot } from '@/core/types'
 
 // ── Effect samples ───────────────────────────────────────────────────────────
@@ -17,7 +17,6 @@ const ALL_EFFECTS: { label: string; effects: CoinEffect[] }[] = [
   { label: 'Weight T', effects: [{ kind: 'weight', favored: 'T' }] },
   { label: 'Heads', effects: [{ kind: 'heads' }] },
   { label: 'Tails', effects: [{ kind: 'tails' }] },
-  { label: 'Face-Down', effects: [{ kind: 'facedown' }] },
   { label: 'Chaos', effects: [{ kind: 'chaos' }] },
   { label: 'Echo', effects: [{ kind: 'echo' }] },
   { label: 'Magnetic', effects: [{ kind: 'magnetic' }] },
@@ -39,11 +38,10 @@ const COMBOS: { label: string; effects: CoinEffect[] }[] = [
   { label: 'Chaos + Magnetic', effects: [{ kind: 'chaos' }, { kind: 'magnetic' }] },
   { label: 'Tax + Jackpot', effects: [{ kind: 'tax' }, { kind: 'jackpot' }] },
   { label: 'Weight H + Heads + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'heads' }, { kind: 'jackpot' }] },
-  { label: 'Weight + Face-Down + Heads + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'facedown' }, { kind: 'heads' }, { kind: 'jackpot' }] },
+  { label: 'Tails + Reverse + Jackpot', effects: [{ kind: 'tails' }, { kind: 'reverse' }, { kind: 'jackpot' }] },
   { label: 'All effects', effects: [
     { kind: 'weight', favored: 'H' },
     { kind: 'heads' },
-    { kind: 'facedown' },
     { kind: 'chaos' },
     { kind: 'echo' },
     { kind: 'magnetic' },

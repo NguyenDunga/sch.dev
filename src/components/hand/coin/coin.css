@@ -145,10 +145,6 @@
   /* gold glow is set via inline style */
 }
 
-.coin-shell.coin-face--facedown .coin-shell-outer {
-  border-style: dashed;
-}
-
 /* -- reduced motion (UX §8) -------------------------------------------------- */
 
 /* No hover pick-up (the lift is motion). */

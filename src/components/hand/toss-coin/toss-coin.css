@@ -1,0 +1,57 @@
+/*
+ * Toss coin (12.5 + 13.2) — the 3D coin that arcs up, tumbles, and settles
+ * on the resolved face (SDD UX §4). CSS 3D transforms (flat + unlit, no
+ * WebGL).
+ *
+ * Structure:
+ *   .toss-coin          perspective + column
+ *     .toss-coin-flip   the 3D disc (preserve-3d); framer drives y (arc) +
+ *                       rotateX (tumble). The landing is a spring-bouncy
+ *                       settle (13.2): the spring overshoots past the rest
+ *                       line, so the coin briefly dips below it — z-index
+ *                       keeps it in front of the slot below.
+ *       .toss-face--heads / --tails   the two faces (backface-visibility),
+ *                                     each a new-system CoinShell + CoinGlyph
+ *
+ * The coin reads as flipping because it's a flat disc: full face when flat,
+ * a thin line when edge-on (90°). The 2px ink border (the "rim") is the
+ * CoinShell's outer ring.
+ */
+
+.toss-coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  perspective: 9rem;
+}
+
+.toss-coin-flip {
+  position: relative;
+  z-index: 1;
+  width: 3.5rem;
+  height: 3.5rem;
+  transform-style: preserve-3d;
+}
+
+.toss-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.toss-face--tails {
+  transform: rotateX(180deg);
+}
+
+/* Reduced-motion fallback: a flat 2D coin (the cross-fade is driven by
+ * framer in the component; the coin itself is the new-system `.coin`). */
+.toss-coin--2d .coin {
+  width: 3.5rem;
+  height: 3.5rem;
+}

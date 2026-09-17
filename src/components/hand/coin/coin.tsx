@@ -17,9 +17,9 @@
 
 import type { CoinEffect, Face } from '@/core/types'
 import { CoinShell } from './coin-shell'
-import { CoinGlyph } from './coin-glyph'
+import { CoinGlyph } from './coin-glyph/coin-glyph'
 import { CoinMotion } from './coin-motion'
-import { resolveCoinFace } from './coin-resolver'
+import { resolveCoinFace } from './resolver/resolver'
 import type { CoinEventHooks } from './coin-events'
 
 export interface CoinProps {
@@ -41,6 +41,11 @@ export interface CoinProps {
   size?: number
   /** Additional CSS classes. */
   className?: string
+  /**
+   * A face to pre-display on the face-down back (e.g. a Magnetic coin
+   * pre-displays its left neighbour's known face). Only applies when face-down.
+   */
+  predisplayFace?: Face
 }
 
 export function Coin({
@@ -53,9 +58,10 @@ export function Coin({
   events,
   size = 56,
   className,
+  predisplayFace,
 }: CoinProps) {
   // Resolve the visual state for the current face (face-down included).
-  const resolved = resolveCoinFace({ face, effects })
+  const resolved = resolveCoinFace({ face, effects, predisplayFace })
 
   // Fire the mount event (if face is defined)
   if (events?.onMount && coinId && face) {

@@ -12,12 +12,7 @@
 @import "./style/run-end.css";
 
 /* Component-level styles (kept in their folders) */
-@import "./components/ui/button/button.css";
-@import "./components/hand/coin.css";
-@import "./components/hand/coin/coin.css";
-@import "./components/hand/toss-coin.css";
-@import "./components/hand/score-ticker.css";
-@import "./components/juice/choreo.css";
+@import "./components/component.css";
 
 /*
  * 50/50 — "Ceramic Tactile" theme (SDD UX §2).
