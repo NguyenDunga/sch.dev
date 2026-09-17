@@ -8,8 +8,8 @@
  *
  * Transform layers (they compose, never fight):
  *   - motion.button  → framer `transform` (shared layoutId pick/unpick)
- *   - .hand-coin-tilt → CSS `translate` (hover lift / press) + `rotate`
- *                       (pointer tilt) + shake animation
+ *   - .hand-coin-lift → CSS `translate` (hover pick-up / press)
+ *   - shake (x keyframes, Motion-driven)
  */
 
 /* -- coin disc ---------------------------------------------------------------- */
@@ -26,10 +26,8 @@
   user-select: none;
 }
 
-/* 13c.3 — the face icon (Heads / Tails / face-down). */
-.coin-disc-icon {
-  display: block;
-}
+/* 13c.3 — the face icon (Heads / Tails / face-down) is the RadialReveal
+ * (M19), rendered by coin/coin-glyph; the old .coin-disc-icon class is gone. */
 
 .coin-disc--back {
   background: var(--surface-sunk);
@@ -116,7 +114,7 @@
 /* the tilt layer: hover lift 4px / press 2px (CSS `translate`), pointer
    tilt (rotateX/rotateY) + the 6th-pick shake (x) are Motion-driven
    (13b.6, hand-coin.tsx) — only the `translate` lift/press is CSS. */
-.hand-coin-tilt {
+.hand-coin-lift {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -124,7 +122,8 @@
   transition: translate 120ms var(--ease-out);
 }
 
-.hand-coin:hover:not(:disabled) .hand-coin-tilt {
+/* Hover pick-up: the coin lifts 4px (UX §3). */
+.hand-coin:hover:not(:disabled) .hand-coin-lift {
   translate: 0 -4px;
 }
 
@@ -133,7 +132,7 @@
   color: var(--surface);
 }
 
-.hand-coin:active:not(:disabled) .hand-coin-tilt {
+.hand-coin:active:not(:disabled) .hand-coin-lift {
   translate: 0 2px;
 }
 
@@ -271,7 +270,7 @@
 
 /* selected: lifted 6px + a hard coral ring on the disc (UX §3 — the visible
    selected state; ring + lift, not color alone). */
-.hand-coin--selected .hand-coin-tilt {
+.hand-coin--selected .hand-coin-lift {
   translate: 0 -6px;
 }
 
@@ -326,13 +325,13 @@
    it is a color change, not motion). The JS pointer tilt is gated in
    hand-coin.tsx. The selected lift is motion too — the ring stays. */
 @media (prefers-reduced-motion: reduce) {
-  .hand-coin:hover:not(:disabled) .hand-coin-tilt,
-  .hand-coin:active:not(:disabled) .hand-coin-tilt,
+  .hand-coin:hover:not(:disabled) .hand-coin-lift,
+  .hand-coin:active:not(:disabled) .hand-coin-lift,
   .play-slot--reflip:hover,
   .play-slot--reflip:active {
     translate: none;
   }
-  .hand-coin--selected .hand-coin-tilt {
+  .hand-coin--selected .hand-coin-lift {
     translate: none;
   }
 }

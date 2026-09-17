@@ -1,31 +1,26 @@
 // Coin Motion — the animation wrapper (layer 5 of 5).
 //
-// Handles: deal flight, hover tilt (3D), shake (6th-pick error).
+// Handles: deal flight, shake (6th-pick error).
 // All Motion-driven (framer-motion) — no direct style writes, no key remount.
 //
-// Reduced motion (UX §8): quick fade, no flight/stagger/tilt/shake.
+// Hover feedback is a CSS pick-up lift (coin.css: `.coin:hover` →
+// `translate 0 -4px`) — no 3D pointer tilt.
+//
+// Reduced motion (UX §8): quick fade, no flight/stagger/shake.
 
 import { useEffect, type ReactNode } from 'react'
-import { motion, useAnimate, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
-import type { PointerEvent as ReactPointerEvent } from 'react'
-import { CHOREO, DEAL, DURATION, EASING, SPRING } from '@/lib/motion'
+import { motion, useAnimate, useMotionValue, useReducedMotion } from 'framer-motion'
+import { CHOREO, DEAL, DURATION, EASING } from '@/lib/motion'
 
 interface CoinMotionProps {
   children: ReactNode
   /** Stagger index among freshly dealt coins (undefined = not a fresh deal). */
   dealIndex?: number
-  /** Whether the coin is enabled (tilt only when enabled). */
-  enabled: boolean
-  /** Whether a drag is in flight (tilt off mid-drag). */
-  dragging: boolean
   /** Whether the 6th-pick shake is playing. */
   shaking: boolean
   /** Bumped on every shake so the animation can restart. */
   shakeKey: number
 }
-
-/** Max tilt in degrees (UX §3: max 8°). */
-const MAX_TILT_DEG = 8
 
 /** Deal flight origin: toward the deck (top-right of the hand row). */
 const DEAL_FROM = { x: 140, y: -110, scale: 0.85 }
@@ -41,36 +36,10 @@ function dealProps(dealIndex: number | undefined, reduceMotion: boolean) {
   }
 }
 
-export function CoinMotion({
-  children,
-  dealIndex,
-  enabled,
-  dragging,
-  shaking,
-  shakeKey,
-}: CoinMotionProps) {
+export function CoinMotion({ children, dealIndex, shaking, shakeKey }: CoinMotionProps) {
   const reduceMotion = useReducedMotion() ?? false
-  const rotateX = useMotionValue(0)
-  const rotateY = useMotionValue(0)
-  const shakeX = useMotionValue(0)
-  const springRotateX = useSpring(rotateX, SPRING.snappy)
-  const springRotateY = useSpring(rotateY, SPRING.snappy)
   const [, animate] = useAnimate()
-
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!enabled || reduceMotion || dragging) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) return
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    rotateX.set(-y * MAX_TILT_DEG * 2)
-    rotateY.set(x * MAX_TILT_DEG * 2)
-  }
-
-  const onPointerLeave = () => {
-    rotateX.set(0)
-    rotateY.set(0)
-  }
+  const shakeX = useMotionValue(0)
 
   // The 6th-pick shake (3px): a Motion keyframe run on shakeKey change.
   useEffect(() => {
@@ -88,12 +57,7 @@ export function CoinMotion({
       animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
       transition={transition}
     >
-      <motion.div
-        className="coin-motion-tilt"
-        style={{ rotateX: springRotateX, rotateY: springRotateY, x: shakeX }}
-        onPointerMove={onPointerMove}
-        onPointerLeave={onPointerLeave}
-      >
+      <motion.div className="coin-motion-shake" style={{ x: shakeX }}>
         {children}
       </motion.div>
     </motion.div>

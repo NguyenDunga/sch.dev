@@ -9,8 +9,7 @@
 // only (no blurred shadows).
 
 import type { RefObject } from 'react'
-import { Trash2 } from 'lucide-react'
-import { FaceDownIcon } from '@/components/icons'
+import { FACE_DOWN_ICON, ACTION_ICONS } from '@/lib/icons'
 import { useRunStore } from '@/state/runStore'
 
 /** The draw pile: a small stack of face-down discs + its count. */
@@ -22,7 +21,7 @@ export function Deck() {
         <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--2" />
         <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--1" />
         <span className="coin-disc coin-disc--back coin-disc--sm deck-disc deck-disc--top">
-          <FaceDownIcon size={16} strokeWidth={2} aria-hidden />
+          <FACE_DOWN_ICON.icon size={16} strokeWidth={2} aria-hidden />
         </span>
       </div>
       <span className="pile-count">{count}</span>
@@ -37,7 +36,7 @@ export function DiscardWell({ wellRef }: { wellRef: RefObject<HTMLDivElement | n
   return (
     <div className="discard-well" role="img" aria-label={`Discard pile, ${count} coins`}>
       <div className="discard-well-hole" ref={wellRef} aria-hidden>
-        <Trash2 size={18} strokeWidth={2} aria-hidden />
+        <ACTION_ICONS.discard.icon size={18} strokeWidth={2} aria-hidden />
       </div>
       <span className="pile-count">{count}</span>
     </div>

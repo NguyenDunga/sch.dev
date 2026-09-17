@@ -7,10 +7,6 @@ import type { Face, CoinEffect } from '@/core/types'
 export interface CoinVisualModifier {
   /** Color tint (CSS color or token reference). */
   color?: string
-  /** Tilt/rotation in degrees (positive = clockwise). */
-  tilt?: number
-  /** Scale factor (1 = normal). */
-  scale?: number
   /** Border style override. */
   border?: string
   /** Glow (CSS box-shadow value). */
@@ -23,15 +19,11 @@ export interface CoinVisualModifier {
 
 /** The fully resolved visual state for one side of a coin. */
 export interface ResolvedCoinFace {
-  face: Face
+  face: Face | undefined
   /** The combined visual modifiers (applied in priority order). */
   modifiers: CoinVisualModifier[]
   /** The resolved color (last non-undefined wins). */
   color: string
-  /** The resolved tilt (sum of all tilt modifiers). */
-  tilt: number
-  /** The resolved scale (product of all scale modifiers). */
-  scale: number
   /** The resolved border (last non-undefined wins). */
   border: string
   /** The resolved glow (last non-undefined wins). */
@@ -42,9 +34,9 @@ export interface ResolvedCoinFace {
   customClasses: string[]
 }
 
-/** The resolver input: a face + its effects. */
+/** The resolver input: a face (undefined = face-down) + its effects. */
 export interface ResolverInput {
-  face: Face
+  face: Face | undefined
   effects: CoinEffect[]
 }
 

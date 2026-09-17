@@ -3,8 +3,11 @@
 // brief "Saved!" confirmation. The timeout is cleaned up on unmount.
 
 import { useEffect, useRef, useState } from 'react'
-import { Save } from 'lucide-react'
+import { withIcon } from '@/lib/icons'
+import { FaFloppyDisk } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
+
+const SaveIcon = withIcon(FaFloppyDisk)
 
 const SAVED_MS = 1500
 
@@ -25,7 +28,7 @@ export function SaveButton({ onSave }: { onSave: () => void }) {
 
   return (
     <Button variant="ghost" size="sm" onClick={handleSave} aria-label="Save run">
-      <Save size={16} aria-hidden />
+      <SaveIcon size={16} aria-hidden />
       {saved ? 'Saved!' : 'Save'}
     </Button>
   )

@@ -21,7 +21,6 @@ import { useCallback, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, ReactNode, RefObject } from 'react'
 import type { Coin, Hand, HandSlot } from '@/core/types'
 import { routeDrop } from './coin-dnd'
-import { CoinBadges } from './coin-badges'
 import { CoinDisc } from './coin-disc'
 import { HandCoin } from './hand-coin'
 import { PlaySlot } from './play-slot'
@@ -79,8 +78,7 @@ export function CoinDnd({ hand, onDropToPlay, onDropToDiscard, onMovePlay, child
 export function CoinDragOverlay({ coin }: { coin: Coin }) {
   return (
     <div className="coin-drag-overlay" aria-hidden>
-      <CoinDisc />
-      <CoinBadges effects={coin.effects} />
+      <CoinDisc effects={coin.effects} />
     </div>
   )
 }

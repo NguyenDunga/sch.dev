@@ -5,10 +5,13 @@
 
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Dices } from 'lucide-react'
+import { withIcon } from '@/lib/icons'
+import { FaDice } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import { generateSeed } from '@/core/rng'
 import { useRunStore } from '@/state/runStore'
+
+const DicesIcon = withIcon(FaDice)
 
 const SEED_MIN = 6
 const SEED_MAX = 8
@@ -38,7 +41,7 @@ function SeedInput({ seed, onChange }: { seed: string; onChange: (seed: string) 
         title="Random seed"
         onClick={() => onChange(generateSeed())}
       >
-        <Dices aria-hidden className="size-5" />
+        <DicesIcon aria-hidden className="size-5" />
       </Button>
     </div>
   )

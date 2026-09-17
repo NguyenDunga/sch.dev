@@ -60,13 +60,12 @@ function nextCoinId(deck: RunState['deck']): number {
   return Math.max(...[...deck.drawPile, ...deck.discardPile].map((c) => c.id)) + 1
 }
 
-/** A catalog id → the purchased coin's effect variant (M9.4): Weight/Double-Side
- *  roll their favoured face via the rng; Draw-N → { kind: 'draw', count: N }. */
+/** A catalog id → the purchased coin's effect variant (M9.4): Weight rolls its
+ *  favoured face via the rng; Heads/Tails/Face-Down are fixed; Draw-N → { kind: 'draw', count: N }. */
 function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
   switch (effectId) {
     case 'weight':
-    case 'doubleSide':
-      return { kind: effectId, favored: rng.next() < 0.5 ? 'H' : 'T' }
+      return { kind: 'weight', favored: rng.next() < 0.5 ? 'H' : 'T' }
     case 'draw1':
       return { kind: 'draw', count: 1 }
     case 'draw2':
@@ -127,7 +126,7 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
     st.charms.push(offer.charm)
   } else if (offer.kind === 'coin') {
     // M9.4: new coin joins the collection (draw pile) with its effect variant;
-    // Weight/Double-Side roll their favoured face now, fixed for the run.
+    // Weight rolls its favoured face now, fixed for the run.
     const coin: Coin = { id: nextCoinId(st.deck), effects: [purchasedEffect(offer.effect, rng)] }
     st.deck.drawPile = [...st.deck.drawPile, coin]
     st.rngState = rng.state()

@@ -53,18 +53,20 @@ const BUILD_RUNS = 300 // round-2 boss with-build cells: seeds per cell
 // -- fast EV ---------------------------------------------------------------------
 
 /** Per-coin P(H) given the left neighbour's face: [none, leftH, leftT].
- *  Mirrors the resolveFace odds stage (magnetic > doubleSide > chaos >
+ *  Mirrors the resolveFace odds stage (magnetic > heads/tails > chaos >
  *  weight > base; Reverse inverts). */
 function faceProbs(coin: Coin): [number, number, number] {
   const fx = (k: Coin['effects'][number]['kind']) => coin.effects.find((e) => e.kind === k)
   const magnetic = fx('magnetic')
-  const doubleSide = fx('doubleSide') as { kind: 'doubleSide'; favored: Face } | undefined
+  const heads = fx('heads')
+  const tails = fx('tails')
   const chaos = fx('chaos')
   const weight = fx('weight') as { kind: 'weight'; favored: Face } | undefined
   const reverse = fx('reverse')
   // Base P(H) when no left-dependent odds effect applies.
   let base: number
-  if (doubleSide) base = doubleSide.favored === 'H' ? 1 : 0
+  if (heads) base = 1
+  else if (tails) base = 0
   else if (chaos) base = 0.5
   else if (weight) base = weight.favored === 'H' ? WEIGHT_ODDS : 1 - WEIGHT_ODDS
   else base = 0.5
@@ -324,11 +326,11 @@ describe('13a.11 — EV math cross-checks (the sim must match the real pipeline)
       { id: 1, effects: [] },
       { id: 2, effects: [{ kind: 'weight', favored: 'H' }] },
       { id: 3, effects: [{ kind: 'weight', favored: 'T' }] },
-      { id: 4, effects: [{ kind: 'doubleSide', favored: 'H' }] },
+      { id: 4, effects: [{ kind: 'heads' }] },
       { id: 5, effects: [{ kind: 'magnetic' }] },
       { id: 6, effects: [{ kind: 'reverse' }] },
       { id: 7, effects: [{ kind: 'reverse' }, { kind: 'weight', favored: 'H' }] },
-      { id: 8, effects: [{ kind: 'magnetic' }, { kind: 'doubleSide', favored: 'T' }] }, // magnetic wins (left present)
+      { id: 8, effects: [{ kind: 'magnetic' }, { kind: 'tails' }] }, // magnetic wins (left present)
       { id: 9, effects: [{ kind: 'chaos' }] },
     ]
     const N = 20000
@@ -354,7 +356,7 @@ describe('13a.11 — EV math cross-checks (the sim must match the real pipeline)
       { id: 1, effects: [] },
       { id: 2, effects: [{ kind: 'weight', favored: 'H' }] },
       { id: 3, effects: [{ kind: 'magnetic' }] },
-      { id: 4, effects: [{ kind: 'doubleSide', favored: 'T' }] },
+      { id: 4, effects: [{ kind: 'tails' }] },
       { id: 5, effects: [{ kind: 'reverse' }, { kind: 'weight', favored: 'T' }] },
     ]
     const probs = hand.map(faceProbs)

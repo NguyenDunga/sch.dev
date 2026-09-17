@@ -1,57 +1,161 @@
-// Coin Glyph — the icon/symbol shown on the coin face (layer 3 of 5).
+// CoinGlyph — the main glyph on the coin (M19: RadialReveal).
 //
-// The glyph is the primary visual signal for the face (H/T). It can be
-// overridden by the resolver (e.g. weight+H = scale tip icon, jackpot =
-// gold star, etc.).
+// Three shapes, by effect count:
+//   - 0 effects → the face-state icon (H / T / face-down), centered, no text
+//                 (a plain face is its own archetype).
+//   - 1 effect  → that effect's per-face-stage glyph, centered (no ring —
+//                 the ring exists to reveal the OTHER effects).
+//   - 2+ effects → a RadialReveal: a conic-gradient ring around a disk that
+//                 shows the highest-priority effect by default and radially
+//                 wipes in the hovered effect. The ring has one wedge per
+//                 NON-top effect (the top effect is already the disk default,
+//                 so it gets no wedge).
 //
-// Colorblind-safe (13c.9): the icon shape is the primary signal; the face
-// color is the secondary signal.
+// The 0/1-effect glyph sits on a light disk (like the RadialReveal's disk):
+// the H / T face fills are solid color, so a same-tone icon drawn directly on
+// them would be invisible.
+//
+// Each effect carries its own per-face-stage glyph + color (EFFECT_FACE_CONFIGS).
+// The coin's face stage (H / T / face-down) selects which glyph + color each
+// effect shows; the ring is tinted by the face stage.
+//
+// `size` is the glyph diameter in px (the coin passes the face-fill size so
+// the ring sits inside the shell).
 
-import type { Face } from '@/core/types'
-import type { ResolvedCoinFace } from './coin-types'
-import { FACE_ICONS, FACE_DOWN_ICON } from '@/lib/icons'
+import type { ComponentType } from 'react'
+import type { CoinEffect, Face } from '@/core/types'
+import type { IconProps } from '@/lib/icons'
+import { EFFECT_FACE_CONFIGS, EFFECT_ICONS, FACE_ICONS, FACE_DOWN_ICON } from '@/lib/icons'
+import { RadialReveal, type RadialRevealItem } from './radial-reveal'
+import { fitTextSize } from './fit-text'
+import { highestPriorityEffect } from './coin-resolver'
+
+type FaceStage = 'H' | 'T' | 'facedown'
+
+/** The coin's face stage (face-down when `face` is undefined). */
+function faceStage(face: Face | undefined): FaceStage {
+  return face === undefined ? 'facedown' : face
+}
+
+/** The face-stage base color (used for the default icon of a plain coin). */
+const STAGE_COLORS: Record<FaceStage, string> = {
+  H: 'var(--heads)',
+  T: 'var(--tails)',
+  facedown: 'var(--ink-soft)',
+}
+
+/** The face-stage a11y label. */
+const STAGE_LABELS: Record<FaceStage, string> = {
+  H: 'Heads',
+  T: 'Tails',
+  facedown: 'face-down',
+}
+
+/** The direct (no-ring) glyph: a single centered icon + short name on a light
+ *  disk (the disk guarantees contrast on the solid H / T face fills). The text
+ *  is auto-fitted to the disk chord. */
+function SoloGlyph({ icon, color, label, text, size }: { icon: ComponentType<IconProps>; color: string; label: string; text?: string; size: number }) {
+  const GlyphIcon = icon
+  const iconSize = Math.max(2, Math.round(size * 0.62))
+  const baseSize = Math.max(5, Math.round(size * 0.16))
+  const fontSize = text && size >= 24 ? fitTextSize(text, size, iconSize, baseSize) : 0
+  return (
+    <div
+      className="coin-glyph-solo"
+      role="img"
+      aria-label={label}
+      style={{ width: size, height: size, display: 'grid', placeItems: 'center' }}
+    >
+      <div
+        className="coin-glyph-solo-disk"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          background: 'var(--surface)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+        }}
+      >
+        <GlyphIcon size={iconSize} color={color} aria-hidden />
+        {fontSize > 0 && (
+          <span
+            className="coin-glyph-solo-text"
+            style={{ fontSize, fontWeight: 600, lineHeight: 1, color, textTransform: 'uppercase', letterSpacing: '0.03em' }}
+          >
+            {text}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface CoinGlyphProps {
-  /** The face (undefined = face-down). */
   face?: Face
-  /** The resolved visual state (may contain glyphOverride). */
-  resolved?: ResolvedCoinFace
-  /** Icon size in px (default 28). */
+  effects: CoinEffect[]
+  /** The glyph diameter in px (default 42 = the 56px coin's face fill). */
   size?: number
 }
 
-export function CoinGlyph({ face, resolved, size = 28 }: CoinGlyphProps) {
-  // Face-down: show the face-down icon
-  if (face === undefined) {
-    const Icon = FACE_DOWN_ICON.icon
-    return <Icon size={size} strokeWidth={2} aria-hidden className="coin-glyph coin-glyph--back" />
+export function CoinGlyph({ face, effects, size = 42 }: CoinGlyphProps) {
+  const stage = faceStage(face)
+  const top = highestPriorityEffect(effects)
+
+  // No effects: the face-state icon (H / T / face-down) — no text (a plain
+  // face is its own archetype).
+  if (!top) {
+    const cfg =
+      face === 'H'
+        ? { icon: FACE_ICONS.H.icon, color: STAGE_COLORS.H }
+        : face === 'T'
+          ? { icon: FACE_ICONS.T.icon, color: STAGE_COLORS.T }
+          : { icon: FACE_DOWN_ICON.icon, color: STAGE_COLORS.facedown }
+    return <SoloGlyph icon={cfg.icon} color={cfg.color} label={STAGE_LABELS[stage]} size={size} />
   }
 
-  // Face-up: show the face icon (or override)
-  const override = resolved?.glyphOverride
-  if (override) {
-    // Custom glyph from the resolver (future: map override → icon)
-    // For now, fall through to the face icon
-    const def = FACE_ICONS[face]
-    const Icon = def.icon
+  // One effect: its per-face-stage glyph + short name directly (no ring needed).
+  if (effects.length === 1) {
+    const cfg = EFFECT_FACE_CONFIGS[top.kind][stage]
     return (
-      <Icon
+      <SoloGlyph
+        icon={cfg.icon}
+        color={cfg.color}
+        label={`${STAGE_LABELS[stage]}, ${EFFECT_ICONS[top.kind].label}`}
+        text={EFFECT_ICONS[top.kind].short}
         size={size}
-        strokeWidth={2}
-        aria-hidden
-        className={`coin-glyph coin-glyph--${face === 'H' ? 'heads' : 'tails'} coin-glyph--override`}
       />
     )
   }
 
-  const def = FACE_ICONS[face]
-  const Icon = def.icon
+  // 2+ effects: the disk shows the top effect; the ring wedges are the OTHER
+  // effects (the top one is already the disk default, so it gets no wedge).
+  const topCfg = EFFECT_FACE_CONFIGS[top.kind][stage]
+  const items: RadialRevealItem[] = effects
+    .filter((e) => e !== top)
+    .map((e) => {
+      const cfg = EFFECT_FACE_CONFIGS[e.kind][stage]
+      return { color: cfg.color, icon: cfg.icon, label: EFFECT_ICONS[e.kind].label, short: EFFECT_ICONS[e.kind].short }
+    })
+
+  // Keep the ring + icon positive even for tiny coins (the debug page tests
+  // 24px coins → a 10px glyph): the ring is at most half the glyph minus 1px.
+  const ringWidth = Math.max(2, Math.min(Math.round(size * 0.14), Math.floor(size / 2) - 1))
+  const iconSize = Math.max(2, Math.round((size - 2 * ringWidth) * 0.62))
+
   return (
-    <Icon
+    <RadialReveal
+      items={items}
+      defaultIcon={topCfg.icon}
+      defaultColor={topCfg.color}
+      defaultLabel={`${STAGE_LABELS[stage]}, ${EFFECT_ICONS[top.kind].label}`}
+      defaultShort={EFFECT_ICONS[top.kind].short}
       size={size}
-      strokeWidth={2}
-      aria-hidden
-      className={`coin-glyph coin-glyph--${face === 'H' ? 'heads' : 'tails'}`}
+      ringWidth={ringWidth}
+      iconSize={iconSize}
     />
   )
 }

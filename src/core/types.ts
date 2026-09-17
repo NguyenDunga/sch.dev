@@ -10,20 +10,21 @@ export type Option<T> = { some: true; value: T } | { some: false }
 
 export type DrawCount = 1 | 2 | 3
 
-// Coin effects as a tagged union: each variant carries exactly its own data. A Weight/Double-Side
-// coin always has a favoured face; a Chaos coin can never carry one. (Replaces the old
-// `effects: CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
+// Coin effects as a tagged union: each variant carries exactly its own data. A Weight coin always
+// has a favoured face; Heads/Tails force a fixed face; Face-Down is a hand-visual-only effect
+// (no core change — the coin still resolves H/T on the toss). (Replaces the old `effects:
+// CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
 export type CoinEffect =
   | { kind: 'weight'; favored: Face }
-  | { kind: 'doubleSide'; favored: Face }
+  | { kind: 'heads' } | { kind: 'tails' } | { kind: 'facedown' }
   | { kind: 'chaos' } | { kind: 'echo' } | { kind: 'magnetic' } | { kind: 'reverse' }
   | { kind: 'tax' } | { kind: 'jackpot' }
   | { kind: 'draw'; count: DrawCount }
 export type CoinEffectKind = CoinEffect['kind']
 
 // Shop catalog id (Draw sold as 3 tiers). At purchase a Draw-N id → { kind: 'draw'; count: N },
-// and Weight/Double-Side roll their favoured face into the effect variant.
-export type CoinEffectId = 'weight' | 'doubleSide' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
+// and Weight rolls its favoured face into the effect variant. Heads/Tails/Face-Down are fixed.
+export type CoinEffectId = 'weight' | 'heads' | 'tails' | 'facedown' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
 
 export interface Coin { id: number; effects: CoinEffect[] }                   // effects carry their own params — no shared optional
 
@@ -49,7 +50,7 @@ export type Blind = { round: number; target: number; reward: number } & (
 )
 
 export interface CharmDef { id: CharmId; name: string; category: CharmCategory; price: number }
-export interface CoinDef { effect: CoinEffectId; name: string; price: number }   // 11 catalog entries = 8 single-effect coins + Draw-1/2/3 (9 effect types; Draw has 3 tiers)
+export interface CoinDef { effect: CoinEffectId; name: string; price: number }   // 13 catalog entries = 10 single-effect coins + Draw-1/2/3 (11 effect types; Draw has 3 tiers)
 export interface Deck { drawPile: Coin[]; discardPile: Coin[] }                  // persistent collection == drawPile + discardPile (+ any coins currently in hand/play mid-blind)
 
 // A hand's score: either no tier matched (scores 0, but may still earn coin cash) or a scored tier.

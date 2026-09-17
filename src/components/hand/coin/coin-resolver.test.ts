@@ -4,8 +4,6 @@
 // - Base face colors (H/T)
 // - Single effect modifiers
 // - Multi-effect priority (higher priority wins)
-// - Tilt accumulation
-// - Scale multiplication
 // - Color override (last wins)
 // - Border/glow override (last wins)
 // - Custom class accumulation
@@ -19,8 +17,14 @@ import type { CoinEffect } from '@/core/types'
 function weight(favored: 'H' | 'T'): CoinEffect {
   return { kind: 'weight', favored }
 }
-function doubleSide(favored: 'H' | 'T'): CoinEffect {
-  return { kind: 'doubleSide', favored }
+function heads(): CoinEffect {
+  return { kind: 'heads' }
+}
+function tails(): CoinEffect {
+  return { kind: 'tails' }
+}
+function facedown(): CoinEffect {
+  return { kind: 'facedown' }
 }
 function chaos(): CoinEffect {
   return { kind: 'chaos' }
@@ -50,8 +54,6 @@ describe('coin-resolver', () => {
     const r = resolveCoinFace({ face: 'H', effects: [] })
     expect(r.face).toBe('H')
     expect(r.color).toBe('var(--heads)')
-    expect(r.tilt).toBe(0)
-    expect(r.scale).toBe(1)
     expect(r.border).toBe('')
     expect(r.glow).toBe('')
     expect(r.customClasses).toEqual([])
@@ -61,25 +63,36 @@ describe('coin-resolver', () => {
     const r = resolveCoinFace({ face: 'T', effects: [] })
     expect(r.face).toBe('T')
     expect(r.color).toBe('var(--tails)')
-    expect(r.tilt).toBe(0)
-    expect(r.scale).toBe(1)
   })
 
   // ── Single effects ─────────────────────────────────────────────────────
-  it('weight H on H face: tilt right', () => {
+  it('weight H on H face: favored color', () => {
     const r = resolveCoinFace({ face: 'H', effects: [weight('H')] })
-    expect(r.tilt).toBe(12)
+    expect(r.color).toContain('var(--heads)')
   })
 
-  it('weight H on T face: tilt left (opposite)', () => {
+  it('weight H on T face: base color (no modifier)', () => {
     const r = resolveCoinFace({ face: 'T', effects: [weight('H')] })
-    expect(r.tilt).toBe(-4)
+    expect(r.color).toBe('var(--tails)')
   })
 
-  it('doubleSide H on H face: strong tilt + glow', () => {
-    const r = resolveCoinFace({ face: 'H', effects: [doubleSide('H')] })
-    expect(r.tilt).toBe(18)
+  it('heads on H face: lightened fill + heads glow', () => {
+    const r = resolveCoinFace({ face: 'H', effects: [heads()] })
+    expect(r.color).toContain('var(--heads)')
     expect(r.glow).toContain('var(--heads)')
+  })
+
+  it('tails on T face: lightened fill + tails glow', () => {
+    const r = resolveCoinFace({ face: 'T', effects: [tails()] })
+    expect(r.color).toContain('var(--tails)')
+    expect(r.glow).toContain('var(--tails)')
+  })
+
+  it('facedown on face-down: brighter fill + glow + custom class', () => {
+    const r = resolveCoinFace({ face: undefined, effects: [facedown()] })
+    expect(r.color).toContain('var(--surface-sunk)')
+    expect(r.glow).toContain('var(--primary)')
+    expect(r.customClasses).toContain('coin-face--facedown')
   })
 
   it('chaos: dashed border + custom class', () => {
@@ -94,28 +107,25 @@ describe('coin-resolver', () => {
     expect(r.customClasses).toContain('coin-face--echo')
   })
 
-  it('magnetic: solid border + scale up', () => {
+  it('magnetic: solid border', () => {
     const r = resolveCoinFace({ face: 'H', effects: [magnetic()] })
     expect(r.border).toContain('solid')
-    expect(r.scale).toBe(1.05)
   })
 
-  it('reverse: negative tilt', () => {
+  it('reverse: hue-invert class', () => {
     const r = resolveCoinFace({ face: 'H', effects: [reverse()] })
-    expect(r.tilt).toBe(-8)
+    expect(r.customClasses).toContain('coin-face--reverse')
   })
 
-  it('tax: dim + red tint + scale down', () => {
+  it('tax: dim + red tint', () => {
     const r = resolveCoinFace({ face: 'H', effects: [tax()] })
     expect(r.color).toContain('var(--danger)')
-    expect(r.scale).toBe(0.9)
   })
 
-  it('jackpot: gold glow + scale up + border', () => {
+  it('jackpot: gold glow + border', () => {
     const r = resolveCoinFace({ face: 'H', effects: [jackpot()] })
     expect(r.color).toContain('var(--tier-jackpot)')
     expect(r.glow).toContain('var(--tier-jackpot)')
-    expect(r.scale).toBe(1.1)
     expect(r.border).toContain('var(--tier-jackpot)')
   })
 
@@ -130,24 +140,19 @@ describe('coin-resolver', () => {
     const r = resolveCoinFace({ face: 'H', effects: [weight('H'), jackpot()] })
     // Jackpot (priority 9) overrides weight (priority 2) for color
     expect(r.color).toContain('var(--tier-jackpot)')
-    // Tilt accumulates: 12 (weight) + 0 (jackpot has no tilt) = 12
-    expect(r.tilt).toBe(12)
-    // Scale multiplies: 1 (weight) * 1.1 (jackpot) = 1.1
-    expect(r.scale).toBeCloseTo(1.1)
   })
 
-  it('weight + reverse: tilt accumulates', () => {
+  it('weight + reverse: color + class combine', () => {
     const r = resolveCoinFace({ face: 'H', effects: [weight('H'), reverse()] })
-    // weight H on H: +12, reverse: -8 → total +4
-    expect(r.tilt).toBe(4)
+    // weight H on H: favored color; reverse: hue-invert class
+    expect(r.color).toContain('var(--heads)')
+    expect(r.customClasses).toContain('coin-face--reverse')
   })
 
   it('tax + jackpot: jackpot wins color (higher priority)', () => {
     const r = resolveCoinFace({ face: 'H', effects: [tax(), jackpot()] })
     // tax (priority 8) sets danger color, jackpot (priority 9) overrides
     expect(r.color).toContain('var(--tier-jackpot)')
-    // Scale: 0.9 * 1.1 = 0.99
-    expect(r.scale).toBeCloseTo(0.99)
   })
 
   it('multiple effects: custom classes accumulate', () => {
@@ -160,21 +165,15 @@ describe('coin-resolver', () => {
   // ── Both sides ─────────────────────────────────────────────────────────
   it('resolveCoinFaces: H and T resolve independently', () => {
     const { H, T } = resolveCoinFaces([weight('H')])
-    // H face: tilt right (favored)
-    expect(H.tilt).toBe(12)
-    // T face: tilt left (opposite)
-    expect(T.tilt).toBe(-4)
-    // Different base colors
+    // H face: favored color; T face: base color (no modifier)
     expect(H.color).toContain('var(--heads)')
-    expect(T.color).toContain('var(--tails)')
+    expect(T.color).toBe('var(--tails)')
   })
 
   it('resolveCoinFaces: no effects → both sides base', () => {
     const { H, T } = resolveCoinFaces([])
     expect(H.color).toBe('var(--heads)')
     expect(T.color).toBe('var(--tails)')
-    expect(H.tilt).toBe(0)
-    expect(T.tilt).toBe(0)
   })
 
   // ── Edge cases ─────────────────────────────────────────────────────────
@@ -183,17 +182,15 @@ describe('coin-resolver', () => {
     expect(r.modifiers).toEqual([])
   })
 
-  it('all 9 effects: no crash, deterministic output', () => {
+  it('all effects: no crash, deterministic output', () => {
     const all: CoinEffect[] = [
-      weight('H'), doubleSide('H'), chaos(), echo(),
+      weight('H'), heads(), tails(), facedown(), chaos(), echo(),
       magnetic(), reverse(), tax(), jackpot(), draw(2),
     ]
     const r1 = resolveCoinFace({ face: 'H', effects: all })
     const r2 = resolveCoinFace({ face: 'H', effects: all })
     // Deterministic: same input → same output
     expect(r1.color).toBe(r2.color)
-    expect(r1.tilt).toBe(r2.tilt)
-    expect(r1.scale).toBe(r2.scale)
     expect(r1.border).toBe(r2.border)
     expect(r1.glow).toBe(r2.glow)
     expect(r1.customClasses).toEqual(r2.customClasses)

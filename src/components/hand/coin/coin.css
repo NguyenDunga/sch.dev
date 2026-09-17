@@ -1,7 +1,7 @@
 /*
  * Coin component — 5-layer structure.
  *
- * Layers: Shell (3-ring disc) → Face (fill) → Glyph (icon) → Badges → Motion
+ * Layers: Shell (3-ring disc) → Face (fill) → Glyph (RadialReveal) → Motion
  *
  * Ceramic Tactile (SDD UX §2–§3): flat panels, 2px --ink sticker border,
  * chunky radii, no blurred shadows.
@@ -14,6 +14,12 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-1);
+  transition: translate 120ms var(--ease-out);
+}
+
+/* Hover pick-up: the coin lifts 4px (UX §3). */
+.coin:hover {
+  translate: 0 -4px;
 }
 
 /* -- shell (3-ring disc) ----------------------------------------------------- */
@@ -23,7 +29,6 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  transition: transform var(--dur-micro) var(--ease-out);
 }
 
 .coin-shell-outer {
@@ -73,6 +78,12 @@
 
 /* -- glyph (centered icon) --------------------------------------------------- */
 
+/* -- glyph (centered RadialReveal, M19) --------------------------------------
+ * The RadialReveal (ring + disk + reveal layers) is sized dynamically in
+ * radial-reveal.tsx (size / ringWidth / iconSize props), so the layers are
+ * styled inline. These classes identify the layers; the reduced-motion
+ * fallback (instant wipe) is handled by framer-motion (duration 0). */
+
 .coin-glyph-layer {
   position: absolute;
   inset: 0;
@@ -81,72 +92,22 @@
   pointer-events: none;
 }
 
-.coin-glyph {
+.radial-reveal {
   display: block;
-  color: var(--ink);
+  pointer-events: auto; /* the ring wedges are hover targets */
 }
 
-.coin-glyph--heads {
-  color: var(--ink);
+.radial-reveal-ring,
+.radial-reveal-disk,
+.radial-reveal-default,
+.radial-reveal-reveal {
+  display: block;
 }
 
-.coin-glyph--tails {
-  color: var(--ink);
-}
-
-.coin-glyph--back {
-  color: var(--ink-soft);
-}
-
-.coin-glyph--override {
-  color: var(--primary);
-}
-
-/* -- badges ------------------------------------------------------------------ */
-
-.coin-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem;
-  justify-content: center;
-  max-width: 100%;
-}
-
-.coin-badge-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-}
-
-.coin-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: var(--r-sm);
-  background: var(--surface-sunk);
-  border: 1px solid var(--line);
-  color: var(--ink-soft);
-}
-
-.face-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-}
-
-.face-badge--heads {
-  background: color-mix(in srgb, var(--heads) 20%, var(--surface));
-}
-
-.face-badge--tails {
-  background: color-mix(in srgb, var(--tails) 20%, var(--surface));
-}
+/* -- badges removed (M18: composite glyph replaces the badge footer) --------
+ * M19: the composite glyph (base + tips) is replaced by the RadialReveal.
+ * The .coin-glyph* classes above are gone; the RadialReveal classes are used.
+ */
 
 /* -- motion wrapper ---------------------------------------------------------- */
 
@@ -156,11 +117,10 @@
   align-items: center;
 }
 
-.coin-motion-tilt {
+.coin-motion-shake {
   display: flex;
   flex-direction: column;
   align-items: center;
-  perspective: 400px;
 }
 
 /* -- effect modifier classes ------------------------------------------------- */
@@ -185,10 +145,15 @@
   /* gold glow is set via inline style */
 }
 
-/* -- reduced motion ---------------------------------------------------------- */
+.coin-shell.coin-face--facedown .coin-shell-outer {
+  border-style: dashed;
+}
 
+/* -- reduced motion (UX §8) -------------------------------------------------- */
+
+/* No hover pick-up (the lift is motion). */
 @media (prefers-reduced-motion: reduce) {
-  .coin-shell {
-    transition: none;
+  .coin:hover {
+    translate: none;
   }
 }

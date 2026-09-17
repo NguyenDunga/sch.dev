@@ -13,7 +13,6 @@ import { motion } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import type { HandSlot } from '@/core/types'
 import { SPRING } from '@/lib/motion'
-import { CoinBadges } from './coin-badges'
 import { CoinDisc } from './coin-disc'
 import { TossCoin } from './toss-coin'
 
@@ -111,10 +110,7 @@ export function PlaySlot({
       {...dragProps}
       aria-label={`slot ${index + 1}, unpick`}
     >
-      <CoinDisc face={undefined} />
-      <span className="coin-badges">
-        <CoinBadges effects={coin.effects} />
-      </span>
+      <CoinDisc face={undefined} effects={coin.effects} />
     </motion.button>
   )
 }

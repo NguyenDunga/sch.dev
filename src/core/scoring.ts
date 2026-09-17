@@ -10,10 +10,12 @@
 // Source of truth for the real implementations:
 // public/.docs/sdd/software_design_component.md (C3).
 
-// -- Coin effects (v1 core set of 9) --
+// -- Coin effects (v1 core set of 11) --
 // Face (resolveFace: odds stage → roll → Reverse):
 //   weight     75/25 toward its favoured face
-//   doubleSide 100/0 toward its favoured face
+//   heads      100/0 — always lands H
+//   tails      100/0 — always lands T
+//   facedown   hand-visual only (no odds-stage entry; the coin still resolves H/T)
 //   chaos      uniform random 0–100% odds on every flip
 //   magnetic   75/25 toward the left neighbour's face (no bias if left is empty)
 //   reverse    inverts the rolled face (applied after the odds stage)
@@ -47,9 +49,9 @@ const opposite = (f: Face): Face => (f === 'H' ? 'T' : 'H')
  *
  * Odds-stage priority (highest effect present wins):
  *   magnetic (75% toward the left neighbour's face; no bias if left is empty,
- *   in which case the next priority applies) > doubleSide (100/0 toward its
- *   favoured face) > chaos (uniform random 0–100% odds) > weight (75/25 toward
- *   its favoured face) > base (50/50).
+ *   in which case the next priority applies) > heads/tails (100/0 fixed face)
+ *   > chaos (uniform random 0–100% odds) > weight (75/25 toward its favoured
+ *   face) > base (50/50). Face-down is visual-only (no odds-stage entry).
  * Then the face is rolled against the odds, and Reverse inverts it.
  * Echo re-flip (buff phase) = the store calls this again.
  */
@@ -59,13 +61,15 @@ export function resolveFace(rng: Rng, coin: Coin, left: Option<Face>): Face {
   // Odds stage — the highest-priority odds effect present sets the odds.
   let target: Face
   let p: number
-  const doubleSide = effect('doubleSide')
   const weight = effect('weight')
   if (left.some && effect('magnetic')) {
     target = left.value
     p = MAGNETIC_ODDS
-  } else if (doubleSide && doubleSide.kind === 'doubleSide') {
-    target = doubleSide.favored
+  } else if (effect('heads')) {
+    target = 'H'
+    p = 1
+  } else if (effect('tails')) {
+    target = 'T'
     p = 1
   } else if (effect('chaos')) {
     target = 'H'

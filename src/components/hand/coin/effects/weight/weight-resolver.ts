@@ -5,6 +5,6 @@ import { resolveWeight, type WeightEffect } from './weight-config'
 
 export type { WeightEffect } from './weight-config'
 
-export function weightResolver(effect: WeightEffect, face: Face): CoinVisualModifier {
+export function weightResolver(effect: WeightEffect, face: Face | undefined): CoinVisualModifier {
   return resolveWeight(effect, face)
 }

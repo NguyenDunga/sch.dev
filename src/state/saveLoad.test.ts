@@ -304,7 +304,7 @@ describe('Coverage — remaining edges (100% gate)', () => {
     expect(st.handPhase).toBe('draw')
   })
 
-  function coinShopStore(seed: string, effect: 'draw1' | 'draw3' | 'weight' | 'doubleSide') {
+  function coinShopStore(seed: string, effect: 'draw1' | 'draw3' | 'weight' | 'heads' | 'tails' | 'facedown') {
     const store = createRunStore()
     store.getState().startRun(seed)
     store.setState({
@@ -328,14 +328,25 @@ describe('Coverage — remaining edges (100% gate)', () => {
   })
 
   it('favoured-face roll reaches both faces across seeds (H and T)', () => {
-    const face = (seed: string, effect: 'weight' | 'doubleSide') => {
-      const store = coinShopStore(seed, effect)
-      store.getState().buy({ kind: 'coin', effect })
+    const face = (seed: string) => {
+      const store = coinShopStore(seed, 'weight')
+      store.getState().buy({ kind: 'coin', effect: 'weight' })
       const eff = store.getState().deck.drawPile.at(-1)?.effects[0]
-      return eff && (eff.kind === 'weight' || eff.kind === 'doubleSide') ? eff.favored : undefined
+      return eff && eff.kind === 'weight' ? eff.favored : undefined
     }
-    expect(face('probe-5', 'weight')).toBe('H')
-    expect(face('probe-0', 'doubleSide')).toBe('T')
+    expect(face('probe-5')).toBe('H')
+    expect(face('probe-0')).toBe('T')
+  })
+
+  it('fixed face effects: heads/tails/facedown buy without a roll', () => {
+    const buyEffect = (effect: 'heads' | 'tails' | 'facedown') => {
+      const store = coinShopStore('fixed-' + effect, effect)
+      store.getState().buy({ kind: 'coin', effect })
+      return store.getState().deck.drawPile.at(-1)?.effects
+    }
+    expect(buyEffect('heads')).toEqual([{ kind: 'heads' }])
+    expect(buyEffect('tails')).toEqual([{ kind: 'tails' }])
+    expect(buyEffect('facedown')).toEqual([{ kind: 'facedown' }])
   })
 
   it('drawHand skips non-empty hand slots (fills only the empty ones)', () => {

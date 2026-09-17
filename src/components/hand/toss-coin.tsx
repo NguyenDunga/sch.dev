@@ -27,9 +27,7 @@ import { useEffect, useRef } from 'react'
 import { motion, useAnimate, useReducedMotion } from 'framer-motion'
 import type { CoinEffect, Face } from '@/core/types'
 import { DURATION, ECHO, EASING, SPRING, TOSS } from '@/lib/motion'
-import { FACE_ICONS } from '@/lib/icons'
-import { CoinBadges } from './coin-badges'
-import { FaceBadge } from './coin-disc'
+import { CoinGlyph } from './coin/coin-glyph'
 import { settleRotation } from './toss'
 import { emitBurst } from '@/components/juice/particles'
 import { playSfx } from '@/components/juice/sfx'
@@ -50,7 +48,6 @@ function CrossfadeCoin({ face, effects, index, onLand }: { face: Face; effects: 
     onLand?.(index)
   }, [onLand, index])
   const label = face === 'H' ? 'heads' : 'tails'
-  const FaceIcon = FACE_ICONS[face].icon
   return (
     <div className="toss-coin toss-coin--2d">
       <motion.span
@@ -61,12 +58,8 @@ function CrossfadeCoin({ face, effects, index, onLand }: { face: Face; effects: 
         role="img"
         aria-label={label}
       >
-        <FaceIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
+        <CoinGlyph face={face} effects={effects} size={44} />
       </motion.span>
-      <span className="coin-badges">
-        <FaceBadge face={face} />
-        <CoinBadges effects={effects} />
-      </span>
     </div>
   )
 }
@@ -75,6 +68,7 @@ interface FlipCoinProps {
   face: Face
   /** Hand index — used for the initial-toss stagger only. */
   index: number
+  /** The coin's effects (the RadialReveal glyph on each face, M19). */
   effects: CoinEffect[]
   /** Quick single-axis re-flip (Echo) — shorter, no stagger. */
   quick: boolean
@@ -119,8 +113,6 @@ function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps) {
   const delay = quick ? 0 : index * TOSS.stagger
   const finalRotate = settleRotation(face, quick ? QUICK_SPINS : FULL_SPINS)
   const label = face === 'H' ? 'heads' : 'tails'
-  const HeadsIcon = FACE_ICONS.H.icon
-  const TailsIcon = FACE_ICONS.T.icon
 
   useEffect(() => {
     const el = flipRef.current
@@ -156,17 +148,16 @@ function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps) {
   return (
     <div className="toss-coin" ref={discRef}>
       <div ref={flipRef} className="toss-coin-flip" style={{ transformStyle: 'preserve-3d' }} role="img" aria-label={label}>
+        {/* M19 — each face carries the RadialReveal glyph for its face stage
+         *  (H front, T back): ring wedges per effect + the top effect on the
+         *  disk. */}
         <div className="toss-face toss-face--heads">
-          <HeadsIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
+          <CoinGlyph face="H" effects={effects} size={44} />
         </div>
         <div className="toss-face toss-face--tails">
-          <TailsIcon size={28} strokeWidth={2} aria-hidden className="coin-disc-icon" />
+          <CoinGlyph face="T" effects={effects} size={44} />
         </div>
       </div>
-      <span className="coin-badges">
-        <FaceBadge face={face} />
-        <CoinBadges effects={effects} />
-      </span>
     </div>
   )
 }

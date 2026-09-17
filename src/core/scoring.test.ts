@@ -411,10 +411,16 @@ describe('M7 — coin face effects (resolveFace)', () => {
     expect(resolveFace(fakeRng([0.9]), wT, noLeft)).toBe('H')
   })
 
-  it('7.7 doubleSide: 100/0 toward its favoured face', () => {
-    const d = coin([{ kind: 'doubleSide', favored: 'T' }])
-    expect(resolveFace(fakeRng([0.0]), d, noLeft)).toBe('T')
-    expect(resolveFace(fakeRng([0.99]), d, noLeft)).toBe('T')
+  it('7.7 heads: 100/0 toward H', () => {
+    const h = coin([{ kind: 'heads' }])
+    expect(resolveFace(fakeRng([0.0]), h, noLeft)).toBe('H')
+    expect(resolveFace(fakeRng([0.99]), h, noLeft)).toBe('H')
+  })
+
+  it('7.7 tails: 100/0 toward T', () => {
+    const t = coin([{ kind: 'tails' }])
+    expect(resolveFace(fakeRng([0.0]), t, noLeft)).toBe('T')
+    expect(resolveFace(fakeRng([0.99]), t, noLeft)).toBe('T')
   })
 
   it('7.7 chaos: uniform random 0–100% odds, rolled fresh each flip', () => {
@@ -448,15 +454,15 @@ describe('M7 — coin face effects (resolveFace)', () => {
     expect(resolveFace(fakeRng([0.9]), plain, noLeft)).toBe('T')
   })
 
-  it('7.2 odds-stage priority: magnetic > doubleSide > chaos > weight > base', () => {
-    // magnetic beats doubleSide (left some)
-    const md = coin([{ kind: 'magnetic' }, { kind: 'doubleSide', favored: 'T' }])
+  it('7.2 odds-stage priority: magnetic > heads/tails > chaos > weight > base', () => {
+    // magnetic beats tails (left some)
+    const md = coin([{ kind: 'magnetic' }, { kind: 'tails' }])
     expect(resolveFace(fakeRng([0.1]), md, leftH)).toBe('H') // magnetic lean wins
-    // …but with left empty, doubleSide applies
+    // …but with left empty, tails applies
     expect(resolveFace(fakeRng([0.9]), md, noLeft)).toBe('T')
-    // doubleSide beats chaos + weight (always T, one draw)
+    // tails beats chaos + weight (always T, one draw)
     const dcw = coin([
-      { kind: 'doubleSide', favored: 'T' },
+      { kind: 'tails' },
       { kind: 'chaos' },
       { kind: 'weight', favored: 'H' },
     ])
@@ -470,8 +476,8 @@ describe('M7 — coin face effects (resolveFace)', () => {
   })
 
   it('7.8 merged coin (two face effects): resolves by priority', () => {
-    const merged = coin([{ kind: 'weight', favored: 'H' }, { kind: 'doubleSide', favored: 'T' }])
-    expect(resolveFace(fakeRng([0.1]), merged, noLeft)).toBe('T') // doubleSide wins
+    const merged = coin([{ kind: 'weight', favored: 'H' }, { kind: 'tails' }])
+    expect(resolveFace(fakeRng([0.1]), merged, noLeft)).toBe('T') // tails wins
     expect(resolveFace(fakeRng([0.9]), merged, noLeft)).toBe('T')
   })
 

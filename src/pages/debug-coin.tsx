@@ -1,10 +1,13 @@
 // /debug/coin — visual test page for all coin visual code.
 //
-// Shows every coin state: face-down, H, T, all 9 effects individually,
+// Shows every coin state: face-down, H, T, all effects individually,
 // and all effect combinations. Desktop-only dev tool.
 
+import { useState } from 'react'
 import { Coin } from '@/components/hand/coin'
-import type { CoinEffect, Face } from '@/core/types'
+import { HandCoin } from '@/components/hand/hand-coin'
+import { PlaySlot } from '@/components/hand/play-slot'
+import type { CoinEffect, Face, HandSlot } from '@/core/types'
 
 // ── Effect samples ───────────────────────────────────────────────────────────
 
@@ -12,8 +15,9 @@ const ALL_EFFECTS: { label: string; effects: CoinEffect[] }[] = [
   { label: 'No effects', effects: [] },
   { label: 'Weight H', effects: [{ kind: 'weight', favored: 'H' }] },
   { label: 'Weight T', effects: [{ kind: 'weight', favored: 'T' }] },
-  { label: 'DoubleSide H', effects: [{ kind: 'doubleSide', favored: 'H' }] },
-  { label: 'DoubleSide T', effects: [{ kind: 'doubleSide', favored: 'T' }] },
+  { label: 'Heads', effects: [{ kind: 'heads' }] },
+  { label: 'Tails', effects: [{ kind: 'tails' }] },
+  { label: 'Face-Down', effects: [{ kind: 'facedown' }] },
   { label: 'Chaos', effects: [{ kind: 'chaos' }] },
   { label: 'Echo', effects: [{ kind: 'echo' }] },
   { label: 'Magnetic', effects: [{ kind: 'magnetic' }] },
@@ -31,13 +35,15 @@ const COMBOS: { label: string; effects: CoinEffect[] }[] = [
   { label: 'Weight H + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'jackpot' }] },
   { label: 'Weight H + Reverse', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'reverse' }] },
   { label: 'Weight H + Tax', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'tax' }] },
-  { label: 'DoubleSide H + Echo', effects: [{ kind: 'doubleSide', favored: 'H' }, { kind: 'echo' }] },
+  { label: 'Heads + Echo', effects: [{ kind: 'heads' }, { kind: 'echo' }] },
   { label: 'Chaos + Magnetic', effects: [{ kind: 'chaos' }, { kind: 'magnetic' }] },
   { label: 'Tax + Jackpot', effects: [{ kind: 'tax' }, { kind: 'jackpot' }] },
-  { label: 'Weight H + DoubleSide H + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'doubleSide', favored: 'H' }, { kind: 'jackpot' }] },
-  { label: 'All 9 effects', effects: [
+  { label: 'Weight H + Heads + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'heads' }, { kind: 'jackpot' }] },
+  { label: 'Weight + Face-Down + Heads + Jackpot', effects: [{ kind: 'weight', favored: 'H' }, { kind: 'facedown' }, { kind: 'heads' }, { kind: 'jackpot' }] },
+  { label: 'All effects', effects: [
     { kind: 'weight', favored: 'H' },
-    { kind: 'doubleSide', favored: 'T' },
+    { kind: 'heads' },
+    { kind: 'facedown' },
     { kind: 'chaos' },
     { kind: 'echo' },
     { kind: 'magnetic' },
@@ -54,17 +60,17 @@ const SIZES = [24, 32, 40, 56, 72, 96] as const
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-function CoinRow({ title, faces, effectsList }: { title: string; faces: Face[]; effectsList: { label: string; effects: CoinEffect[] }[] }) {
+function CoinRow({ title, faces, effectsList }: { title: string; faces: (Face | undefined)[]; effectsList: { label: string; effects: CoinEffect[] }[] }) {
   return (
     <section style={{ marginBottom: '2rem' }}>
       <h2>{title}</h2>
       {faces.map((face) => (
-        <div key={face} style={{ marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.9rem', color: 'var(--ink-soft)' }}>{face === 'H' ? 'Heads' : 'Tails'}</h3>
+        <div key={face ?? 'back'} style={{ marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--ink-soft)' }}>{face === 'H' ? 'Heads' : face === 'T' ? 'Tails' : 'Face-down'}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(8rem, 1fr))', gap: '1rem' }}>
             {effectsList.map(({ label, effects }) => (
               <div key={label} style={{ textAlign: 'center', padding: '0.5rem' }}>
-                <Coin face={face} effects={effects} coinId={`${face}-${label}`} size={56} />
+                <Coin face={face} effects={effects} coinId={`${face ?? 'back'}-${label}`} size={56} />
                 <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', display: 'block', marginTop: '0.3rem' }}>{label}</span>
               </div>
             ))}
@@ -112,14 +118,60 @@ function AnimRow() {
           <Coin face="H" effects={[]} coinId="shake" size={56} shaking shakeKey={1} />
           <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Shaking</span>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/** The pick / unpick flight (12.4): the real HandCoin ↔ PlaySlot shared-layout
+ *  animation — click the coin in the hand to pick it into the play slot
+ *  (spring-snappy); click it in the slot to unpick it back (spring-soft). */
+function PickRow() {
+  const [inPlay, setInPlay] = useState(false)
+  const coin = { id: 99, effects: [] as CoinEffect[] }
+  const slot: HandSlot = { kind: 'filled', coin, face: 'H', echoUsed: false }
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h2>Pick / Unpick (click into play)</h2>
+      <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginBottom: '1rem' }}>
+        The real shared-layout animation (HandCoin ↔ PlaySlot, same coin id): click the coin in
+        the hand to pick it into the play slot (spring-snappy); click it in the slot to unpick
+        it back (spring-soft).
+      </p>
+      <div style={{ display: 'flex', gap: '6rem', alignItems: 'flex-end' }}>
         <div style={{ textAlign: 'center' }}>
-          <Coin face="H" effects={[]} coinId="drag" size={56} dragging />
-          <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Dragging</span>
+          <div style={{ width: '5.5rem', height: '5.5rem', display: 'grid', placeItems: 'center' }}>
+            {!inPlay && <HandCoin coin={coin} index={0} enabled shaking={false} shakeKey={0} onPick={() => setInPlay(true)} />}
+          </div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Hand</span>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <Coin face="H" effects={[]} coinId="disabled" size={56} enabled={false} />
-          <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Disabled</span>
+          <div style={{ width: '5.5rem', height: '5.5rem', display: 'grid', placeItems: 'center' }}>
+            {inPlay && <PlaySlot index={0} slot={slot} revealed={false} onUnpick={() => setInPlay(false)} />}
+          </div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Play</span>
         </div>
+      </div>
+    </section>
+  )
+}
+
+function DetailRow({ title, face, effectsList }: { title: string; face: Face | undefined; effectsList: { label: string; effects: CoinEffect[] }[] }) {
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h2>{title}</h2>
+      <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginBottom: '1rem' }}>
+        The same 5-layer coins at 120px — the same structure as the rows above, just larger.
+        Hover a ring wedge to radially wipe in that effect's glyph; hover the disk to collapse
+        back to the default (highest-priority effect).
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))', gap: '1.25rem' }}>
+        {effectsList.map(({ label, effects }) => (
+          <div key={label} style={{ textAlign: 'center', padding: '0.5rem' }}>
+            <Coin face={face} effects={effects} coinId={`detail-${face ?? 'back'}-${label}`} size={120} />
+            <span style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', display: 'block', marginTop: '0.5rem' }}>{label}</span>
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -134,8 +186,12 @@ export function DebugCoinPage() {
       <SizeRow title="Face-down" face={undefined} />
       <SizeRow title="Heads (H)" face="H" />
       <SizeRow title="Tails (T)" face="T" />
-      <CoinRow title="Individual Effects" faces={['H', 'T']} effectsList={ALL_EFFECTS} />
-      <CoinRow title="Combinations" faces={['H', 'T']} effectsList={COMBOS} />
+      <CoinRow title="Individual Effects" faces={['H', 'T', undefined]} effectsList={ALL_EFFECTS} />
+      <CoinRow title="Combinations" faces={['H', 'T', undefined]} effectsList={COMBOS} />
+      <DetailRow title="Detail — Face-down" face={undefined} effectsList={COMBOS} />
+      <DetailRow title="Detail — Heads (H)" face="H" effectsList={COMBOS} />
+      <DetailRow title="Detail — Tails (T)" face="T" effectsList={COMBOS} />
+      <PickRow />
       <AnimRow />
     </div>
   )

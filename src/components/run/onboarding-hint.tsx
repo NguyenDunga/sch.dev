@@ -9,9 +9,12 @@
 
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { withIcon } from '@/lib/icons'
+import { FaXmark } from 'react-icons/fa6'
 import { EASING, DURATION } from '@/lib/motion'
 import { hasSeenOnboarding, markOnboardingSeen } from '@/lib/onboarding'
+
+const XIcon = withIcon(FaXmark)
 
 /** The three core gestures of the 13a input model. */
 const HINT_TEXT = 'Drag a coin to the play row to pick it · drag it into the bin to discard · match a pattern to score'
@@ -54,7 +57,7 @@ export function OnboardingHint() {
             }}
             aria-label="Dismiss hint"
           >
-            <X size={16} strokeWidth={2.5} aria-hidden />
+            <XIcon size={16} strokeWidth={2.5} aria-hidden />
           </button>
         </motion.div>
       )}

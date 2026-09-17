@@ -6,7 +6,6 @@
 
 import { motion, useReducedMotion, type Transition } from 'framer-motion'
 import { ghostMotionProps, type DiscardGhost } from './discard-ghost'
-import { CoinBadges } from '@/components/hand/coin-badges'
 import { CoinDisc } from '@/components/hand/coin-disc'
 
 interface DiscardGhostLayerProps {
@@ -39,8 +38,7 @@ function Ghost({ ghost, onDone }: { ghost: DiscardGhost; onDone: (key: number) =
       transition={transition as unknown as Transition}
       onAnimationComplete={() => onDone(ghost.key)}
     >
-      <CoinDisc face={undefined} />
-      <CoinBadges effects={ghost.coin.effects} />
+      <CoinDisc face={undefined} effects={ghost.coin.effects} />
     </motion.div>
   )
 }

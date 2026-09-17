@@ -13,26 +13,24 @@ describe('weight effect', () => {
     expect(WEIGHT_META.priority).toBe(2)
   })
 
-  it('H favored, H face: tilt right + color', () => {
+  it('H favored, H face: favored color', () => {
     const m = resolveWeight(wH, 'H')
-    expect(m.tilt).toBe(12)
     expect(m.color).toBe(WEIGHT_VALUES.colorFavored)
   })
 
-  it('H favored, T face: tilt left (opposite)', () => {
+  it('H favored, T face: no modifier', () => {
     const m = resolveWeight(wH, 'T')
-    expect(m.tilt).toBe(-4)
+    expect(m).toEqual({})
   })
 
-  it('T favored, T face: tilt left + color', () => {
+  it('T favored, T face: favored color', () => {
     const m = resolveWeight(wT, 'T')
-    expect(m.tilt).toBe(-12)
     expect(m.color).toBe(WEIGHT_VALUES.colorFavored)
   })
 
-  it('T favored, H face: tilt right (opposite)', () => {
+  it('T favored, H face: no modifier', () => {
     const m = resolveWeight(wT, 'H')
-    expect(m.tilt).toBe(4)
+    expect(m).toEqual({})
   })
 
   it('resolver delegates to config', () => {

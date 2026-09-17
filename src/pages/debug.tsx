@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Moon, Plus, Sun } from 'lucide-react'
+import { withIcon } from '@/lib/icons'
+import { FaMoon, FaPlus, FaSun } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -8,6 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+const MoonIcon = withIcon(FaMoon)
+const PlusIcon = withIcon(FaPlus)
+const SunIcon = withIcon(FaSun)
 
 const textSizes = ['xs', 'sm', 'default', 'lg', 'xl'] as const
 const iconSizes = ['icon-xs', 'icon-sm', 'icon', 'icon-lg'] as const
@@ -100,7 +105,7 @@ export function DebugPage() {
                 setDark(next)
               }}
             >
-              {dark ? <Sun /> : <Moon />}
+              {dark ? <SunIcon /> : <MoonIcon />}
             </Button>
             <Button variant="link" onClick={() => (window.location.href = '/')}>
               ← Home
@@ -134,7 +139,7 @@ export function DebugPage() {
           <div className="flex flex-wrap items-center gap-3">
             {iconSizes.map((s) => (
               <Button key={s} size={s} aria-label={s}>
-                <Plus />
+                <PlusIcon />
               </Button>
             ))}
           </div>

@@ -22,7 +22,6 @@ import { useState } from 'react'
 import { REMOVE_COIN_COST } from '@/core/balance'
 import type { Coin } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import { CoinBadges } from '@/components/hand/coin-badges'
 import { CoinDisc } from '@/components/hand/coin-disc'
 import { Button } from '@/components/ui/button'
 
@@ -102,9 +101,8 @@ export function Collection({ coins }: CollectionProps) {
           {dragCoin ? (
             <li className="collection-item collection-item--drag">
               <span className="collection-item-disc">
-                <CoinDisc face={undefined} />
+                <CoinDisc face={undefined} effects={dragCoin.effects} />
               </span>
-              <CoinBadges effects={dragCoin.effects} />
             </li>
           ) : null}
         </DragOverlay>
@@ -150,10 +148,9 @@ function MergeTile({ coin, cash, isSource, merging, onMerge, onCancel, onRemove 
         {...listeners}
       >
         <span className="collection-item-disc">
-          <CoinDisc face={undefined} />
+          <CoinDisc face={undefined} effects={coin.effects} />
         </span>
       </span>
-      <CoinBadges effects={coin.effects} />
       <div className="collection-item-actions">
         {isSource ? (
           <Button size="xs" variant="outline" onClick={onCancel}>

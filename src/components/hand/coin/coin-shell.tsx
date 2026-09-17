@@ -20,10 +20,6 @@ interface CoinShellProps {
   border?: string
   /** The resolved glow (from effects). */
   glow?: string
-  /** The resolved tilt in degrees. */
-  tilt?: number
-  /** The resolved scale factor. */
-  scale?: number
   /** Custom CSS classes from the resolver. */
   customClasses?: string[]
   /** Size in px (default 56). */
@@ -36,8 +32,6 @@ export function CoinShell({
   color,
   border,
   glow,
-  tilt = 0,
-  scale = 1,
   customClasses = [],
   size = 56,
   children,
@@ -45,7 +39,6 @@ export function CoinShell({
   const shellStyle: CSSProperties = {
     width: size,
     height: size,
-    transform: `rotate(${tilt}deg) scale(${scale})`,
     ...(glow ? { boxShadow: glow } : {}),
   }
 

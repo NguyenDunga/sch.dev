@@ -1,57 +1,26 @@
 // @vitest-environment jsdom
 // 13.8 — the reduced-motion / a11y path (SDD UX §8): the hand coin is a real
 // <button> (full keyboard path: Tab + Enter/Space), carries an ARIA label,
-// and the hover tilt is OFF under prefers-reduced-motion (no hover tilt,
-// UX §8). H/T carry a glyph, never color alone (colorblind-safe, UX §8).
+// and hover has no 3D tilt (the pick-up lift is CSS, UX §3). H/T carry a
+// glyph, never color alone (colorblind-safe, UX §8).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { Coin } from '@/core/types'
 import { HandCoin } from './hand-coin'
 import { CoinDisc } from './coin-disc'
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-/** true if the transform carries a non-zero rotateX/rotateY (a tilt). The
- *  tilt is Motion-driven (13b.6) — at rest the transform is identity
- *  (rotateX(0deg) rotateY(0deg)), so "no tilt" = no non-zero rotation. */
+/** true if the transform carries a non-zero rotateX/rotateY (a tilt). */
 function hasNonZeroRotation(transform: string): boolean {
   const rx = transform.match(/rotateX\((-?[\d.]+)deg\)/)
   const ry = transform.match(/rotateY\((-?[\d.]+)deg\)/)
   return (rx !== null && parseFloat(rx[1]) !== 0) || (ry !== null && parseFloat(ry[1]) !== 0)
 }
 
-/** A matchMedia stub for framer's useReducedMotion (same pattern as
- *  run.juice.test.tsx): motion-dom reads the media query once and subscribes
- *  to its change events; setReduced flips the preference. */
-const reduced = (() => {
-  const listeners: Array<() => void> = []
-  const mql = {
-    matches: false,
-    media: '(prefers-reduced-motion)',
-    addEventListener: (_event: string, fn: () => void) => listeners.push(fn),
-    removeEventListener: (fn: () => void) => {
-      const i = listeners.indexOf(fn)
-      if (i >= 0) listeners.splice(i, 1)
-    },
-    addListener: (fn: () => void) => listeners.push(fn),
-    removeListener: (fn: () => void) => {
-      const i = listeners.indexOf(fn)
-      if (i >= 0) listeners.splice(i, 1)
-    },
-  }
-  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
-  return {
-    setReduced: (r: boolean) => {
-      mql.matches = r
-      listeners.forEach((fn) => fn())
-    },
-  }
-})()
-
 afterEach(() => {
   cleanup()
-  reduced.setReduced(false)
 })
 
 const coin: Coin = { id: 1, effects: [] }
@@ -72,30 +41,19 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     expect(onPick.mock.calls[0][0]).toBeInstanceOf(HTMLElement)
   })
 
-  it('the hover tilt follows the pointer (normal motion)', async () => {
-    // jsdom rects are 0×0 (the tilt math divides by the width) — give the
-    // button a real size.
+  it('hover: no 3D tilt — the pick-up is a CSS translate (M19 follow-up)', async () => {
+    // jsdom rects are 0×0 — give the button a real size.
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
       left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100, x: 0, y: 0, toJSON: () => {},
     } as DOMRect)
     const { container } = render(<HandCoin coin={coin} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />)
     const btn = container.querySelector('button')!
-    const tilt = container.querySelector('.hand-coin-tilt') as HTMLDivElement
+    const lift = container.querySelector('.hand-coin-lift') as HTMLDivElement
     fireEvent.pointerMove(btn, { clientX: 10, clientY: 10 })
-    // The tilt is a spring (Motion, 13b.6) — it eases toward the pointer;
-    // wait for it to reach a non-zero rotation.
-    await waitFor(() => expect(hasNonZeroRotation(tilt.style.transform)).toBe(true), { timeout: 500 })
-  })
-
-  it('reduced motion: no hover tilt (UX §8)', async () => {
-    reduced.setReduced(true)
-    const { container } = render(<HandCoin coin={coin} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />)
-    const btn = container.querySelector('button')!
-    const tilt = container.querySelector('.hand-coin-tilt') as HTMLDivElement
-    fireEvent.pointerMove(btn, { clientX: 10, clientY: 10 })
-    // Gated off under reduced motion: the transform stays identity (no tilt).
+    // The 3D pointer tilt is gone: the transform carries no rotateX/rotateY
+    // (the pick-up lift is a CSS `translate`, not a Motion transform).
     await wait(150)
-    expect(hasNonZeroRotation(tilt.style.transform)).toBe(false)
+    expect(hasNonZeroRotation(lift.style.transform)).toBe(false)
   })
 
   it('H/T carry an icon + ARIA label, never color alone (colorblind-safe)', () => {
@@ -117,12 +75,39 @@ describe('13.8 — the hand coin a11y path (UX §8)', () => {
     expect(t.classList.contains('coin-disc--tails')).toBe(true)
   })
 
-  it('13a.9 — a Weight coin shows its favored face on the badge', () => {
+  it('13a.9 — a multi-effect coin shows its RadialReveal glyph (ring + disk, M19)', () => {
     const { container } = render(
-      <HandCoin coin={{ id: 2, effects: [{ kind: 'weight', favored: 'H' }] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
+      <HandCoin coin={{ id: 2, effects: [{ kind: 'weight', favored: 'H' }, { kind: 'jackpot' }] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
     )
-    // 13c.4 — the effect badge is an icon (an SVG), not a text glyph.
-    expect(container.querySelector('.coin-badge svg')).toBeTruthy()
-    expect(container.querySelector('.face-badge--heads svg')).toBeTruthy()
+    // M19 — the glyph is a RadialReveal (a conic-gradient ring around a disk).
+    // The ring has one wedge per NON-top effect (the top effect is the disk
+    // default, so it gets no wedge): 2 effects → 1 wedge.
+    const glyph = container.querySelector('.radial-reveal')
+    expect(glyph).toBeTruthy()
+    expect(glyph!.querySelectorAll('.radial-reveal-hits path')).toHaveLength(1)
+    // The disk shows the top effect's short name (Jackpot, priority 9).
+    expect(glyph!.textContent).toContain('Jackpot')
+  })
+
+  it('13a.9 — a single-effect coin shows its glyph directly (no ring, M19)', () => {
+    const { container } = render(
+      <HandCoin coin={{ id: 3, effects: [{ kind: 'weight', favored: 'H' }] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
+    )
+    expect(container.querySelector('.radial-reveal')).toBeNull()
+    expect(container.querySelector('.coin-glyph-solo svg')).toBeTruthy()
+    // The glyph sits on a light disk (contrast on the solid H / T face fills)
+    // with the effect's short name below the icon.
+    expect(container.querySelector('.coin-glyph-solo-disk')).toBeTruthy()
+    expect(container.querySelector('.coin-glyph-solo-text')!.textContent).toBe('Weight')
+  })
+
+  it('13a.9 — a plain coin (no effects) shows the face icon without text', () => {
+    const { container } = render(
+      <HandCoin coin={{ id: 4, effects: [] }} index={0} enabled shaking={false} shakeKey={0} onPick={() => {}} />,
+    )
+    // A plain face is its own archetype: the face-state icon, no text.
+    expect(container.querySelector('.coin-glyph-solo svg')).toBeTruthy()
+    expect(container.querySelector('.coin-glyph-solo-text')).toBeNull()
+    expect(container.querySelector('.coin-glyph-solo-disk')).toBeTruthy()
   })
 })

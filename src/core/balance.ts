@@ -55,7 +55,9 @@ export const CHARMS: CharmDef[] = [
 /** v1 core coin effects (2026-09-13 Q&A round 2). Shop content lands in M3. */
 export const COIN_EFFECTS: CoinDef[] = [
   { effect: 'weight', name: 'Weight', price: 5 },
-  { effect: 'doubleSide', name: 'Double-Side', price: 8 },
+  { effect: 'heads', name: 'Heads', price: 8 },
+  { effect: 'tails', name: 'Tails', price: 8 },
+  { effect: 'facedown', name: 'Face-Down', price: 5 },
   { effect: 'chaos', name: 'Chaos', price: 6 },
   { effect: 'echo', name: 'Echo', price: 7 },
   { effect: 'magnetic', name: 'Magnetic', price: 6 },

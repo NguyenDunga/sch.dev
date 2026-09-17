@@ -45,7 +45,7 @@ describe('M7.6 — mergeCoin (shop action)', () => {
     store.setState((s) => ({
       deck: {
         drawPile: s.deck.drawPile.map((c) =>
-          c.id === 901 ? { id: 901, effects: [{ kind: 'doubleSide', favored: 'T' as Face }] } : c,
+          c.id === 901 ? { id: 901, effects: [{ kind: 'tails' }] } : c,
         ),
         discardPile: s.deck.discardPile,
       },
@@ -53,7 +53,7 @@ describe('M7.6 — mergeCoin (shop action)', () => {
     store.getState().mergeCoin(900, 901)
     const target = store.getState().deck.drawPile.find((c) => c.id === 901)
     expect(target?.effects).toEqual([
-      { kind: 'doubleSide', favored: 'T' },
+      { kind: 'tails' },
       { kind: 'weight', favored: 'H' },
     ])
   })

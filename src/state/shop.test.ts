@@ -185,7 +185,7 @@ describe('M9.3 — buy (charm) + rejections', () => {
 })
 
 describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
-  function shopStore(seed: string, effect: 'weight' | 'doubleSide' | 'draw2' | 'tax') {
+  function shopStore(seed: string, effect: 'weight' | 'heads' | 'tails' | 'facedown' | 'draw2' | 'tax') {
     const store = createRunStore()
     store.getState().startRun(seed)
     store.setState({
@@ -220,14 +220,15 @@ describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
     expect(buyWeight('m9-4').bought).toEqual(a.bought)
   })
 
-  it('buy a Double-Side coin: favoured face rolled on purchase', () => {
-    const store = shopStore('m9-4b', 'doubleSide')
-    store.getState().buy({ kind: 'coin', effect: 'doubleSide' })
-    const bought = store.getState().deck.drawPile.at(-1)
-    expect(bought?.effects[0].kind).toBe('doubleSide')
-    if (bought?.effects[0].kind === 'doubleSide') {
-      expect(['H', 'T']).toContain(bought.effects[0].favored)
+  it('buy a Heads/Tails/Face-Down coin: fixed face effect (no roll)', () => {
+    const buyFixed = (effect: 'heads' | 'tails' | 'facedown') => {
+      const store = shopStore('m9-4b-' + effect, effect)
+      store.getState().buy({ kind: 'coin', effect })
+      return store.getState().deck.drawPile.at(-1)
     }
+    expect(buyFixed('heads')?.effects).toEqual([{ kind: 'heads' }])
+    expect(buyFixed('tails')?.effects).toEqual([{ kind: 'tails' }])
+    expect(buyFixed('facedown')?.effects).toEqual([{ kind: 'facedown' }])
   })
 
   it('buy a Draw-2 coin: the effect variant carries count 2', () => {

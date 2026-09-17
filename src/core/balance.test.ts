@@ -80,7 +80,9 @@ describe('COIN_EFFECTS', () => {
   it('v1 core set: 8 effect coins + 3 draw tiers, with baseline prices', () => {
     expect(COIN_EFFECTS.map((c) => [c.effect, c.price])).toEqual([
       ['weight', 5],
-      ['doubleSide', 8],
+      ['heads', 8],
+      ['tails', 8],
+      ['facedown', 5],
       ['chaos', 6],
       ['echo', 7],
       ['magnetic', 6],

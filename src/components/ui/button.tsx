@@ -1,11 +1,14 @@
 import { cn } from "cn"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { LoaderCircle } from "lucide-react"
+import { withIcon } from "@/lib/icons"
+import { FaSpinner } from "react-icons/fa6"
 
 import { buttonVariants, flashCss, loadingCss } from "./button/buttonVariants"
 import type { VariantProps } from "class-variance-authority"
 import { playSfx } from "@/components/juice/sfx"
 import type { SfxEvent } from "@/components/juice/sfx"
+
+const SpinnerIcon = withIcon(FaSpinner)
 
 function Button({
   className,
@@ -44,7 +47,7 @@ function Button({
       onClick={handleClick}
       {...props}
     >
-      {loading && <LoaderCircle aria-hidden className="size-4 animate-spin" />}
+      {loading && <SpinnerIcon aria-hidden className="size-4 animate-spin" />}
       {children}
     </ButtonPrimitive>
   )

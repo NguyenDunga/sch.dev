@@ -17,7 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { Trash2 } from 'lucide-react'
+import { ACTION_ICONS } from '@/lib/icons'
 import { BLINDS } from '@/core/balance'
 import { isFilled, none, some } from '@/core/helpers'
 import { projectScore } from '@/core/scoring'
@@ -360,7 +360,7 @@ function QuickDiscardChip({ onQuickDiscard }: { onQuickDiscard: () => void }) {
       aria-label="Quick discard: discards the hovered coin or the selected coins"
       title="Quick discard — hover a coin, then this"
     >
-      <Trash2 size={16} strokeWidth={2.5} aria-hidden />
+      <ACTION_ICONS.discard.icon size={16} strokeWidth={2.5} aria-hidden />
       <span>Discard</span>
     </button>
   )

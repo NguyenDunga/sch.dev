@@ -126,10 +126,10 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
       ),
     })
     render(<RunScreen />)
-    // 13c.4 — the redraw pip (Draw icon) is visible on the coin before the discard.
-    expect(document.querySelector('.coin-badge svg')).toBeTruthy()
-
+    // M19 — a single-effect coin shows its glyph directly (no ring).
     const coin = screen.getAllByRole('button', { name: /pick coin 1/i })[0]
+    expect(coin.querySelector('.coin-glyph-solo svg')).toBeTruthy()
+
     coin.focus()
     fireEvent.keyDown(coin, { key: 'd' })
 

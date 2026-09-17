@@ -3,11 +3,11 @@
 // layoutId with the play slot). The 6th pick (play full) shakes 3px
 // (error sfx lands in M13).
 //
-// States (UX §3): default / hover (lift 4px + tilt toward cursor, max 8°,
-// badges brighten) / press (depress 2px) / disabled (desaturated, no
-// offset, cursor not-allowed) / focus-visible (3px coral ring) / selected
-// (13a.5 multi-select: lift 6px + coral ring). "Selected" for a plain click
-// is the pick itself — the coin springs out of the hand.
+// States (UX §3): default / hover (pick-up: lift 4px, badges brighten) /
+// press (depress 2px) / disabled (desaturated, no offset, cursor not-allowed)
+// / focus-visible (3px coral ring) / selected (13a.5 multi-select: lift 6px
+// + coral ring). "Selected" for a plain click is the pick itself — the coin
+// springs out of the hand.
 //
 // 13a.5 drag & multi-select: `dragProps` carries dnd-kit's pointer
 // listeners (press-drag to the play row); `onSelectClick` routes
@@ -21,12 +21,11 @@
 // flight/stagger (UX §8).
 
 import { forwardRef, useEffect } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
-import { motion, useAnimate, useMotionValue, useReducedMotion, useSpring } from 'framer-motion'
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
+import { motion, useAnimate, useMotionValue, useReducedMotion } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { CHOREO, DEAL, DURATION, EASING, SPRING } from '@/lib/motion'
 import type { Coin } from '@/core/types'
-import { CoinBadges } from './coin-badges'
 import { CoinDisc } from './coin-disc'
 
 interface HandCoinProps {
@@ -60,9 +59,6 @@ interface HandCoinProps {
   onHoverEnd?: () => void
 }
 
-/** Max tilt in degrees (UX §3: max 8°). */
-const MAX_TILT_DEG = 8
-
 /** Deal flight origin (13.1): toward the deck (top-right of the hand row). */
 const DEAL_FROM = { x: 140, y: -110, scale: 0.85 }
 
@@ -80,44 +76,22 @@ function dealProps(dealIndex: number | undefined, reduceMotion: boolean) {
   }
 }
 
-/** The hover tilt (UX §3) + the 6th-pick shake, both Motion-driven (13b.6).
- *  The tilt is a 3D rotation (rotateX/rotateY) eased by a spring — no direct
- *  style writes, no re-render per pointermove (the targets are MotionValues).
- *  The shake is a 3px keyframe run on `shakeKey` change (was a CSS
- *  @keyframes + `key` remount). Gated off under reduced motion (UX §8) and
- *  mid-drag. */
-function useCoinMotion(enabled: boolean, dragging: boolean, shaking: boolean, shakeKey: number) {
+/** The 6th-pick shake (3px, UX §3): a Motion keyframe run on shakeKey change
+ *  (was a CSS @keyframes + `key` remount). Gated off under reduced motion
+ *  (UX §8). The hover pick-up is CSS (coin.css: `.hand-coin:hover` →
+ *  `translate 0 -4px`) — no 3D pointer tilt. */
+function useCoinShake(shaking: boolean, shakeKey: number) {
   const reduceMotion = useReducedMotion() ?? false
-  const rotateX = useMotionValue(0)
-  const rotateY = useMotionValue(0)
   const shakeX = useMotionValue(0)
-  const springRotateX = useSpring(rotateX, SPRING.snappy)
-  const springRotateY = useSpring(rotateY, SPRING.snappy)
   const [, animate] = useAnimate()
 
-  const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
-    if (!enabled || reduceMotion || dragging) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) return
-    const x = (e.clientX - rect.left) / rect.width - 0.5 // -0.5..0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    rotateX.set(-y * MAX_TILT_DEG * 2)
-    rotateY.set(x * MAX_TILT_DEG * 2)
-  }
-
-  const onPointerLeave = () => {
-    rotateX.set(0)
-    rotateY.set(0)
-  }
-
-  // The 6th-pick shake (3px, UX §3): a Motion keyframe run on shakeKey change.
   useEffect(() => {
     if (!shaking || reduceMotion) return
     const a = animate(shakeX, [0, -3, 3, -3, 3, 0], { duration: CHOREO.shake.duration, ease: 'easeOut' })
     return () => a.stop()
   }, [shaking, shakeKey, reduceMotion, animate, shakeX])
 
-  return { springRotateX, springRotateY, shakeX, onPointerMove, onPointerLeave, reduceMotion }
+  return { shakeX, reduceMotion }
 }
 
 /** The a11y label: position, selection state, effect kinds, the discard key. */
@@ -131,7 +105,7 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
   { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick, onDiscard, onHover, onHoverEnd },
   ref,
 ) {
-  const { springRotateX, springRotateY, shakeX, onPointerMove, onPointerLeave, reduceMotion } = useCoinMotion(enabled, !!dragging, shaking, shakeKey)
+  const { shakeX, reduceMotion } = useCoinShake(shaking, shakeKey)
 
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
     // 13a.5: Ctrl/Cmd+click (toggle) and Shift+click (range) are selection gestures — they never pick.
@@ -147,12 +121,6 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
     }
   }
 
-  /** 13a.6: the pointer left — reset the tilt AND end the hover tracking. */
-  const handlePointerLeave = () => {
-    onPointerLeave()
-    onHoverEnd?.()
-  }
-
   const { initial, transition } = dealProps(dealIndex, reduceMotion)
 
   return (
@@ -166,20 +134,18 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
       disabled={!enabled}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      onPointerMove={onPointerMove}
-      onPointerLeave={handlePointerLeave}
+      onPointerLeave={onHoverEnd}
       onPointerEnter={() => onHover?.()}
       {...dragProps}
       aria-label={coinAriaLabel(index, enabled, !!selected, coin.effects)}
     >
       {/* The deal-flight layer: animates once on mount (fresh deal only).
-          Kept separate from the tilt layer so the shake never replays the
-          deal. The tilt (rotateX/rotateY spring) + shake (x keyframes) are
-          Motion-driven (13b.6) — no direct style writes, no key remount. */}
+          Kept separate from the shake layer so the shake never replays the
+          deal. The shake (x keyframes) is Motion-driven (13b.6) — no direct
+          style writes, no key remount. The hover pick-up is CSS. */}
       <motion.div className="hand-coin-deal" initial={initial} animate={{ x: 0, y: 0, opacity: 1, scale: 1 }} transition={transition}>
-        <motion.div className="hand-coin-tilt" style={{ rotateX: springRotateX, rotateY: springRotateY, x: shakeX }}>
-          <CoinDisc />
-          <CoinBadges effects={coin.effects} />
+        <motion.div className="hand-coin-lift" style={{ x: shakeX }}>
+          <CoinDisc effects={coin.effects} />
         </motion.div>
       </motion.div>
     </motion.button>

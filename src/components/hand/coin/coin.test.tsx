@@ -27,10 +27,12 @@ describe('Coin — render coverage', () => {
     expect(() => render(<Coin face="T" effects={[]} coinId="c1" />)).not.toThrow()
   })
 
-  it('renders with all 9 effects without crashing', () => {
+  it('renders with all effects without crashing', () => {
     const effects: CoinEffect[] = [
       { kind: 'weight', favored: 'H' },
-      { kind: 'doubleSide', favored: 'T' },
+      { kind: 'heads' },
+      { kind: 'tails' },
+      { kind: 'facedown' },
       { kind: 'chaos' },
       { kind: 'echo' },
       { kind: 'magnetic' },
@@ -53,16 +55,8 @@ describe('Coin — render coverage', () => {
     expect(() => render(<Coin face="H" effects={[]} coinId="c1" dealIndex={4} />)).not.toThrow()
   })
 
-  it('renders in dragging state without crashing', () => {
-    expect(() => render(<Coin face="H" effects={[]} coinId="c1" dragging />)).not.toThrow()
-  })
-
   it('renders in shaking state without crashing', () => {
     expect(() => render(<Coin face="H" effects={[]} coinId="c1" shaking shakeKey={1} />)).not.toThrow()
-  })
-
-  it('renders disabled without crashing', () => {
-    expect(() => render(<Coin face="H" effects={[]} coinId="c1" enabled={false} />)).not.toThrow()
   })
 })
 
@@ -81,30 +75,12 @@ describe('Coin — resolver (pure function)', () => {
     const { H, T } = resolveCoinFaces([{ kind: 'weight', favored: 'H' }])
     expect(H.face).toBe('H')
     expect(T.face).toBe('T')
-    expect(H.tilt).not.toBe(T.tilt)
+    expect(H.color).not.toBe(T.color)
   })
 
   it('handles empty effects', () => {
     const r = resolveCoinFace({ face: 'H', effects: [] })
-    expect(r.tilt).toBe(0)
-    expect(r.scale).toBe(1)
     expect(r.modifiers).toEqual([])
-  })
-
-  it('tilt accumulates across effects', () => {
-    const r = resolveCoinFace({ face: 'H', effects: [
-      { kind: 'weight', favored: 'H' },
-      { kind: 'reverse' },
-    ]})
-    expect(r.tilt).toBe(4) // 12 + (-8)
-  })
-
-  it('scale multiplies across effects', () => {
-    const r = resolveCoinFace({ face: 'H', effects: [
-      { kind: 'magnetic' },
-      { kind: 'tax' },
-    ]})
-    expect(r.scale).toBeCloseTo(0.945) // 1.05 * 0.9
   })
 })
 
