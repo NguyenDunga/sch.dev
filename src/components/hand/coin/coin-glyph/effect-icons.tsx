@@ -34,7 +34,6 @@ import {
   FaRotateLeft,
   FaHand,
   FaCopy,
-  FaScaleUnbalancedFlip,
 } from 'react-icons/fa6'
 import { GiWhaleTail } from 'react-icons/gi'
 import type { Face, CoinEffectKind } from '@/core/types'
@@ -104,7 +103,7 @@ export const EFFECT_FACE_CONFIGS: Record<CoinEffectKind, EffectFaceConfig> = {
  * (its `favored` face).
  */
 export const WEIGHT_FACEDOWN: Record<Face, { icon: ComponentType<IconProps>; color: string }> = {
-  H: { icon: withIcon(FaScaleUnbalancedFlip), color: '#8a8178' },
+  H: { icon: withIcon(FaRegFaceGrinWink), color: '#8a8178' },
   T: { icon: withIcon(GiWhaleTail), color: '#8a8178' },
 }
 
