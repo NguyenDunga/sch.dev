@@ -6,32 +6,22 @@
 // React key / re-render errors.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, waitFor } from '@testing-library/react'
 import { StrictMode } from 'react'
 import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
-import type { Coin } from '@/core/types'
+import type { Coin, DrawCount } from '@/core/types'
 
-const reduced = (() => {
-  const listeners: Array<() => void> = []
-  const mql = {
-    matches: true,
-    media: '(prefers-reduced-motion)',
-    addEventListener: (_event: string, fn: () => void) => listeners.push(fn),
-    removeEventListener: (fn: () => void) => {
-      const i = listeners.indexOf(fn)
-      if (i >= 0) listeners.splice(i, 1)
-    },
-  }
-  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
-  return {
-    setReduced: (r: boolean) => {
-      mql.matches = r
-      listeners.forEach((fn) => fn())
-    },
-  }
-})()
+// matchMedia stub for framer's useReducedMotion (same pattern as
+// run.13a.test.tsx) — this file always runs with REDUCED motion.
+const mql = {
+  matches: true,
+  media: '(prefers-reduced-motion)',
+  addEventListener: () => {},
+  removeEventListener: () => {},
+}
+vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
 
 let errors: string[] = []
 let rngState = 12345
@@ -76,7 +66,7 @@ describe('repro fuzz — React key / re-render errors', () => {
       if (filled.length === 0) break
       const i = filled[rnd(filled.length)]
       // sometimes force a draw-enchant or echo coin first
-      if (p === 0 && rnd(3) === 0) forceCoin(i, [{ kind: 'draw', count: 1 + rnd(3) }])
+      if (p === 0 && rnd(3) === 0) forceCoin(i, [{ kind: 'draw', count: (1 + rnd(3)) as DrawCount }])
       if (p === 1 && rnd(3) === 0) forceCoin(i, [{ kind: 'echo' }])
       useRunStore.getState().pickCoin(i)
       // sometimes unpick again

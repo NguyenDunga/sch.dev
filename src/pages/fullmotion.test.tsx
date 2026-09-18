@@ -6,17 +6,15 @@ import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
 
-const reduced = (() => {
-  const listeners: Array<() => void> = []
-  const mql = {
-    matches: false, // FULL motion
-    media: '(prefers-reduced-motion)',
-    addEventListener: (_e: string, fn: () => void) => listeners.push(fn),
-    removeEventListener: (fn: () => void) => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1) },
-  }
-  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
-  return { setReduced: (r: boolean) => { mql.matches = r; listeners.forEach((fn) => fn()) } }
-})()
+// matchMedia stub for framer's useReducedMotion (same pattern as
+// run.13a.test.tsx) — this file always runs with FULL motion.
+const mql = {
+  matches: false, // FULL motion
+  media: '(prefers-reduced-motion)',
+  addEventListener: () => {},
+  removeEventListener: () => {},
+}
+vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mql))
 
 let errors: string[] = []
 

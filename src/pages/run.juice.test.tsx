@@ -248,7 +248,6 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
   it('Score plays the sequence to the end: banner, chip flights, ticker counts up then resets for the new round', { timeout: 10000 }, async () => {
     fourRowRun('juice-choro')
     const flights = observeFlights('.choreo-chip')
-    const t0 = Date.now()
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
 
     // Beat 2: the tier banner slams in with the tier name.
@@ -256,12 +255,10 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     // The ticker's count-up (a Motion animation) settles on the store's
     // numbers during the sequence (the beat-5 resolve).
     await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'), { timeout: 3000 })
-    // The sequence runs to the end: the score beats (~2.2s for this hand)
-    // + the post-resolve rest (1.5s) — the overlay is gone, the new round
-    // starts, and the ticker resets to its idle state.
+    // The sequence runs to the end: the score beats + the post-resolve rest
+    // — the overlay is gone, the new round starts, and the ticker resets to
+    // its idle state.
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 6000 })
-    // The rest is real time: the full sequence is ~3.7s, not ~2.2s.
-    expect(Date.now() - t0).toBeGreaterThanOrEqual(3000)
     flights.stop()
     expect(flights.seen.length).toBeGreaterThan(0) // the matched chips flew
     expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')

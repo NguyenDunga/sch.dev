@@ -6,7 +6,7 @@
 
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { useRunStore } from '@/state/runStore'
-import type { RunState } from '@/state/runStore'
+import type { RunState } from '@/core/types'
 
 beforeAll(() => {
   const store = new Map<string, string>()
@@ -50,7 +50,7 @@ function act(name: string, fn: () => void, double = false) {
 function step(i: number) {
   const st = useRunStore.getState()
   const s = st
-  if (s.phase === 'menu' || s.phase === 'gameover' || s.phase === 'runEnd') {
+  if (s.phase === 'menu' || s.phase === 'runEnd') {
     act(`startRun@${i}`, () => st.startRun(`f-${rnd(100000)}`))
     return
   }
