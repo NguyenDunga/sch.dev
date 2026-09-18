@@ -24,6 +24,7 @@ import {
   discardDraft,
   drawHandDraft,
   echoReflipDraft,
+  finishScore,
   pickCoinDraft,
   score,
   startRun,
@@ -57,8 +58,13 @@ export interface RunActions {
   confirmPlay: () => void
   /** buff: re-run face resolution once for an unused Echo coin in the play. */
   echoReflip: (slotIndex: number) => void
-  /** buff → score → draw: C3 pipeline → blindScore/cash; ALL coins to discard; handsLeft −1 (endBlind at 0). */
+  /** buff → score: C3 pipeline → blindScore/cash; ALL played coins to discard;
+   *  handsLeft −1; lastScore set. The hand STAYS in 'score' — the UI plays the
+   *  scoring choreography over lastScore, then calls finishScore() to advance. */
   score: () => void
+  /** score → draw (or endBlind): advance the hand once the scoring choreography
+   *  has settled (the UI calls this when the ticker/animation are done). */
+  finishScore: () => void
   /** shop: toId gains all of fromId's effects (stack freely, no cap); fromId removed from the collection; free. */
   mergeCoin: (fromId: number, toId: number) => void
   /** shop: remove a coin from the collection; cash -= REMOVE_COIN_COST ($1). Delete only — never a refund. */
@@ -131,6 +137,7 @@ export function createRunStore() {
       confirmPlay: () => confirmPlay(get, set, rng),
       echoReflip: (slotIndex) => set((st) => echoReflipDraft(st, slotIndex, rng)),
       score: () => score(get, set, rng),
+      finishScore: () => finishScore(get, set, rng),
       mergeCoin: (fromId, toId) => set((st) => mergeCoinDraft(st, fromId, toId)),
       removeCoin: (id) => set((st) => removeCoinDraft(st, id)),
       moveCharm: (from, to) => set((st) => moveCharmDraft(st, from, to)),

@@ -29,6 +29,15 @@
   color: var(--ink-soft);
 }
 
+/* 13c — the ticker fades out 2.5s after the choreography settles. Opacity
+ *  only (the min-height keeps the grid row's space, so the layout doesn't
+ *  shift). Purely cosmetic — it never blocks the next round. */
+.score-ticker--hidden {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+  pointer-events: none;
+}
+
 .score-ticker-total {
   color: var(--ink);
 }

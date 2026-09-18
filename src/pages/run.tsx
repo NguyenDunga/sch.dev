@@ -457,6 +457,58 @@ function useScoringChoro(score: () => void) {
   return { seq, beat, skipped, reduced, chipsRef, cashRef, handleScore }
 }
 
+/** Async hand flow: the store rests in 'score' while the scoring choreography
+ *  plays over lastScore. When the sequence settles (beat 7 — the natural end
+ *  or a skip), advance the hand: deal the next hand (draw) or end the blind.
+ *  A new round is only started after the calculation animation + ticker are
+ *  done. Fires exactly once per scoring sequence (keyed by runId). */
+function useFinishOnSettle(
+  choro: { seq: ChoroSeq | null; beat: Beat },
+  finishScore: () => void,
+): void {
+  const finishedRunIdRef = useRef(0)
+  useEffect(() => {
+    if (choro.seq && choro.beat === 7 && finishedRunIdRef.current !== choro.seq.runId) {
+      finishedRunIdRef.current = choro.seq.runId
+      finishScore()
+    }
+  }, [choro.seq, choro.beat, finishScore])
+}
+
+/** The score ticker rests on its numbers once the choreography settles
+ *  (beat 7), then fades out 2.5s later. Purely cosmetic — the new round
+ *  already started when finishScore advanced the hand, so the fade never
+ *  blocks it. A new sequence (new runId) shows the ticker again. */
+function useTickerHide(choro: { seq: ChoroSeq | null; beat: Beat }): boolean {
+  const [hidden, setHidden] = useState(false)
+  const timerRef = useRef<number | null>(null)
+  const clear = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+  // A new sequence starts → show the ticker (and cancel any pending fade).
+  useEffect(() => {
+    if (choro.seq) {
+      clear()
+      setHidden(false)
+    }
+  }, [choro.seq?.runId, clear])
+  // Beat 7 (settled) → fade the ticker out 2.5s later.
+  useEffect(() => {
+    if (choro.seq && choro.beat === 7) {
+      clear()
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null
+        setHidden(true)
+      }, 2500)
+    }
+    return clear
+  }, [choro.seq?.runId, choro.beat, clear])
+  return hidden
+}
+
 interface RunPortalsProps {
   ghosts: DiscardGhost[]
   removeGhost: (key: number) => void
@@ -763,6 +815,7 @@ export function RunScreen() {
   const charms = useRunStore((s) => s.charms)
   const unpickCoin = useRunStore((s) => s.unpickCoin)
   const score = useRunStore((s) => s.score)
+  const finishScore = useRunStore((s) => s.finishScore)
   const save = useRunStore((s) => s.save)
   const wellRef = useRef<HTMLDivElement>(null)
   const deals = useDeals(hand, play)
@@ -772,6 +825,10 @@ export function RunScreen() {
   useAutoDraw()
   const flags = useRunFlags(handPhase, play)
   const choro = useScoringChoro(score)
+  // Async hand flow: advance the hand (deal the next / end the blind) only
+  // once the scoring choreography settles (beat 7).
+  useFinishOnSettle(choro, finishScore)
+  const tickerHidden = useTickerHide(choro) // cosmetic fade, never blocks the round
   useHandShortcuts(hand, play, handPhase, selection, flow.pickOne, flow.handleConfirm, choro.handleScore) // 13a.5
   const onBackgroundClick = useBackgroundClear(selection) // 13a.5 — empty-space click clears
   // 13a.7 — the live projected total (the boss rule applies, as in score()).
@@ -786,6 +843,7 @@ export function RunScreen() {
       <ScoreTicker
         score={lastScore}
         projection={projection}
+        hidden={tickerHidden}
         choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
         chipsRef={choro.chipsRef}
         cashRef={choro.cashRef}

@@ -143,12 +143,16 @@ export function ScoreTicker({
   choro,
   chipsRef,
   cashRef,
+  hidden,
 }: {
   score: Option<Score>
   projection: TossProjection | null
   choro: ChoroBeat | null
   chipsRef?: RefObject<HTMLSpanElement | null>
   cashRef?: RefObject<HTMLSpanElement | null>
+  /** 13c: fade the ticker out (cosmetic) once the choreography has settled
+   *  and its 2.5s rest is over. Never blocks the next round. */
+  hidden?: boolean
 }) {
   const reduced = useReducedMotion() ?? false
   if (projection) return <ProjectedTicker projection={projection} reduced={reduced} />
@@ -159,6 +163,11 @@ export function ScoreTicker({
         <span className="score-ticker-math score-ticker--idle">— × — = —</span>
       </div>
     )
+  }
+  if (hidden) {
+    // Faded out (the choreography settled and its rest is over). Keep the
+    // grid row's space (min-height) so the layout doesn't shift.
+    return <div className="score-ticker score-ticker--hidden" aria-hidden />
   }
 
   const result = score.value

@@ -97,6 +97,7 @@ describe('M10.4 — endBlind rewards', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     return store
   }
 
@@ -135,6 +136,7 @@ describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     const st = store.getState()
 
     expect(st.phase).toBe('runEnd')
@@ -150,6 +152,7 @@ describe('M10.5 — clearing blind 11 (round 4 boss) wins the run', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     expect(store.getState().won).toBe(false)
   })
 })
@@ -197,6 +200,7 @@ describe('M10.7 — miss the target after the hand budget → lose (even with ca
     store.getState().pickCoin(0) // a lone coin scores no tier → 0
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     const st = store.getState()
 
     expect(st.phase).toBe('runEnd')
@@ -222,6 +226,7 @@ describe('M10.8 — full 12-blind walk (mocked clears) reaches win', () => {
       store.getState().pickCoin(0)
       store.getState().confirmPlay()
       store.getState().score()
+      store.getState().finishScore()
 
       const st = store.getState()
       if (i === BLINDS.length - 1) {
@@ -257,6 +262,7 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
       store.getState().confirmPlay()
       if (h < hands - 1) {
         store.getState().score() // 1 coin → 0, keeps playing
+        store.getState().finishScore()
       } else {
         // The clearing hand: 3-same = 15 chips × 1 = 15 → blindScore 150.
         store.setState({
@@ -270,6 +276,7 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
           ],
         })
         store.getState().score()
+        store.getState().finishScore()
       }
     }
     return store
@@ -321,6 +328,7 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
       ],
     })
     store.getState().score()
+    store.getState().finishScore()
     const st = store.getState()
     expect(st.phase).toBe('runEnd')
     expect(st.won).toBe(true)
@@ -337,6 +345,7 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
       store.getState().pickCoin(0)
       store.getState().confirmPlay()
       store.getState().score() // 0 each
+      store.getState().finishScore()
       expect(store.getState().phase).toBe('run') // still in the blind
     }
     // Last hand: still 0 → the blind ends on the budget, not early.
@@ -344,6 +353,7 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     const st = store.getState()
     expect(st.phase).toBe('runEnd')
     expect(st.won).toBe(false)

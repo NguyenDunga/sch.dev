@@ -18,6 +18,7 @@ describe('M9.1 — shop offer generation', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     return store
   }
 
@@ -87,6 +88,7 @@ describe('M9.2 — reroll (one free per shop)', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     return store
   }
 

@@ -228,6 +228,7 @@ function playOneHand(store: ReturnType<typeof createRunStore>): void {
   }
   store.getState().confirmPlay()
   store.getState().score()
+  store.getState().finishScore()
 }
 
 /** A fresh store positioned at the start of `blindIndex` — the state

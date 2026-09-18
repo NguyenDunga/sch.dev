@@ -34,6 +34,7 @@ describe('M4.1 — handPhase machine', () => {
       st.confirmPlay()
       expect(store.getState().handPhase).toBe('buff')
       store.getState().score()
+      store.getState().finishScore()
       expect(store.getState().handPhase).toBe('draw')
     }
     unsub()
@@ -659,6 +660,7 @@ describe('M4.8 — score', () => {
     store.getState().confirmPlay()
 
     store.getState().score()
+    store.getState().finishScore()
     const after = store.getState()
 
     expect(after.handsLeft).toBe(HANDS_PER_BLIND - 1)
@@ -690,6 +692,7 @@ describe('M4.8 — score', () => {
     store.getState().confirmPlay()
 
     store.getState().score()
+    store.getState().finishScore()
     const after = store.getState()
 
     expect(after.handsLeft).toBe(0)
@@ -712,6 +715,7 @@ describe('M4.8 — score', () => {
     store.getState().confirmPlay()
 
     store.getState().score()
+    store.getState().finishScore()
     const after = store.getState()
 
     // First hand: runScore and blindScore both start at 0 and add the same
@@ -728,7 +732,9 @@ describe('M4.8 — score', () => {
 })
 
 describe('M4.9 — out-of-phase actions are no-ops', () => {
-  /** A store resting in the given phase (toss/score are transient and cannot be rested in). */
+  /** A store resting in the given phase. `toss` is transient (cannot be
+   *  rested in); `score` is now a resting phase — the hand rests there while
+   *  the scoring choreography plays over lastScore. */
   function atPhase(seed: string, phase: HandPhase) {
     const store = createRunStore()
     store.getState().startRun(seed)
@@ -737,6 +743,12 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
       store.getState().drawHand()
       store.getState().pickCoin(0)
       store.getState().confirmPlay()
+    }
+    if (phase === 'score') {
+      store.getState().drawHand()
+      store.getState().pickCoin(0)
+      store.getState().confirmPlay()
+      store.getState().score()
     }
     return store
   }
@@ -749,6 +761,7 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
     confirmPlay: (s) => s.confirmPlay(),
     echoReflip: (s) => s.echoReflip(0),
     score: (s) => s.score(),
+    finishScore: (s) => s.finishScore(),
   }
 
   const VALID_IN: Record<string, HandPhase> = {
@@ -759,9 +772,10 @@ describe('M4.9 — out-of-phase actions are no-ops', () => {
     confirmPlay: 'play',
     echoReflip: 'buff',
     score: 'buff',
+    finishScore: 'score',
   }
 
-  const RESTING: HandPhase[] = ['draw', 'play', 'buff']
+  const RESTING: HandPhase[] = ['draw', 'play', 'buff', 'score']
 
   it.each(
     Object.entries(VALID_IN).flatMap(([action, valid]) =>
@@ -798,6 +812,7 @@ describe('M4.10 — full cycle repeated', () => {
       store.getState().confirmPlay()
       expect(store.getState().handPhase).toBe('buff')
       store.getState().score()
+      store.getState().finishScore()
       const st = store.getState()
 
       // Coin conservation: every coin is in exactly one place.
@@ -837,6 +852,7 @@ describe('M4.10 — full cycle repeated', () => {
         store.getState().pickCoin(3)
         store.getState().confirmPlay()
         store.getState().score()
+        store.getState().finishScore()
       }
       const s = store.getState()
       return {

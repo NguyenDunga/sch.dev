@@ -8,7 +8,10 @@
 // - buff:  echoReflip() — one re-flip per Echo coin (boosters apply at score)
 // - score: score() — C3 pipeline → blindScore/cash; ONLY the played coins
 //   go to the discard pile — unplayed hand coins stay in the hand and the
-//   next hand refills around them (13a.2 keep-unplayed); handsLeft −1
+//   next hand refills around them (13a.2 keep-unplayed); handsLeft −1. The
+//   hand STAYS in 'score' while the UI plays the scoring choreography over
+//   lastScore; finishScore() then advances to draw (or ends the blind) once
+//   the animation + ticker are done (async hand flow).
 //
 // An action fired in the wrong handPhase is a no-op.
 //
@@ -214,10 +217,10 @@ function scoreDraft(st: Draft, rng: Rng): void {
   st.lastScore = some(result)
   st.play = emptyHand(PLAY_SIZE)
   st.rngState = rng.state()
-  st.handPhase = 'draw'
-  // 13a.4: the moment the target is met, end the blind — don't force the
-  // player through the remaining hands (unused hands pay a bonus in endBlind).
-  if (st.handsLeft <= 0 || st.blindScore >= effectiveTarget(blind)) endBlind(st, rng)
+  // STAY in 'score': the UI plays the scoring choreography over lastScore
+  // (the chips×mult ticker). The hand does not advance here — finishScore()
+  // moves it to 'draw' (or ends the blind) once the choreography settles.
+  st.handPhase = 'score'
 }
 
 /** The blind's runtime target (Heavy Target boss: ×1.5 — 1750 → 2625, m13a). */
@@ -228,16 +231,31 @@ function effectiveTarget(blind: (typeof BLINDS)[number]): number {
 export function score(get: GetFn, set: SetFn, rng: Rng): void {
   const st = get()
   if (st.phase !== 'run' || st.handPhase !== 'buff') return
-  // Step 1: buff → score (observable — the UI runs the chips×mult ticker here).
-  set((s) => {
-    s.handPhase = 'score'
-  })
-  // Step 2: score → draw — C3 pipeline, then all coins to the discard pile.
+  // buff → score: run the C3 pipeline, update the totals, empty the play, and
+  // set lastScore — but STAY in 'score'. The UI plays the scoring choreography
+  // over lastScore; the hand only advances when it settles (finishScore).
   set((s) => scoreDraft(s, rng))
 }
 
+/** score → draw (or endBlind): the scoring choreography has settled (beat 7).
+ *  Called by the UI once the score ticker/animation is done, so a new hand is
+ *  only dealt (and the next round started) after the calculation animation and
+ *  ticker are finished. The blind ends when the hands are gone or the target
+ *  is met (13a.4) — that transition is also deferred until the choreography
+ *  settles, so the full score animation plays before the shop / run end. */
+export function finishScore(get: GetFn, set: SetFn, rng: Rng): void {
+  const st = get()
+  if (st.phase !== 'run' || st.handPhase !== 'score') return
+  set((s) => {
+    const blind = BLINDS[s.blindIndex]
+    if (s.handsLeft <= 0 || s.blindScore >= effectiveTarget(blind)) endBlind(s, rng)
+    else s.handPhase = 'draw'
+  })
+}
+
 /** Blind end (M4 minimal: target check + phase transition). M10 adds rewards,
- *  boss rules, and round progression. Called by score() when handsLeft hits 0. */
+ *  boss rules, and round progression. Called by finishScore() when the hands
+ *  are gone or the target is met, and by drawHandDraft on an empty pile. */
 function endBlind(st: Draft, rng: Rng): void {
   const blind = BLINDS[st.blindIndex]
   const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'

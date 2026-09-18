@@ -174,6 +174,7 @@ describe('M11.4 — resume in shop: offers regenerated from rngState', () => {
     a.getState().pickCoin(0)
     a.getState().confirmPlay()
     a.getState().score()
+    a.getState().finishScore()
     if (reroll) a.getState().reroll()
     a.getState().save()
     return a
@@ -261,6 +262,7 @@ describe('M11.6 — no autosave: no phase transition calls save', () => {
       store.getState().pickCoin(0)
       store.getState().confirmPlay()
       store.getState().score()
+      store.getState().finishScore()
     }
     // clear the blind → shop
     store.setState({ blindScore: 10_000, handsLeft: 1 })
@@ -268,6 +270,7 @@ describe('M11.6 — no autosave: no phase transition calls save', () => {
     store.getState().pickCoin(0)
     store.getState().confirmPlay()
     store.getState().score()
+    store.getState().finishScore()
     expect(store.getState().phase).toBe('shop')
 
     // every shop action
