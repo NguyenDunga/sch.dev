@@ -143,6 +143,13 @@ export interface BeatDurations {
 /** The total score-beats budget (UX §5: ~1.2–2.4s). */
 export const BEAT_BUDGET_MS = 2400
 
+/** The post-resolve rest: once the score calculation is done (the beat-5
+ *  total has counted up), the final numbers rest on screen for this long
+ *  before the animation ends (the cash fly + settle follow). A fixed pause,
+ *  not a beat — it is not part of the beat budget. Reduced motion (UX §8):
+ *  no rest — the fast sequence stays fast. */
+export const REST_MS = 1500
+
 const REDUCED_DURATIONS: BeatDurations = {
   reveal: 150,
   banner: 150,

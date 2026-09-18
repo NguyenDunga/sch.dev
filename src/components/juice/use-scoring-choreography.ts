@@ -2,7 +2,9 @@
 //
 // A pure state machine over the 7-beat timeline (UX §6 table). `lastScore`
 // drives it: when a new scored result appears, the sequence starts at beat 1
-// and advances 2→7 on the beat durations (13.1 `beatDurations`). The
+// and advances 2→7 on the beat durations (13.1 `beatDurations`). After the
+// resolve (the score calculation), the final numbers rest for REST_MS
+// (1.5s) before the end (skipped under reduced motion). The
 // presentation layer (scoring-choreography.tsx) renders the per-beat
 // elements from the current beat.
 //
@@ -28,7 +30,7 @@ import { useAnimate, useMotionValue, useReducedMotion as useFramerReducedMotion 
 import { isSome } from '@/core/helpers'
 import type { Score } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import { beatDurations, cashCoinCount, type Beat, type ChoroSeq, type PlaySnapshot } from './choreography'
+import { beatDurations, cashCoinCount, REST_MS, type Beat, type ChoroSeq, type PlaySnapshot } from './choreography'
 
 export interface ChoroState {
   seq: ChoroSeq | null
@@ -108,6 +110,11 @@ export function useScoringChoreography(snapshotRef: { current: unknown | null })
         if (isStale()) return
         setBeat(5)
         await step(d.resolve)
+        if (isStale()) return
+        // The post-resolve rest: the score calculation is done — the final
+        // numbers rest for REST_MS before the animation ends (the cash fly +
+        // settle follow). Skipped under reduced motion (UX §8: no long beats).
+        if (!reduced) await step(REST_MS)
         if (isStale()) return
         setBeat(6)
         await step(d.cash)

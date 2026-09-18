@@ -75,7 +75,7 @@ function numbers(s: RunStore): Record<string, unknown> {
 }
 
 describe('13a.1 — auto-advance the buff phase', () => {
-  it('a hand with no Echo coin never stops in buff (auto-score after the toss lands)', async () => {
+  it('a hand with no Echo coin never stops in buff (auto-score after the toss lands)', { timeout: 10000 }, async () => {
     useRunStore.getState().startRun('13a1-auto')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
@@ -84,12 +84,13 @@ describe('13a.1 — auto-advance the buff phase', () => {
 
     // No Score click: the run scores itself once the last coin has landed
     // (stagger + rise + beat ≈ 700ms for 5 coins), then the score choreography
-    // plays (≈2.4s) before the hand settles to draw and auto-draws to play.
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 6000 })
+    // plays (≈2.4s + the 1.5s post-resolve rest) before the hand settles to
+    // draw and auto-draws to play.
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     expect(useRunStore.getState().lastScore.some).toBe(true)
   })
 
-  it('a hand with an unused Echo coin still waits for input', async () => {
+  it('a hand with an unused Echo coin still waits for input', { timeout: 10000 }, async () => {
     useRunStore.getState().startRun('13a1-echo')
     useRunStore.getState().drawHand()
     // Force an Echo coin into the first hand slot (presentational test —
@@ -110,7 +111,7 @@ describe('13a.1 — auto-advance the buff phase', () => {
 
     // The explicit Score button still ends the hand.
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 6000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
   })
 
   it('auto vs. manual score changes no number (M13 §0)', async () => {
@@ -119,7 +120,7 @@ describe('13a.1 — auto-advance the buff phase', () => {
     useRunStore.getState().drawHand()
     render(<RunScreen />)
     confirmFive()
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 6000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     const auto = numbers(useRunStore.getState())
     cleanup()
 
@@ -130,7 +131,7 @@ describe('13a.1 — auto-advance the buff phase', () => {
     render(<RunScreen />)
     confirmFive()
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 6000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     const manual = numbers(useRunStore.getState())
 
     expect(auto).toEqual(manual)

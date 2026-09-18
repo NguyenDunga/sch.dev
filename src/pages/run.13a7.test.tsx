@@ -74,7 +74,7 @@ function forceEcho(): void {
 }
 
 describe('13a.7 — pre-computed score + auto-end score phase', () => {
-  it('the projected total is shown live as the coins land (no click)', async () => {
+  it('the projected total is shown live as the coins land (no click)', { timeout: 10000 }, async () => {
     useRunStore.getState().startRun('13a7-live')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
@@ -94,8 +94,9 @@ describe('13a.7 — pre-computed score + auto-end score phase', () => {
     await waitFor(() => expect(screen.getByText(/projected 5\/5/i)).toBeTruthy(), { timeout: 2000 })
 
     // The idle buff auto-ends (13a.1/13a.7) — the real score matches the
-    // projection exactly (M13 §0): same chips × mult = total.
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 4000 })
+    // projection exactly (M13 §0): same chips × mult = total. (The score
+    // choreography plays ≈2.4s + the 1.5s post-resolve rest first.)
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     const ls = useRunStore.getState().lastScore
     const proj = projectScore(playAtConfirm, none, useRunStore.getState().charms, 5)
     expect(ls.some).toBe(true)
@@ -130,14 +131,14 @@ describe('13a.7 — pre-computed score + auto-end score phase', () => {
     expect(useRunStore.getState().lastScore.some).toBe(true)
   }, 15000)
 
-  it('the manual Score button still ends the hand early', async () => {
+  it('the manual Score button still ends the hand early', { timeout: 10000 }, async () => {
     useRunStore.getState().startRun('13a7-early')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
     confirmFive()
     // Score immediately (before the auto-advance timer fires).
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 3000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
     expect(useRunStore.getState().lastScore.some).toBe(true)
   })
 })

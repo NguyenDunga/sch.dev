@@ -245,9 +245,10 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     vi.stubGlobal('localStorage', makeLocalStorage())
   })
 
-  it('Score plays the sequence to the end: banner, chip flights, ticker counts up then resets for the new round', async () => {
+  it('Score plays the sequence to the end: banner, chip flights, ticker counts up then resets for the new round', { timeout: 10000 }, async () => {
     fourRowRun('juice-choro')
     const flights = observeFlights('.choreo-chip')
+    const t0 = Date.now()
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
 
     // Beat 2: the tier banner slams in with the tier name.
@@ -255,9 +256,12 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     // The ticker's count-up (a Motion animation) settles on the store's
     // numbers during the sequence (the beat-5 resolve).
     await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'), { timeout: 3000 })
-    // The sequence runs to the end (≤ ~2.4s budget): the overlay is gone,
-    // the new round starts, and the ticker resets to its idle state.
-    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
+    // The sequence runs to the end: the score beats (~2.2s for this hand)
+    // + the post-resolve rest (1.5s) — the overlay is gone, the new round
+    // starts, and the ticker resets to its idle state.
+    await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 6000 })
+    // The rest is real time: the full sequence is ~3.7s, not ~2.2s.
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(3000)
     flights.stop()
     expect(flights.seen.length).toBeGreaterThan(0) // the matched chips flew
     expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')
@@ -300,9 +304,9 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
 
     // The "No match" banner (not a tier slam) and the cash landing in the
-    // ticker (beat 6, during the sequence).
+    // ticker (beat 6 — after the post-resolve rest, so a longer wait).
     await waitFor(() => expect(screen.getByText('No match')).toBeTruthy())
-    await waitFor(() => expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash'))
+    await waitFor(() => expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash'), { timeout: 5000 })
     // The sequence settles → the new round starts → the ticker resets.
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
     expect(document.querySelector('.score-ticker-cash')).toBeNull()
@@ -370,7 +374,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     )
   })
 
-  it('a skip changes no number vs. letting the sequence play out', async () => {
+  it('a skip changes no number vs. letting the sequence play out', { timeout: 10000 }, async () => {
     // Run A: the same hand (same seed → same deck), let the sequence play
     // out to the end.
     fourRowRun('juice-134')
@@ -415,7 +419,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     expect(useRunStore.getState().blindScore).toBe(120)
   })
 
-  it('a tap after the sequence ends changes nothing', async () => {
+  it('a tap after the sequence ends changes nothing', { timeout: 10000 }, async () => {
     fourRowRun('juice-134-late')
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })

@@ -108,7 +108,7 @@ describe('13a.5 — keyboard shortcuts', () => {
     expect(useRunStore.getState().handPhase).toBe('buff')
   })
 
-  it('Space scores in the buff phase (with an Echo coin, so auto-advance waits)', async () => {
+  it('Space scores in the buff phase (with an Echo coin, so auto-advance waits)', { timeout: 10000 }, async () => {
     freshRun('13a5-space')
     // Force an Echo coin into the first hand slot (auto-advance must wait
     // for a re-flip decision — same pattern as run.13a.test.tsx).
@@ -127,7 +127,7 @@ describe('13a.5 — keyboard shortcuts', () => {
 
     fireEvent.keyDown(window, { key: ' ' })
     expect(useRunStore.getState().lastScore.some).toBe(true)
-    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 3000 })
+    await waitFor(() => expect(useRunStore.getState().handPhase).toBe('play'), { timeout: 8000 })
   })
 
   it('clicking empty space clears the selection', () => {
