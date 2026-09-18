@@ -136,38 +136,36 @@ function ProjectedTicker({ projection, reduced }: { projection: TossProjection; 
  *  counts up on each score; during one (13.3) the counters build on their
  *  beats and the cash lands on beat 6. 13a.7: while the toss is live
  *  (`projection`), the projected total is shown instead — it updates
- *  without a click as the coins land. */
+ *  without a click as the coins land. `reset` (a new round started): the
+ *  ticker shows its idle state — the previous hand's numbers never linger
+ *  into the new round. */
 export function ScoreTicker({
   score,
   projection,
   choro,
   chipsRef,
   cashRef,
-  hidden,
+  reset,
 }: {
   score: Option<Score>
   projection: TossProjection | null
   choro: ChoroBeat | null
   chipsRef?: RefObject<HTMLSpanElement | null>
   cashRef?: RefObject<HTMLSpanElement | null>
-  /** 13c: fade the ticker out (cosmetic) once the choreography has settled
-   *  and its 2.5s rest is over. Never blocks the next round. */
-  hidden?: boolean
+  /** A new round started (outside the score phase): reset the ticker to
+   *  its idle state. Keeps the grid row's space (min-height) so the layout
+   *  doesn't shift. */
+  reset?: boolean
 }) {
   const reduced = useReducedMotion() ?? false
   if (projection) return <ProjectedTicker projection={projection} reduced={reduced} />
-  if (!isSome(score)) {
+  if (reset || !isSome(score)) {
     return (
       <div className="score-ticker" aria-live="polite">
         <span className="score-ticker-tier">—</span>
         <span className="score-ticker-math score-ticker--idle">— × — = —</span>
       </div>
     )
-  }
-  if (hidden) {
-    // Faded out (the choreography settled and its rest is over). Keep the
-    // grid row's space (min-height) so the layout doesn't shift.
-    return <div className="score-ticker score-ticker--hidden" aria-hidden />
   }
 
   const result = score.value

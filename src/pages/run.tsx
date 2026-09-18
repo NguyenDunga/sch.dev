@@ -475,40 +475,6 @@ function useFinishOnSettle(
   }, [choro.seq, choro.beat, finishScore])
 }
 
-/** The score ticker rests on its numbers once the choreography settles
- *  (beat 7), then fades out 2.5s later. Purely cosmetic — the new round
- *  already started when finishScore advanced the hand, so the fade never
- *  blocks it. A new sequence (new runId) shows the ticker again. */
-function useTickerHide(choro: { seq: ChoroSeq | null; beat: Beat }): boolean {
-  const [hidden, setHidden] = useState(false)
-  const timerRef = useRef<number | null>(null)
-  const clear = useCallback(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-  }, [])
-  // A new sequence starts → show the ticker (and cancel any pending fade).
-  useEffect(() => {
-    if (choro.seq) {
-      clear()
-      setHidden(false)
-    }
-  }, [choro.seq?.runId, clear])
-  // Beat 7 (settled) → fade the ticker out 2.5s later.
-  useEffect(() => {
-    if (choro.seq && choro.beat === 7) {
-      clear()
-      timerRef.current = window.setTimeout(() => {
-        timerRef.current = null
-        setHidden(true)
-      }, 2500)
-    }
-    return clear
-  }, [choro.seq?.runId, choro.beat, clear])
-  return hidden
-}
-
 interface RunPortalsProps {
   ghosts: DiscardGhost[]
   removeGhost: (key: number) => void
@@ -828,7 +794,6 @@ export function RunScreen() {
   // Async hand flow: advance the hand (deal the next / end the blind) only
   // once the scoring choreography settles (beat 7).
   useFinishOnSettle(choro, finishScore)
-  const tickerHidden = useTickerHide(choro) // cosmetic fade, never blocks the round
   useHandShortcuts(hand, play, handPhase, selection, flow.pickOne, flow.handleConfirm, choro.handleScore) // 13a.5
   const onBackgroundClick = useBackgroundClear(selection) // 13a.5 — empty-space click clears
   // 13a.7 — the live projected total (the boss rule applies, as in score()).
@@ -843,7 +808,7 @@ export function RunScreen() {
       <ScoreTicker
         score={lastScore}
         projection={projection}
-        hidden={tickerHidden}
+        reset={handPhase !== 'score'}
         choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
         chipsRef={choro.chipsRef}
         cashRef={choro.cashRef}

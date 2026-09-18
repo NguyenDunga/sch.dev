@@ -68,7 +68,10 @@ const MAX_CONCURRENT = 8
 const DUCK_MS = 300
 const DUCK_FACTOR = 0.4
 
-const BASE = '/resource/sfx'
+// The asset base: Vite's `base` (the app is served under /sch.dev/ on
+// GitHub Pages — a root-absolute '/resource/sfx' 404s there, so the path
+// must be base-relative; in dev/test BASE_URL is '/').
+const BASE = `${import.meta.env.BASE_URL}resource/sfx`
 
 let ready = false
 /** Events whose asset failed to load (silenced, never retried). */

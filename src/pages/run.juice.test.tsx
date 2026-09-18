@@ -245,22 +245,22 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     vi.stubGlobal('localStorage', makeLocalStorage())
   })
 
-  it('Score plays the sequence to the end: banner, chip flights, ticker settles on the store numbers', async () => {
+  it('Score plays the sequence to the end: banner, chip flights, ticker counts up then resets for the new round', async () => {
     fourRowRun('juice-choro')
     const flights = observeFlights('.choreo-chip')
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
 
     // Beat 2: the tier banner slams in with the tier name.
     await waitFor(() => expect(screen.getByText('4-IN-A-ROW')).toBeTruthy())
-    // The sequence runs to the end (≤ ~2.4s budget): the overlay is gone
-    // and the ticker rests on the store's numbers.
+    // The ticker's count-up (a Motion animation) settles on the store's
+    // numbers during the sequence (the beat-5 resolve).
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'), { timeout: 3000 })
+    // The sequence runs to the end (≤ ~2.4s budget): the overlay is gone,
+    // the new round starts, and the ticker resets to its idle state.
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
     flights.stop()
     expect(flights.seen.length).toBeGreaterThan(0) // the matched chips flew
-    // The ticker's count-up (a Motion animation) settles on the store's
-    // numbers; wait for it rather than asserting the instant the overlay
-    // disappears (the two are both rAF-driven and can be a frame apart).
-    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'), { timeout: 2000 })
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')
 
     // The numbers come from the store (juice never mutates state, UX §0).
     const { lastScore, blindScore } = useRunStore.getState()
@@ -279,10 +279,10 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     await waitFor(() => expect(screen.getByText('4-IN-A-ROW')).toBeTruthy())
     fireEvent.pointerDown(document.body)
 
-    // Snapped: the overlay is gone and the ticker shows the final numbers
-    // instantly (no count-up left to play).
+    // Snapped: the overlay is gone, the new round starts, and the ticker
+    // resets to its idle state (the final numbers never linger).
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
-    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'))
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —'))
 
     // No number changes: the store numbers are exactly what score() set —
     // the same values the full-sequence test settles on.
@@ -299,10 +299,13 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     const cashBefore = useRunStore.getState().cash
     fireEvent.click(screen.getByRole('button', { name: /score/i }))
 
-    // The "No match" banner (not a tier slam) and the cash landing.
+    // The "No match" banner (not a tier slam) and the cash landing in the
+    // ticker (beat 6, during the sequence).
     await waitFor(() => expect(screen.getByText('No match')).toBeTruthy())
+    await waitFor(() => expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash'))
+    // The sequence settles → the new round starts → the ticker resets.
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull(), { timeout: 5000 })
-    expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash')
+    expect(document.querySelector('.score-ticker-cash')).toBeNull()
     expect(useRunStore.getState().cash).toBe(cashBefore + 1)
   })
 
@@ -318,7 +321,8 @@ describe('13.3 — scoring choreography (the 7 beats)', () => {
     expect(Date.now() - t0).toBeLessThan(1500)
     // No chip/cash flights in reduced motion.
     expect(flights.seen).toEqual([])
-    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
+    // The new round started → the ticker reset to its idle state.
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')
   })
 })
 
@@ -358,7 +362,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     fireEvent.keyDown(document.body, { key: 'Enter' })
 
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
-    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'))
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —'))
     const { lastScore, blindScore } = useRunStore.getState()
     expect(blindScore).toBe(120)
     expect(lastScore).toEqual(
@@ -395,7 +399,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     // No wait: skip before the banner even slams in.
     fireEvent.pointerDown(document.body)
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
-    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120'))
+    await waitFor(() => expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —'))
     expect(useRunStore.getState().blindScore).toBe(120)
   })
 
@@ -407,7 +411,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     fireEvent.pointerDown(document.body)
     fireEvent.keyDown(document.body, { key: ' ' })
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
-    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')
     expect(useRunStore.getState().blindScore).toBe(120)
   })
 
@@ -432,7 +436,8 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     // The tax cash was counted by score() before the sequence started — the
     // skip neither loses it nor double-counts it.
     expect(useRunStore.getState().cash).toBe(cashBefore + 1)
-    expect(document.querySelector('.score-ticker-cash')?.textContent).toBe('+$1 cash')
+    // The new round started → the ticker reset (the cash line is gone).
+    expect(document.querySelector('.score-ticker-cash')).toBeNull()
   })
 
   it('a skip never blocks input: the next hand is playable right away', async () => {
@@ -455,7 +460,7 @@ describe('13.4 — skip / fast-forward (no number changes)', () => {
     await waitFor(() => expect(screen.getByText('4-IN-A-ROW')).toBeTruthy())
     fireEvent.pointerDown(document.body)
     await waitFor(() => expect(document.querySelector('.choreo-layer')).toBeNull())
-    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('40 × 3 = 120')
+    expect(document.querySelector('.score-ticker-math')?.textContent).toBe('— × — = —')
     expect(useRunStore.getState().blindScore).toBe(120)
   })
 })
