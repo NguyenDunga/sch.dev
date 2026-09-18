@@ -7,7 +7,9 @@
 import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE } from '@/core/balance'
 import type { ShopOffer, CoinEffectKind } from '@/core/types'
 import { Button } from '@/components/ui/button'
-import { ACTION_ICONS, CHARM_ICONS, EFFECT_ICONS } from '@/lib/icons'
+import { ACTION_ICONS } from '@/components/run/action-icons'
+import { CHARM_ICONS } from '@/components/charm-bar/charm-icons'
+import { EFFECT_ICONS } from '@/components/hand/coin/coin-glyph/effect-icons'
 import { CHARM_DESCRIPTIONS, COIN_DESCRIPTIONS } from './descriptions'
 
 interface OfferCardProps {

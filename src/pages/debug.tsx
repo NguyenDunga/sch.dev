@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { withIcon } from '@/lib/icons'
+import { withIcon } from '@/components/ui/icon'
 import { FaMoon, FaPlus, FaSun } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import {

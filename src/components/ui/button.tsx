@@ -1,6 +1,6 @@
 import { cn } from "cn"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { withIcon } from "@/lib/icons"
+import { withIcon } from "./icon"
 import { FaSpinner } from "react-icons/fa6"
 
 import { buttonVariants, flashCss, loadingCss } from "./button/buttonVariants"

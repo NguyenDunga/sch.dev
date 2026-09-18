@@ -6,7 +6,7 @@
 
 import type { HandPhase } from '@/core/types'
 import { Button } from '@/components/ui/button'
-import { ACTION_ICONS } from '@/lib/icons'
+import { ACTION_ICONS } from './action-icons'
 
 interface ActionBarProps {
   handPhase: HandPhase

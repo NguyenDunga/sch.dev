@@ -2,7 +2,7 @@
 // (the text sits below the icon, hidden when it doesn't fit the chord).
 
 import type { ComponentType } from 'react'
-import type { IconProps } from '@/lib/icons'
+import type { IconProps } from '@/components/ui/icon'
 import { fitTextSize } from '../fit-text'
 
 export function GlyphStack({

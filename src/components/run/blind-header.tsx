@@ -5,7 +5,7 @@
 
 import { BLINDS, BOSS_RULES, HEAVY_TARGET_MULT } from '@/core/balance'
 import { useRunStore } from '@/state/runStore'
-import { ACTION_ICONS } from '@/lib/icons'
+import { ACTION_ICONS } from './action-icons'
 
 const BLIND_NAMES = { small: 'Small', big: 'Big', boss: 'Boss' } as const
 

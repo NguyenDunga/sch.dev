@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { withIcon } from '@/lib/icons'
+import { withIcon } from '@/components/ui/icon'
 import { FaDice } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import { generateSeed } from '@/core/rng'

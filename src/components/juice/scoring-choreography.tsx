@@ -21,7 +21,7 @@ import { shakeScreen } from './screen-shake'
 import { none, some } from '@/core/helpers'
 import type { CharmId, Score, TierId } from '@/core/types'
 import { CHOREO, DURATION, EASING, SHAKE_DURATION } from '@/lib/motion'
-import { TIER_ICONS } from '@/lib/icons'
+import { TIER_ICONS } from './tier-icons'
 import {
   bannerText,
   cashCoinCount,

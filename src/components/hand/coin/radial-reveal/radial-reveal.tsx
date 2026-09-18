@@ -24,7 +24,7 @@
 import { useState } from 'react'
 import { AnimatePresence, useReducedMotion } from 'framer-motion'
 import type { ComponentType } from 'react'
-import type { IconProps } from '@/lib/icons'
+import type { IconProps } from '@/components/ui/icon'
 import { RingHits } from './radial-reveal-ring'
 import { GlyphStack } from './radial-reveal-glyph'
 import { RevealLayer } from './radial-reveal-layer'

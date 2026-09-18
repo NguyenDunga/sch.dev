@@ -3,7 +3,7 @@
 // brief "Saved!" confirmation. The timeout is cleaned up on unmount.
 
 import { useEffect, useRef, useState } from 'react'
-import { withIcon } from '@/lib/icons'
+import { withIcon } from '@/components/ui/icon'
 import { FaFloppyDisk } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 

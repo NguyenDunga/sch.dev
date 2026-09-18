@@ -9,7 +9,7 @@
 
 import { motion, type Transition } from 'framer-motion'
 import type { ComponentType } from 'react'
-import type { IconProps } from '@/lib/icons'
+import type { IconProps } from '@/components/ui/icon'
 import { GlyphStack } from './radial-reveal-glyph'
 import { ANTICIPATE, PEEK_RADIUS, SCALE_PEEK, SCALE_REST, WIPE } from './radial-constant'
 

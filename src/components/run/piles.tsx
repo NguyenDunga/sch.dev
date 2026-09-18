@@ -9,7 +9,7 @@
 // only (no blurred shadows).
 
 import type { RefObject } from 'react'
-import { ACTION_ICONS } from '@/lib/icons'
+import { ACTION_ICONS } from './action-icons'
 import { Coin } from '@/components/hand/coin'
 import { useRunStore } from '@/state/runStore'
 

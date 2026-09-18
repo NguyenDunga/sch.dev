@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RadialReveal } from './radial-reveal'
 import { FaDumbbell, FaBolt } from 'react-icons/fa6'
-import { withIcon } from '@/lib/icons'
+import { withIcon } from '@/components/ui/icon'
 
 const Dumbbell = withIcon(FaDumbbell)
 const Bolt = withIcon(FaBolt)
