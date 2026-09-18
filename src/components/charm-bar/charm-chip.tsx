@@ -4,7 +4,7 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CHARMS } from '@/core/balance'
+import { CHARMS } from '@/core/shop'
 import { CHARM_ICONS } from './charm-icons'
 import type { CharmId } from '@/core/types'
 

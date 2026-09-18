@@ -4,7 +4,7 @@
 // unavailable (charm already owned / hand size at cap). The store also
 // re-rejects (buyDraft) — the disabled state is just UX feedback.
 
-import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE } from '@/core/balance'
+import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE } from '@/core/shop'
 import type { ShopOffer, CoinEffectKind } from '@/core/types'
 import { Button } from '@/components/ui/button'
 import { ACTION_ICONS } from '@/components/run/action-icons'

@@ -43,7 +43,7 @@ import type { Rng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
 import type { BossRuleId, Face, Option } from '@/core/types'
 import type { Draft, GetFn, SetFn } from './storeTypes'
-import { generateOffers } from './shopActions'
+import { enterShopDraft } from './shopActions'
 
 /** Placeholder face for face-down coins (hand and pre-toss play slots).
  *  Meaningless until the toss phase resolves the face (SDD C4). */
@@ -272,11 +272,7 @@ function endBlind(st: Draft, rng: Rng): void {
       st.phase = 'runEnd'
       st.won = true
     } else {
-      st.phase = 'shop'
-      st.shop = {
-        offers: generateOffers(rng, st.charms, st.handSize),
-        rerollUsed: false,
-      }
+      enterShopDraft(st, rng) // the shop entry lives in shopActions (M10.2)
     }
   } else {
     st.phase = 'runEnd'

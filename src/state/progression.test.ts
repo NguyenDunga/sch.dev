@@ -5,7 +5,8 @@
 // hand budget loses, M10.8 full 12-blind walk.
 
 import { describe, expect, it } from 'vitest'
-import { BLINDS, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PAYDAY_BONUS, PLAY_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { BLINDS, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PAYDAY_BONUS, PLAY_SIZE, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { SHOP_SLOTS } from '@/core/shop'
 import { filledSlot } from '@/core/helpers'
 import type { Face } from '@/core/types'
 import { createRunStore, type RunStore } from './runStore'

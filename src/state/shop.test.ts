@@ -5,7 +5,7 @@
 // upgrade (cap).
 
 import { describe, expect, it } from 'vitest'
-import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/balance'
+import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/shop'
 import { createRunStore, type RunStore } from './runStore'
 
 describe('M9.1 — shop offer generation', () => {

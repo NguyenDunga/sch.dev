@@ -1,7 +1,8 @@
-import type { Blind, BossRuleId, CharmDef, CoinDef, Tier } from './types'
+import type { Blind, BossRuleId, Tier } from './types'
 
 // Data-only tables (draft values from plan_balance-baseline.md — tunable in
-// playtest, not a scope change). No logic here.
+// playtest, not a scope change). No logic here. Shop-side data (charm/coin
+// catalog, shop pricing) lives in shop.ts.
 
 /** One boss rule (shape of the BOSS_RULES table; the id also lives on the Blind 'boss' variant). */
 export interface BossRule {
@@ -43,45 +44,15 @@ export const BOSS_RULES: BossRule[] = [
   { id: 'heavyTarget', name: 'Heavy Target', description: 'Target ×1.5, +$5 bonus reward' },
 ]
 
-/** Re-Toss removed 2026-09-13 (Q&A round 2) — unlimited discard supersedes it. */
-export const CHARMS: CharmDef[] = [
-  { id: 'plusChips', name: '+Chips', category: 'scoring', price: 5 },
-  { id: 'plusMult', name: '+Mult', category: 'scoring', price: 8 },
-  { id: 'extraHand', name: 'Extra Hand', category: 'flip', price: 15 }, // 13a.11: $10 → $15 (playtest: +1 of 4 hands ≈ +5–9pp clear rate on mid blinds; the only charm that adds a full hand of EV)
-  { id: 'payday', name: 'Payday', category: 'economy', price: 5 },
-  { id: 'jackpotFever', name: 'Jackpot Fever', category: 'pattern', price: 12 },
-]
-
-/** v1 core coin effects (2026-09-13 Q&A round 2). Shop content lands in M3. */
-export const COIN_EFFECTS: CoinDef[] = [
-  { effect: 'weight', name: 'Weight', price: 5 },
-  { effect: 'heads', name: 'Heads', price: 8 },
-  { effect: 'tails', name: 'Tails', price: 8 },
-  { effect: 'chaos', name: 'Chaos', price: 6 },
-  { effect: 'echo', name: 'Echo', price: 7 },
-  { effect: 'magnetic', name: 'Magnetic', price: 6 },
-  { effect: 'reverse', name: 'Reverse', price: 5 },
-  { effect: 'tax', name: 'Tax', price: 5 },
-  { effect: 'jackpot', name: 'Jackpot', price: 10 },
-  { effect: 'draw1', name: 'Draw-1', price: 5 },
-  { effect: 'draw2', name: 'Draw-2', price: 8 },
-  { effect: 'draw3', name: 'Draw-3', price: 12 },
-]
-
 export const HANDS_PER_BLIND = 4
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
 export const HAND_SIZE = 8
 /** 13a.4: bonus paid per unused hand when a blind clears before its hand budget (draft +$1/hand). */
 export const EARLY_CLEAR_BONUS_PER_HAND = 1
-/** Hand-size upgrade: price and cap (draft, 2026-09-13 Q&A round 3). */
-export const HAND_SIZE_PRICE = 10
-export const HAND_SIZE_CAP = 10
 /** Play slots — the player plays 1–5 coins per hand. */
 export const PLAY_SIZE = 5
 export const SHORT_FUSE_HANDS = 3
 export const START_CASH = 4
-export const SHOP_SLOTS = 5
-export const FREE_REROLLS = 1
 export const PAYDAY_BONUS = 5
 export const HEAVY_TARGET_BONUS = 5
 /** Heavy Target boss: the blind's table target is multiplied by this at runtime (1750 → 2625). */
@@ -101,8 +72,6 @@ export const BASE_DECK_SIZE = 24
  * (plan_balance-baseline.md, critical finding).
  */
 export const STARTER_WEIGHT_COINS = 8
-/** Shop: delete a coin from the collection. */
-export const REMOVE_COIN_COST = 1
 /** Coin cash effects. */
 export const TAX_PAYOUT = 1
 export const JACKPOT_CHANCE = 0.25

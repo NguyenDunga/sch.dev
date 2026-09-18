@@ -5,7 +5,8 @@
 // autosave. The node test env has no localStorage — stub it per suite.
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, SHOP_SLOTS, SHORT_FUSE_HANDS } from '@/core/balance'
+import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
+import { SHOP_SLOTS } from '@/core/shop'
 import { filledSlot, none } from '@/core/helpers'
 import { createRunStore } from './runStore'
 import { makeLocalStorage } from './testHelpers'

@@ -3,24 +3,20 @@ import {
   BASE_DECK_SIZE,
   BLINDS,
   BOSS_RULES,
-  CHARMS,
-  COIN_EFFECTS,
   TIERS,
-  FREE_REROLLS,
   HANDS_PER_BLIND,
   HEAVY_TARGET_BONUS,
   JACKPOT_CHANCE,
   JACKPOT_PAYOUT,
   MAGNETIC_ODDS,
   PAYDAY_BONUS,
-  REMOVE_COIN_COST,
   SHORT_FUSE_HANDS,
-  SHOP_SLOTS,
   START_CASH,
   STARTER_WEIGHT_COINS,
   TAX_PAYOUT,
   WEIGHT_ODDS,
 } from './balance'
+import { CHARMS, COIN_EFFECTS, FREE_REROLLS, REMOVE_COIN_COST, SHOP_SLOTS } from './shop'
 
 describe('TIERS', () => {
   it('6 tiers in priority order with baseline chips × mult', () => {

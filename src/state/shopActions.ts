@@ -7,23 +7,36 @@
 
 import {
   BLINDS,
-  CHARMS,
-  COIN_EFFECTS,
   HANDS_PER_BLIND,
-  HAND_SIZE_CAP,
-  HAND_SIZE_PRICE,
   PLAY_SIZE,
-  REMOVE_COIN_COST,
-  SHOP_SLOTS,
   SHORT_FUSE_HANDS,
 } from '@/core/balance'
+import {
+  CHARMS,
+  COIN_EFFECTS,
+  HAND_SIZE_CAP,
+  HAND_SIZE_PRICE,
+  REMOVE_COIN_COST,
+  SHOP_SLOTS,
+} from '@/core/shop'
 import { shuffleCollection } from '@/core/deck'
 import { emptyHand } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { Coin, CoinEffect, CoinEffectId, RunState, ShopOffer } from '@/core/types'
 import type { Draft } from './storeTypes'
 
-// -- offer generation (M9.1) ------------------------------------------------------
+// -- shop entry / offer generation (M9.1, M10.2) --------------------------------
+
+/**
+ * M10.2: blind cleared (not the last one) → the shop: phase 'shop' with a
+ * fresh set of offers and the free reroll unused again. Called from
+ * handActions.endBlind — the run flow only decides *that* the blind is
+ * cleared; the shop entry itself lives here.
+ */
+export function enterShopDraft(st: Draft, rng: Rng): void {
+  st.phase = 'shop'
+  st.shop = { offers: generateOffers(rng, st.charms, st.handSize), rerollUsed: false }
+}
 
 /**
  * M9.1: draw SHOP_SLOTS offers from the combined pool — unowned charms + all

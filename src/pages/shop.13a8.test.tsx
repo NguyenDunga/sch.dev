@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
 //
-// 13a.8 — Rework the shop layout (WBS 13a.8):
-//   - the coin collection is the visual anchor (first, above the offers)
-//   - the offers are grouped by kind (Charms / Coins / Hand size sections)
+// 13a.14 — Shop areas (draft): Trade / Forge / Recycler tabs.
+//   - the three areas are tabs, one visible at a time (Trade is the default)
+//   - the deck lives behind a small header icon (shop-only, read-only)
+//   - the Trade area keeps the 13a.8 offer grouping (Charms / Coins / Hand size)
 //   - Reroll is labeled "free, once" (and "Rerolled" after use)
 //   - Leave nudges when cash is unspent (it carries over to the next blind)
 //   - an unaffordable offer shows its poor state (the card dims)
 //
-// The merge/remove store logic is covered in shop.test.ts / charms.test.ts;
-// the drag-to-merge interaction is covered in collection.13a8.test.tsx.
+// The Forge/Recycler store logic (not yet wired — draft) will get its own
+// tests.
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
@@ -36,23 +37,84 @@ afterEach(() => {
 
 /** A store in the shop phase with the fixed offers. */
 function shopState(): void {
-  useRunStore.getState().startRun('13a8')
+  useRunStore.getState().startRun('13a14')
   useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS, rerollUsed: false } })
 }
 
-describe('13a.8 — shop layout', () => {
-  it('the collection is the visual anchor (first, above the offers)', () => {
+describe('13a.14 — shop areas (draft)', () => {
+  it('the three areas are tabs; Trade is the default', () => {
     shopState()
     render(<ShopScreen />)
-    const collection = document.querySelector('.collection')
-    const firstSection = document.querySelector('.offer-section')
-    expect(collection).toBeTruthy()
-    expect(firstSection).toBeTruthy()
-    // DOM order: the deck panel comes before any offer section.
-    expect(collection!.compareDocumentPosition(firstSection!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    // …and it is the deck the player is building (24 base coins).
-    expect(screen.getByText('Your deck')).toBeTruthy()
+    const tabs = screen.getByRole('navigation', { name: 'Shop areas' })
+    expect(tabs.querySelectorAll('.shop-tab')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: 'Trade' }).getAttribute('aria-current')).toBe('page')
+    // Trade is visible by default; Forge/Recycler are not.
+    expect(screen.queryByRole('region', { name: 'Forge' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Recycler' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Charms' })).toBeTruthy()
+  })
+
+  it('switching tabs shows the Forge / Recycler areas', () => {
+    shopState()
+    render(<ShopScreen />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Forge' }))
+    expect(screen.getByRole('region', { name: 'Forge' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Charms' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recycler' }))
+    const recycler = screen.getByRole('region', { name: 'Recycler' })
+    expect(recycler).toBeTruthy()
+    // The 24 base coins are listed, each with a sell price ($1 minimum).
+    expect(recycler.querySelectorAll('.recycler-row')).toHaveLength(24)
+    expect(recycler.querySelectorAll('.recycler-price')).toHaveLength(24)
+  })
+
+  it('the deck lives behind the header icon (shop-only, read-only)', () => {
+    shopState()
+    render(<ShopScreen />)
+    // The deck is hidden until the icon is clicked.
+    expect(screen.queryByText('Your deck')).toBeNull()
+
+    const icon = screen.getByRole('button', { name: 'Show deck' })
+    fireEvent.click(icon)
+    expect(icon.getAttribute('aria-expanded')).toBe('true')
+    const panel = screen.getByRole('dialog', { name: 'Your deck' })
+    expect(panel).toBeTruthy()
     expect(screen.getByText('24 coins')).toBeTruthy()
+    expect(panel.querySelectorAll('.deck-item')).toHaveLength(24)
+    // Read-only: the only button in the panel is the Close button.
+    expect(panel.querySelectorAll('button')).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog', { name: 'Your deck' })).toBeNull()
+  })
+
+  it('the recycler list is sortable (price high→low by default)', () => {
+    shopState()
+    useRunStore.setState({
+      deck: {
+        drawPile: [
+          { id: 3, effects: [{ kind: 'tax' }, { kind: 'echo' }] }, // $2
+          { id: 1, effects: [{ kind: 'tax' }] }, // $1
+          { id: 2, effects: [] }, // plain — $1 minimum
+        ],
+        discardPile: [],
+      },
+    })
+    render(<ShopScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Recycler' }))
+    const rows = () =>
+      Array.from(document.querySelectorAll('.recycler-row .recycler-effects')).map((el) => el.textContent)
+
+    // Default: price high → low (the 2-effect coin first).
+    expect(rows()).toEqual(['2 effects', '1 effect', 'plain 50/50'])
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort' }), { target: { value: 'priceAsc' } })
+    expect(rows()).toEqual(['1 effect', 'plain 50/50', '2 effects'])
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort' }), { target: { value: 'order' } })
+    expect(rows()).toEqual(['2 effects', '1 effect', 'plain 50/50']) // deck order
   })
 
   it('the offers are grouped by kind (Charms / Coins / Hand size)', () => {
