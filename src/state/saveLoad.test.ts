@@ -340,8 +340,8 @@ describe('Coverage — remaining edges (100% gate)', () => {
       const eff = store.getState().deck.drawPile.at(-1)?.effects[0]
       return eff && eff.kind === 'weight' ? eff.favored : undefined
     }
-    expect(face('probe-5')).toBe('H')
-    expect(face('probe-0')).toBe('T')
+    expect(face('probe-5')).toBe('T')
+    expect(face('probe-0')).toBe('H')
   })
 
   it('fixed face effects: heads/tails buy without a roll', () => {

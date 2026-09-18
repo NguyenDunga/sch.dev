@@ -15,8 +15,8 @@ const ids = (deck: Deck): number[] => deck.drawPile.map((c) => c.id)
 const sortedIds = (deck: Deck): number[] => [...ids(deck)].sort((a, b) => a - b)
 
 describe('buildCollection', () => {
-  it('builds the m13a mixed starter deck: 16 plain 50/50 + 8 Weight(Heads)', () => {
-    const deck = buildCollection()
+  it('builds the m13a mixed starter deck: 16 plain 50/50 + 8 Weight coins', () => {
+    const deck = buildCollection(createRng('build'))
     expect(deck.drawPile).toHaveLength(BASE_DECK_SIZE)
     expect(deck.discardPile).toHaveLength(0)
     const plain = deck.drawPile.filter((c) => c.effects.length === 0)
@@ -24,12 +24,26 @@ describe('buildCollection', () => {
     expect(plain).toHaveLength(BASE_DECK_SIZE - STARTER_WEIGHT_COINS)
     expect(weight).toHaveLength(STARTER_WEIGHT_COINS)
     for (const coin of weight) {
-      expect(coin.effects).toEqual([{ kind: 'weight', favored: 'H' }]) // aligned Heads
+      expect(coin.effects).toEqual([{ kind: 'weight', favored: expect.stringMatching(/^[HT]$/) } as never])
     }
   })
 
+  it('rolls each starter Weight coin\'s favoured face from the rng (50/50 H/T, one draw each)', () => {
+    const deck = buildCollection(createRng('build-2'))
+    const weight = deck.drawPile.filter((c) => c.effects.length > 0)
+    for (const eff of weight.map((c) => c.effects[0])) {
+      expect(eff.kind).toBe('weight')
+      if (eff.kind === 'weight') expect(['H', 'T']).toContain(eff.favored)
+    }
+    // Same seed → same favoured faces (deterministic roll)
+    const again = buildCollection(createRng('build-2'))
+    expect(weight.map((c) => c.effects[0])).toEqual(
+      again.drawPile.filter((c) => c.effects.length > 0).map((c) => c.effects[0]),
+    )
+  })
+
   it('assigns distinct ids to every coin', () => {
-    const deck = buildCollection()
+    const deck = buildCollection(createRng('build-3'))
     expect(new Set(deck.drawPile.map((c) => c.id)).size).toBe(BASE_DECK_SIZE)
   })
 })
@@ -45,20 +59,20 @@ describe('shuffleCollection', () => {
   })
 
   it('preserves the same multiset of ids (no coin lost or duplicated)', () => {
-    const deck = buildCollection()
+    const deck = buildCollection(createRng('build'))
     const shuffled = shuffleCollection(createRng('abc'), deck)
     expect(sortedIds(shuffled)).toEqual(sortedIds(deck))
   })
 
   it('is seed-deterministic (same seed → same order)', () => {
-    const a = shuffleCollection(createRng('abc'), buildCollection())
-    const b = shuffleCollection(createRng('abc'), buildCollection())
+    const a = shuffleCollection(createRng('abc'), buildCollection(createRng('build')))
+    const b = shuffleCollection(createRng('abc'), buildCollection(createRng('build')))
     expect(ids(a)).toEqual(ids(b))
   })
 
   it('different seeds → different order', () => {
-    const a = shuffleCollection(createRng('abc'), buildCollection())
-    const b = shuffleCollection(createRng('abd'), buildCollection())
+    const a = shuffleCollection(createRng('abc'), buildCollection(createRng('build')))
+    const b = shuffleCollection(createRng('abd'), buildCollection(createRng('build')))
     expect(ids(a)).not.toEqual(ids(b))
   })
 

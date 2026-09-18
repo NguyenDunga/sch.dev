@@ -509,7 +509,7 @@ describe('M4.6 — toss (auto on confirmPlay)', () => {
     // Reference: the RNG draw-order contract (SDD Data Design) —
     // 1. blind-start shuffle, 2. per-hand draw (no rng), 4. per-slot toss in play order.
     const rng = createRng(seed)
-    const deck = shuffleCollection(rng, buildCollection())
+    const deck = shuffleCollection(rng, buildCollection(rng))
     const hand = deck.drawPile.slice(0, HAND_SIZE)
     const picked = [hand[0], hand[2], hand[5]]
     const expected: Face[] = []

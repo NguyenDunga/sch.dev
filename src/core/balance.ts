@@ -37,10 +37,9 @@ export const HEAVY_TARGET_MULT = 1.5
  */
 export const BASE_DECK_SIZE = 24
 /**
- * m13a: the starter collection is 16 plain 50/50 + 8 Weight coins, ALL
- * favoring Heads. Aligned favored faces are the whole point — random/opposing
- * faces cancel under a face-down draw and collapse EV to the plain baseline
- * (plan_balance-baseline.md, critical finding).
+ * m13a: the starter collection is 16 plain 50/50 + 8 Weight coins. Each
+ * starter Weight coin's favoured face is rolled at run start (50/50 Heads /
+ * Tails, one rng draw per coin) — the lean is random, not fixed to Heads.
  */
 export const STARTER_WEIGHT_COINS = 3 * DIFFICULTY;
 /** Coin cash effects. */

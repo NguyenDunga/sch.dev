@@ -174,7 +174,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
-  padding: var(--sp-3);
+  padding: var(--sp-2);
   background: var(--surface);
   border: 2px solid var(--ink);
   border-radius: var(--r-lg);
@@ -185,8 +185,8 @@
 .forge-crafter {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 1rem 0.625rem;
+  gap: 0.5rem;
+  padding: 0.52rem 0.625rem;
 }
 
 .forge-slots {
@@ -336,7 +336,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
   padding: var(--sp-3);
   background: var(--surface);
   border: 2px solid var(--ink);

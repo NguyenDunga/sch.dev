@@ -14,17 +14,17 @@ import type { Coin, Deck, Option } from './types'
 
 /**
  * Fresh run: the m13a base collection — plain 50/50 coins + Weight coins
- * that all favor Heads (aligned favored faces; plan_balance-baseline.md).
- * Ids 0..size-1.
+ * whose favoured face is rolled at run start (50/50 Heads/Tails each, one
+ * rng draw per Weight coin). Ids 0..size-1.
  */
-export function buildCollection(): Deck {
+export function buildCollection(rng: Rng): Deck {
   const plain = Array.from(
     { length: BASE_DECK_SIZE - STARTER_WEIGHT_COINS },
     (_, i): Coin => ({ id: i, effects: [] }),
   )
   const weight = Array.from({ length: STARTER_WEIGHT_COINS }, (_, i): Coin => ({
     id: BASE_DECK_SIZE - STARTER_WEIGHT_COINS + i,
-    effects: [{ kind: 'weight', favored: 'H' }],
+    effects: [{ kind: 'weight', favored: rng.next() < 0.5 ? 'H' : 'T' }],
   }))
   return { drawPile: [...plain, ...weight], discardPile: [] }
 }
