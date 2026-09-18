@@ -38,8 +38,12 @@ export const HAND_SIZE_PRICE = 10
 export const HAND_SIZE_CAP = 10
 /** The number of offers in a shop (M9.1). */
 export const SHOP_SLOTS = 5
-/** Free rerolls per shop (M9.2 — the reroll is free, once). */
-export const FREE_REROLLS = 1
+/** 13a.15: unlimited rerolls — the next reroll costs $1 more than the
+ *  previous one. The counter is per round: it persists across the shops of
+ *  a round (small → big → boss) and resets after a boss blind. */
+export function rerollCost(rerollsUsed: number): number {
+  return rerollsUsed + 1
+}
 /** Forge (13a.14): the cost to merge two coins into one. */
 export const FORGE_COST = 1
 /** Recycler (13a.14): sell price per coin effect (a plain coin sells for the $1 minimum). */

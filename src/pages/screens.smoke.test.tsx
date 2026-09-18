@@ -56,7 +56,7 @@ describe('M12.11 — screen smoke tests (render from valid RunState without thro
 
   it('shop renders from the shop phase with offers', () => {
     useRunStore.getState().startRun('smoke-shop')
-    useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS, rerollUsed: false } })
+    useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS } })
     const { container } = render(<ShopScreen />)
     expect(container.querySelector('.shop-title')?.textContent).toBe('Shop')
     expect(container.querySelectorAll('.offer-card')).toHaveLength(5)

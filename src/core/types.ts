@@ -78,7 +78,8 @@ export interface RunState {
   earlyClearBonus: number    // 13a.4: $ paid for unused hands on the last blind clear (0 on a full-budget clear)
   charms: CharmId[]          // owned charms, in charm-bar (scoring) order
   deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
-  shop: { offers: ShopOffer[]; rerollUsed: boolean }
+  shop: { offers: ShopOffer[] }
+  rerollCount: number        // 13a.15: rerolls used since the last boss blind (next reroll cost = rerollCount + 1)
   lastScore: Option<Score>   // for the UI ticker; none before the first hand is scored
   runScore: number           // total score across the run (summary)
   won: boolean               // set when blind 12 is cleared

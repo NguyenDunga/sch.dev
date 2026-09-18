@@ -5,7 +5,7 @@
 // hand budget loses, M10.8 full 12-blind walk.
 
 import { describe, expect, it } from 'vitest'
-import { BLINDS, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PAYDAY_BONUS, PLAY_SIZE, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { BLINDS, EARLY_CLEAR_BONUS_PER_HAND, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PAYDAY_BONUS, PLAY_SIZE, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
 import { SHOP_SLOTS } from '@/core/shop'
 import { filledSlot } from '@/core/helpers'
 import type { Face } from '@/core/types'
@@ -283,13 +283,13 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
     return store
   }
 
-  it('clearing on hand 2 of 4 ends the blind and pays +$2 for hands 3–4', () => {
+  it('clearing on hand 2 of 4 ends the blind and pays the early-clear bonus for hands 3–4', () => {
     const store = clearOnHand('m13a-4a', 2)
     const st = store.getState()
     expect(st.phase).toBe('shop')
     expect(st.handsLeft).toBe(HANDS_PER_BLIND - 2) // 2 unused hands
-    expect(st.earlyClearBonus).toBe(2) // +$1 × 2
-    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + 2) // 4 + 4 + 2
+    expect(st.earlyClearBonus).toBe(2 * EARLY_CLEAR_BONUS_PER_HAND) // 2 unused hands
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + 2 * EARLY_CLEAR_BONUS_PER_HAND)
   })
 
   it('clearing on the last hand pays no early-clear bonus', () => {
@@ -304,8 +304,8 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
   it('early-clear bonus stacks with the Payday charm reward', () => {
     const store = clearOnHand('m13a-4c', 2, ['payday'])
     const st = store.getState()
-    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + PAYDAY_BONUS + 2) // 4 + 4 + 5 + 2
-    expect(st.earlyClearBonus).toBe(2)
+    expect(st.cash).toBe(START_CASH + BLINDS[0].reward + PAYDAY_BONUS + 2 * EARLY_CLEAR_BONUS_PER_HAND)
+    expect(st.earlyClearBonus).toBe(2 * EARLY_CLEAR_BONUS_PER_HAND)
   })
 
   it('early clear on the final blind wins the run and pays the bonus', () => {
@@ -333,8 +333,8 @@ describe('13a.4 — early clear: leftover hands convert to money', () => {
     const st = store.getState()
     expect(st.phase).toBe('runEnd')
     expect(st.won).toBe(true)
-    expect(st.earlyClearBonus).toBe(2) // handsLeft 3 → 2 after the clearing hand
-    expect(st.cash).toBe(START_CASH + BLINDS[11].reward + HEAVY_TARGET_BONUS + 2)
+    expect(st.earlyClearBonus).toBe(2 * EARLY_CLEAR_BONUS_PER_HAND) // handsLeft 3 → 2 after the clearing hand
+    expect(st.cash).toBe(START_CASH + BLINDS[11].reward + HEAVY_TARGET_BONUS + 2 * EARLY_CLEAR_BONUS_PER_HAND)
   })
 
   it('missing the target still plays out the full hand budget (no early end)', () => {

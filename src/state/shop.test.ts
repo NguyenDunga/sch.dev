@@ -1,8 +1,8 @@
 // M9 — Shop (shopActions via runStore).
 //
-// M9.1 offer generation, M9.2 one free reroll, M9.3 buy a charm, M9.4 buy a
-// coin (favoured-face roll), 13a.14 sellCoin (Recycler), M9.7 hand-size
-// upgrade (cap).
+// M9.1 offer generation, 13a.15 unlimited rerolls (escalating, per-round),
+// M9.3 buy a charm, M9.4 buy a coin (favoured-face roll), 13a.14 sellCoin
+// (Recycler), M9.7 hand-size upgrade (cap).
 
 import { describe, expect, it } from 'vitest'
 import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/shop'
@@ -26,7 +26,7 @@ describe('M9.1 — shop offer generation', () => {
     const store = shopStore('m9-1')
     expect(store.getState().phase).toBe('shop')
     expect(store.getState().shop.offers).toHaveLength(SHOP_SLOTS)
-    expect(store.getState().shop.rerollUsed).toBe(false)
+    expect(store.getState().rerollCount).toBe(0)
   })
 
   it('no owned charm is ever offered', () => {
@@ -79,7 +79,7 @@ describe('M9.1 — shop offer generation', () => {
   })
 })
 
-describe('M9.2 — reroll (one free per shop)', () => {
+describe('M9.2 — reroll (13a.15: unlimited, $1 more each, per round)', () => {
   function shopStore(seed: string) {
     const store = createRunStore()
     store.getState().startRun(seed)
@@ -92,30 +92,69 @@ describe('M9.2 — reroll (one free per shop)', () => {
     return store
   }
 
-  it('reroll regenerates all 5 offers and sets rerollUsed', () => {
+  it('13a.15 reroll regenerates all 5 offers, charges $1, and bumps the counter', () => {
     const store = shopStore('m9-2')
-    const before = store.getState().shop
-    expect(before.rerollUsed).toBe(false)
+    const before = store.getState()
+    expect(before.rerollCount).toBe(0)
 
     store.getState().reroll()
-    const after = store.getState().shop
-    expect(after.rerollUsed).toBe(true)
-    expect(after.offers).toHaveLength(SHOP_SLOTS)
-    expect(after.offers).not.toEqual(before.offers) // regenerated, not kept
+    const after = store.getState()
+    expect(after.rerollCount).toBe(1)
+    expect(after.cash).toBe(before.cash - 1)
+    expect(after.shop.offers).toHaveLength(SHOP_SLOTS)
+    expect(after.shop.offers).not.toEqual(before.shop.offers) // regenerated, not kept
   })
 
-  it('9.8 the second reroll is a no-op (offers and rng state unchanged)', () => {
+  it('13a.15 each reroll costs $1 more than the previous one', () => {
     const store = shopStore('m9-2b')
+    const cash0 = store.getState().cash
     store.getState().reroll()
-    const once = store.getState()
-    const rngOnce = [...once.rngState]
-    const offersOnce = [...once.shop.offers]
-
+    expect(store.getState().cash).toBe(cash0 - 1) // 1st: $1
     store.getState().reroll()
-    const twice = store.getState()
-    expect(twice.shop.offers).toEqual(offersOnce)
-    expect(twice.rngState).toEqual(rngOnce) // no rng consumed
+    expect(store.getState().cash).toBe(cash0 - 3) // 2nd: $2
+    store.getState().reroll()
+    expect(store.getState().cash).toBe(cash0 - 6) // 3rd: $3
+    expect(store.getState().rerollCount).toBe(3)
   })
+
+  it('13a.15 a reroll is a no-op when broke (offers and rng unchanged)', () => {
+    const store = shopStore('m9-2b')
+    store.setState({ cash: 0 })
+    const before = store.getState()
+    store.getState().reroll()
+    expect(store.getState().shop.offers).toEqual(before.shop.offers)
+    expect(store.getState().rngState).toEqual(before.rngState) // no rng consumed
+    expect(store.getState().rerollCount).toBe(0)
+  })
+
+  it('13a.15 the counter persists across a round and resets after the boss blind', () => {
+    const store = shopStore('m9-2c') // the round-1 small's shop
+    store.getState().reroll()
+    store.getState().reroll()
+    expect(store.getState().rerollCount).toBe(2)
+
+    // Clear the big blind → its shop: the counter persists.
+    store.getState().leaveShop()
+    clearBlind(store)
+    expect(store.getState().phase).toBe('shop')
+    expect(store.getState().rerollCount).toBe(2)
+
+    // Clear the boss blind → the round-2 shop: the counter resets.
+    store.getState().leaveShop()
+    clearBlind(store)
+    expect(store.getState().phase).toBe('shop')
+    expect(store.getState().rerollCount).toBe(0)
+  })
+
+  /** Clears the current blind (real flow) → the next shop. */
+  function clearBlind(store: ReturnType<typeof createRunStore>) {
+    store.setState({ blindScore: 10_000, handsLeft: 1 })
+    store.getState().drawHand()
+    store.getState().pickCoin(0)
+    store.getState().confirmPlay()
+    store.getState().score()
+    store.getState().finishScore()
+  }
 
   it('reroll out of the shop phase is a no-op', () => {
     const store = shopStore('m9-2c')
@@ -141,7 +180,6 @@ describe('M9.3 — buy (charm) + rejections', () => {
           { kind: 'charm', charm: 'payday' },
           { kind: 'coin', effect: 'draw1' },
         ],
-        rerollUsed: false,
       },
     })
     return store
@@ -193,7 +231,7 @@ describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
     store.setState({
       phase: 'shop',
       cash: 20,
-      shop: { offers: [{ kind: 'coin', effect }], rerollUsed: false },
+      shop: { offers: [{ kind: 'coin', effect }] },
     })
     return store
   }
@@ -325,7 +363,7 @@ describe('M9.7 — hand-size upgrade', () => {
       phase: 'shop',
       handSize,
       cash,
-      shop: { offers: [{ kind: 'handSize' }], rerollUsed: false },
+      shop: { offers: [{ kind: 'handSize' }] },
     })
     return store
   }

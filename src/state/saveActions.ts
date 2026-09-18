@@ -67,6 +67,8 @@ export function resume(set: SetFn, rng: Rng): void {
     st.handSize = s.handSize
     st.runScore = s.runScore
     st.earlyClearBonus = s.earlyClearBonus
+    // 13a.15: per-round reroll counter (absent in pre-13a.15 saves → 0).
+    st.rerollCount = s.rerollCount ?? 0
     st.rngState = s.rngState
     // Reset: hand, play, handPhase, lastScore, current-blind progress.
     st.hand = emptyHand(st.handSize)
@@ -83,14 +85,12 @@ export function resume(set: SetFn, rng: Rng): void {
         blind.kind === 'boss' && blind.rule === 'shortFuse' ? SHORT_FUSE_HANDS : HANDS_PER_BLIND
       st.handsLeft = baseHands + (s.charms.includes('extraHand') ? 1 : 0)
       st.deck = shuffleCollection(rng, st.deck)
-      st.shop = { offers: [], rerollUsed: false }
+      st.shop = { offers: [] }
     } else {
       // Shop: offers regenerated identically from the restored rngState
-      // (deterministic in rngState + charms + handSize); rerollUsed preserved.
-      st.shop = {
-        offers: generateOffers(rng, s.charms, s.handSize),
-        rerollUsed: s.shop.rerollUsed,
-      }
+      // (deterministic in rngState + charms + handSize); the reroll price
+      // counter is restored with the rest of the state.
+      st.shop = { offers: generateOffers(rng, s.charms, s.handSize) }
     }
     st.rngState = rng.state()
   })

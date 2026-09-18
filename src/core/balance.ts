@@ -11,7 +11,9 @@ export interface BossRule {
   description: string
 }
 
-const DIFFICULTY = 3;
+/** Global difficulty multiplier (beta v0.1.1): scales cash rewards, bonuses,
+ *  and payouts (blind targets and tier chips/mults are unscaled). */
+export const DIFFICULTY = 3;
 
 export const HANDS_PER_BLIND = 4
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
@@ -57,7 +59,7 @@ export const BOSS_RULES: BossRule[] = [
   { id: 'noAlternating', name: 'No Alternating', description: 'Alternating hands score 0' },
   { id: 'shortFuse', name: 'Short Fuse', description: '3 hands instead of 4' },
   { id: 'noJackpots', name: 'No Jackpots', description: '5-same hands score as 4-same' },
-  { id: 'heavyTarget', name: 'Heavy Target', description: `Target ×1.5, +\$${HEAVY_TARGET_BONUS} bonus reward` },
+  { id: 'heavyTarget', name: 'Heavy Target', description: `Target ×1.5, +$${HEAVY_TARGET_BONUS} bonus reward` },
 ]
 
 export const TIERS: Tier[] = [

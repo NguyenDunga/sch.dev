@@ -64,9 +64,10 @@ function startRunDraft(st: Draft, rng: Rng, seed: string): void {
   st.blindScore = 0
   st.cash = START_CASH
   st.earlyClearBonus = 0
+  st.rerollCount = 0
   st.charms = []
   st.deck = shuffleCollection(rng, buildCollection())
-  st.shop = { offers: [], rerollUsed: false }
+  st.shop = { offers: [] }
   st.lastScore = none
   st.runScore = 0
   st.won = false

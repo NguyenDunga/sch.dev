@@ -38,7 +38,7 @@ afterEach(() => {
 /** A store in the shop phase with the fixed offers. */
 function shopState(): void {
   useRunStore.getState().startRun('13a14')
-  useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS, rerollUsed: false } })
+  useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS } })
 }
 
 describe('13a.14 — shop areas (draft)', () => {
@@ -226,14 +226,22 @@ describe('13a.14 — shop areas (draft)', () => {
     ).toBeTruthy()
   })
 
-  it('Reroll is labeled "free, once" and reads "Rerolled" after use', () => {
+  it('Reroll shows its escalating price and gets pricier after use', () => {
     shopState()
     render(<ShopScreen />)
-    const reroll = screen.getByRole('button', { name: /reroll \(free, once\)/i })
+    const reroll = screen.getByRole('button', { name: /reroll \(\$1\)/i })
     fireEvent.click(reroll)
-    expect(useRunStore.getState().shop.rerollUsed).toBe(true)
-    const rerolled = screen.getByRole('button', { name: /rerolled/i })
-    expect(rerolled.hasAttribute('disabled')).toBe(true)
+    expect(useRunStore.getState().rerollCount).toBe(1)
+    const pricier = screen.getByRole('button', { name: /reroll \(\$2\)/i })
+    expect(pricier.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('Reroll is disabled when broke', () => {
+    shopState()
+    useRunStore.setState({ cash: 0 })
+    render(<ShopScreen />)
+    const reroll = screen.getByRole('button', { name: /reroll \(\$1\)/i })
+    expect(reroll.hasAttribute('disabled')).toBe(true)
   })
 
   it('Leave nudges when cash is unspent (and is quiet at $0)', () => {

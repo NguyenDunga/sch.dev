@@ -71,7 +71,7 @@ export interface RunActions {
   sellCoin: (id: number) => void
   /** run/shop: reorder the charms — array order is the charm-bar (scoring) order. */
   moveCharm: (from: number, to: number) => void
-  /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
+  /** shop: 13a.15 unlimited reroll — costs $1 more than the previous reroll this round; regenerate all offers (rng). */
   reroll: () => void
   /** run/shop: manual save — serialize { version: 3, state } to localStorage (explicit only, no autosave). */
   save: () => void
@@ -113,7 +113,8 @@ function initialState(): RunState {
     earlyClearBonus: 0,
     charms: [],
     deck: { drawPile: [], discardPile: [] },
-    shop: { offers: [], rerollUsed: false },
+    shop: { offers: [] },
+    rerollCount: 0,
     lastScore: none,
     runScore: 0,
     won: false,

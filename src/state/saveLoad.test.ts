@@ -196,15 +196,17 @@ describe('M11.4 — resume in shop: offers regenerated from rngState', () => {
     expect(c.getState().shop.offers).toEqual(st.shop.offers)
   })
 
-  it('preserves rerollUsed across resume', () => {
+  it('preserves the reroll price counter across resume (13a.15)', () => {
     saveInShop('m11-4b', true)
     const b = createRunStore()
     b.getState().resume()
-    expect(b.getState().shop.rerollUsed).toBe(true)
-    // and the (now spent) reroll stays spent after resume
+    expect(b.getState().rerollCount).toBe(1)
+    // and the next reroll costs the escalated price ($2)
+    const cash = b.getState().cash
     const offers = b.getState().shop.offers
     b.getState().reroll()
-    expect(b.getState().shop.offers).toEqual(offers)
+    expect(b.getState().cash).toBe(cash - 2)
+    expect(b.getState().shop.offers).not.toEqual(offers)
   })
 })
 
@@ -314,7 +316,7 @@ describe('Coverage — remaining edges (100% gate)', () => {
     store.setState({
       phase: 'shop',
       cash: 20,
-      shop: { offers: [{ kind: 'coin', effect }], rerollUsed: false },
+      shop: { offers: [{ kind: 'coin', effect }] },
     })
     return store
   }

@@ -18,6 +18,7 @@ import {
   HAND_SIZE_CAP,
   HAND_SIZE_PRICE,
   recyclePrice,
+  rerollCost,
   SHOP_SLOTS,
 } from '@/core/shop'
 import { forgeCoin } from '@/core/forge'
@@ -31,13 +32,16 @@ import type { Draft } from './storeTypes'
 
 /**
  * M10.2: blind cleared (not the last one) → the shop: phase 'shop' with a
- * fresh set of offers and the free reroll unused again. Called from
- * handActions.endBlind — the run flow only decides *that* the blind is
- * cleared; the shop entry itself lives here.
+ * fresh set of offers. The reroll price counter (13a.15) resets here only
+ * after a boss blind. Called from handActions.endBlind — the run flow only
+ * decides *that* the blind is cleared; the shop entry itself lives here.
  */
 export function enterShopDraft(st: Draft, rng: Rng): void {
   st.phase = 'shop'
-  st.shop = { offers: generateOffers(rng, st.charms, st.handSize), rerollUsed: false }
+  // 13a.15: the reroll price counter resets after a boss blind (a new round
+  // starts) — it persists across the shops of a round.
+  if (st.blindIndex % 3 === 2) st.rerollCount = 0
+  st.shop = { offers: generateOffers(rng, st.charms, st.handSize) }
 }
 
 /**
@@ -125,10 +129,15 @@ export function moveCharmDraft(st: Draft, from: number, to: number): void {
   st.charms = charms
 }
 
+/** 13a.15: unlimited rerolls — each one costs $1 more than the previous
+ *  (rerollCost over the per-round counter). Broke → no-op. */
 export function rerollDraft(st: Draft, rng: Rng): void {
-  if (st.phase !== 'shop' || st.shop.rerollUsed) return
+  if (st.phase !== 'shop') return
+  const cost = rerollCost(st.rerollCount)
+  if (st.cash < cost) return // broke — reject
+  st.cash -= cost
+  st.rerollCount += 1
   st.shop.offers = generateOffers(rng, st.charms, st.handSize)
-  st.shop.rerollUsed = true
   st.rngState = rng.state()
 }
 
@@ -195,7 +204,7 @@ export function leaveShopDraft(st: Draft, rng: Rng): void {
   // Whole collection (draw + discard + kept hand coins) → shuffled draw pile;
   // discard cleared.
   st.deck = shuffleCollection(rng, { drawPile: [...st.deck.drawPile, ...inHand], discardPile: st.deck.discardPile })
-  st.shop = { offers: [], rerollUsed: false }
+  st.shop = { offers: [] }
   st.rngState = rng.state()
   st.phase = 'run'
   st.handPhase = 'draw'

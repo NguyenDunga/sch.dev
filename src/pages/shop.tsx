@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { useRunStore } from '@/state/runStore'
 import { BLINDS, HEAVY_TARGET_BONUS, PAYDAY_BONUS } from '@/core/balance'
+import { rerollCost } from '@/core/shop'
 import { Coin as CoinVisual } from '@/components/hand/coin'
 import { ShopTabs } from '@/components/shop/tabs/shop-tabs'
 import type { ShopTab } from '@/components/shop/tabs/shop-tabs'
@@ -70,13 +71,15 @@ function RewardLine() {
   )
 }
 
-/** 13a.8: fixed primary actions — Reroll (free, once) + Leave (nudges when
- *  cash is unspent; it carries over to the next blind). */
+/** 13a.8: fixed primary actions — Reroll (13a.15: unlimited, $1 more each
+ *  time, per-round counter) + Leave (nudges when cash is unspent; it carries
+ *  over to the next blind). */
 function ShopFooter() {
   const cash = useRunStore((s) => s.cash)
-  const rerollUsed = useRunStore((s) => s.shop.rerollUsed)
+  const rerollCount = useRunStore((s) => s.rerollCount)
   const reroll = useRunStore((s) => s.reroll)
   const leaveShop = useRunStore((s) => s.leaveShop)
+  const cost = rerollCost(rerollCount)
 
   return (
     <footer className="shop-footer">
@@ -86,8 +89,8 @@ function ShopFooter() {
         </p>
       )}
       <div className="shop-footer-actions">
-        <Button variant="outline" size="lg" disabled={rerollUsed} sfx="reroll" onClick={reroll}>
-          {rerollUsed ? 'Rerolled' : 'Reroll (free, once)'}
+        <Button variant="outline" size="lg" disabled={cash < cost} sfx="reroll" onClick={reroll}>
+          Reroll (${cost})
         </Button>
         <Button size="xl" pulse onClick={leaveShop}>
           Leave
