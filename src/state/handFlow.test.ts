@@ -5,7 +5,7 @@
 // observed transition is the next step of the cycle.
 
 import { describe, expect, it } from 'vitest'
-import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
 import { none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
@@ -144,7 +144,7 @@ describe('M4.2 — drawHand', () => {
     expect(st.deck.drawPile).toHaveLength(0)
   })
 
-  it('an empty pile at hand start auto-skips the hand (no score, handsLeft −1, stays in draw)', () => {
+  it('an empty pile at hand start with an empty hand ends the blind (target missed → runEnd)', () => {
     const store = createRunStore()
     store.getState().startRun('m4-2d')
     store.setState({ deck: { drawPile: [], discardPile: [] } })
@@ -152,10 +152,28 @@ describe('M4.2 — drawHand', () => {
     store.getState().drawHand()
     const st = store.getState()
 
-    expect(st.handPhase).toBe('draw') // auto-skipped: no play phase, back to draw
+    // Nothing left to draw and nothing left to play — the blind ends instead
+    // of looping the draw phase: target missed → loss.
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
     expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
     expect(st.handsLeft).toBe(HANDS_PER_BLIND - 1)
     expect(st.blindScore).toBe(0)
+  })
+
+  it('an empty pile at hand start with the target met ends the blind as a win (shop)', () => {
+    const store = createRunStore()
+    store.getState().startRun('m4-2d2')
+    store.setState({
+      deck: { drawPile: [], discardPile: [] },
+      blindScore: BLINDS[0].target,
+    })
+
+    store.getState().drawHand()
+    const st = store.getState()
+
+    expect(st.phase).toBe('shop')
+    expect(st.won).toBe(false) // the run continues — only the blind is won
   })
 
   it('auto-skip on the last hand ends the blind (target missed → runEnd)', () => {

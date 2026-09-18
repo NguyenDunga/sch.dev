@@ -94,8 +94,18 @@ export function drawHandDraft(st: Draft, rng: Rng): void {
     st.deck.drawPile = st.deck.drawPile.slice(1)
   }
   if (!st.hand.some(isFilled)) {
-    // Empty pile at hand start: auto-skip the hand (no score), handsLeft −1,
-    // back to draw (design decision 2026-09-14 — the SDD was silent here).
+    if (st.deck.drawPile.length === 0) {
+      // Hand empty AND draw pile empty: nothing left to draw and nothing
+      // left to play — no further hand can ever be dealt. End the blind now
+      // (win if the target is met, lose otherwise) instead of looping the
+      // draw phase forever.
+      st.handsLeft -= 1
+      endBlind(st, rng)
+      return
+    }
+    // Empty hand but the pile still has coins: auto-skip the hand (no
+    // score), handsLeft −1, back to draw (design decision 2026-09-14 — the
+    // SDD was silent here).
     st.handsLeft -= 1
     if (st.handsLeft <= 0) endBlind(st, rng)
     return
