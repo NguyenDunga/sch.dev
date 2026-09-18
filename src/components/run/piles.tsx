@@ -19,9 +19,9 @@ export function Deck() {
   return (
     <div className="deck" role="img" aria-label={`Draw pile, ${count} coins`}>
       <div className="deck-stack" aria-hidden>
-        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--2" />
-        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--1" />
-        <Coin face={undefined} effects={[]} size={44} className="deck-disc deck-disc--top" />
+        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--2" />
+        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--1" />
+        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--top" />
       </div>
       <span className="pile-count">{count}</span>
     </div>

@@ -50,13 +50,13 @@
 }
 
 /* Empty hand slot placeholder: its box is EXACTLY the hand-coin button's
-   box (64px, border-box, same flex shrink) and the dashed circle is drawn
-   4px inside it — the coin's own footprint. Filled and empty slots are the
-   same size and shrink identically, so picking/dealing a coin never changes
-   the row's dimensions. */
+   box (the xl coin's clamp + the button's 0.5rem padding, border-box, same
+   flex shrink) and the dashed circle is drawn 4px inside it — the coin's own
+   footprint. Filled and empty slots are the same size and shrink identically,
+   so picking/dealing a coin never changes the row's dimensions. */
 .hand-slot--empty {
   position: relative;
-  width: 4rem;
+  width: clamp(5rem, 9vw + 0.5rem, 6.5rem);
   aspect-ratio: 1;
 }
 

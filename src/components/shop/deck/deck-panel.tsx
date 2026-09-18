@@ -28,7 +28,7 @@ export function DeckPanel({ coins, onClose }: DeckPanelProps) {
         <ul className="deck-list">
           {coins.map((coin) => (
             <li key={coin.id} className="deck-item">
-              <CoinVisual face={undefined} effects={coin.effects} size={56} />
+              <CoinVisual face={undefined} effects={coin.effects} size="md" />
             </li>
           ))}
         </ul>

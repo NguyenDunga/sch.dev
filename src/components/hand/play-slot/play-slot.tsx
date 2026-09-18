@@ -113,7 +113,7 @@ export function PlaySlot({
       {...dragProps}
       aria-label={`slot ${index + 1}, unpick`}
     >
-      <Coin face={undefined} effects={coin.effects} size={72} predisplayFace={predisplayFace} />
+      <Coin face={undefined} effects={coin.effects} size="xl" predisplayFace={predisplayFace} />
     </motion.button>
   )
 }

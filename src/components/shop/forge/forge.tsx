@@ -71,7 +71,7 @@ export function Forge({ coins }: ForgeProps) {
           <span className="forge-slot-label">Result</span>
           <span className="forge-slot-disc">
             {outcome ? (
-              <CoinVisual face={undefined} effects={outcome.effects} size={56} />
+              <CoinVisual face={undefined} effects={outcome.effects} size="xl" />
             ) : (
               <span className="forge-slot-empty">—</span>
             )}
@@ -98,7 +98,7 @@ export function Forge({ coins }: ForgeProps) {
               aria-label={`Coin with ${coin.effects.length} effect${coin.effects.length === 1 ? '' : 's'}`}
               onClick={() => pick(coin.id)}
             >
-              <CoinVisual face={undefined} effects={coin.effects} size={40} />
+              <CoinVisual face={undefined} effects={coin.effects} size="sm" />
             </button>
           )
         })}
@@ -138,7 +138,7 @@ function ForgeSlot({ label, coin, onClear }: ForgeSlotProps) {
           onClick={onClear}
         >
           <span className="forge-slot-disc">
-            <CoinVisual face={undefined} effects={coin.effects} size={56} />
+            <CoinVisual face={undefined} effects={coin.effects} size="xl" />
           </span>
         </button>
       ) : (

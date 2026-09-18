@@ -100,7 +100,7 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
         dealIndex={dealIndex}
         shaking={shaking}
         shakeKey={shakeKey}
-        size={56}
+        size="md"
       />
     </motion.button>
   )

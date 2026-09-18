@@ -39,7 +39,7 @@ function ShopHeader({
         aria-expanded={deckOpen}
         onClick={onToggleDeck}
       >
-        <CoinVisual face={undefined} effects={[]} size={28} />
+        <CoinVisual face={undefined} effects={[]} size="xs" />
       </button>
       <h1 className="shop-title">Shop</h1>
       <span className="shop-cash">${cash}</span>

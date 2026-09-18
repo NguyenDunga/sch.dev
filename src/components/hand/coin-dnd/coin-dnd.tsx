@@ -65,7 +65,7 @@ export function CoinDnd({ hand, onDropToPlay, onDropToDiscard, onMovePlay, child
 export function CoinDragOverlay({ coin }: { coin: Coin }) {
   return (
     <div className="coin-drag-overlay" aria-hidden>
-      <CoinVisual face={undefined} effects={coin.effects} size={56} />
+      <CoinVisual face={undefined} effects={coin.effects} size="md" />
     </div>
   )
 }

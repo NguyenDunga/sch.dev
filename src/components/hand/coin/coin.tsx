@@ -20,6 +20,7 @@ import { CoinShell } from './coin-shell'
 import { CoinGlyph } from './coin-glyph/coin-glyph'
 import { CoinMotion } from './coin-motion'
 import { resolveCoinFace } from './resolver/resolver'
+import { useCoinSize, type CoinSize } from './coin-size'
 import type { CoinEventHooks } from './coin-events'
 
 export interface CoinProps {
@@ -37,8 +38,11 @@ export interface CoinProps {
   shakeKey?: number
   /** Event hooks (onMount, onToss, etc.). */
   events?: CoinEventHooks
-  /** Size in px (default 56). */
-  size?: number
+  /**
+   * Size: a named size from the COIN_SIZES scale (xs → xl; auto-adjusts to
+   * the viewport, 13a.16) or a raw px override (the debug page). Default 'md'.
+   */
+  size?: CoinSize | number
   /** Additional CSS classes. */
   className?: string
   /**
@@ -56,10 +60,16 @@ export function Coin({
   shaking = false,
   shakeKey = 0,
   events,
-  size = 56,
+  size = 'md',
   className,
   predisplayFace,
 }: CoinProps) {
+  // Named sizes resolve live (viewport clamp); raw px pass through (debug).
+  // The hook is always called (rules of hooks) — with a fallback when a raw
+  // px size is passed (its result is just unused).
+  const namedSize: CoinSize = typeof size === 'number' ? 'md' : size
+  const namedPx = useCoinSize(namedSize)
+  const px = typeof size === 'number' ? size : namedPx
   // Resolve the visual state for the current face (face-down included).
   const resolved = resolveCoinFace({ face, effects, predisplayFace })
 
@@ -82,13 +92,13 @@ export function Coin({
           border={resolved.border || undefined}
           glow={resolved.glow || undefined}
           customClasses={shellClasses}
-          size={size}
+          size={px}
         >
           {/* Glyph (centered on the shell) — the RadialReveal is sized to the
            *  face fill (size - 14: the shell's 8px inner ring + 6px face inset)
            *  so the sticker border stays visible around it. */}
           <div className="coin-glyph-layer">
-            <CoinGlyph face={face} effects={effects} size={size - 14} />
+            <CoinGlyph face={face} effects={effects} size={px - 14} />
           </div>
         </CoinShell>
       </CoinMotion>

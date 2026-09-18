@@ -29,8 +29,8 @@
 .toss-coin-flip {
   position: relative;
   z-index: 1;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 6rem;
+  height: 6rem;
   transform-style: preserve-3d;
 }
 
@@ -52,6 +52,6 @@
 /* Reduced-motion fallback: a flat 2D coin (the cross-fade is driven by
  * framer in the component; the coin itself is the new-system `.coin`). */
 .toss-coin--2d .coin {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 6rem;
+  height: 6rem;
 }

@@ -23,3 +23,36 @@ export function ringBackground(items: RadialRevealItem[], gap: number): string {
     })
     .join(', ')})`
 }
+
+/** The SVG path for a ring wedge (annular sector) from start to end (deg,
+ *  0 = up, clockwise), between rInner and rOuter around center c.
+ *
+ *  A full 360° span (a single wedge — e.g. a 2-effect coin, whose one
+ *  non-top effect takes the whole ring) is special-cased: an SVG arc from a
+ *  point to itself is degenerate (zero area), so the donut is built from two
+ *  180° arcs per circle (outer clockwise, inner counter-clockwise — the
+ *  nonzero fill rule keeps only the ring between them). */
+export function wedgePath(c: number, rOuter: number, rInner: number, start: number, end: number): string {
+  const span = end - start
+  if (span >= 360) {
+    const o1 = polarToCartesian(c, c, rOuter, start)
+    const o2 = polarToCartesian(c, c, rOuter, start + 180)
+    const i1 = polarToCartesian(c, c, rInner, start)
+    const i2 = polarToCartesian(c, c, rInner, start + 180)
+    return [
+      `M ${o1.x} ${o1.y}`,
+      `A ${rOuter} ${rOuter} 0 1 1 ${o2.x} ${o2.y}`,
+      `A ${rOuter} ${rOuter} 0 1 1 ${o1.x} ${o1.y}`,
+      `L ${i1.x} ${i1.y}`,
+      `A ${rInner} ${rInner} 0 1 0 ${i2.x} ${i2.y}`,
+      `A ${rInner} ${rInner} 0 1 0 ${i1.x} ${i1.y}`,
+      'Z',
+    ].join(' ')
+  }
+  const p1 = polarToCartesian(c, c, rOuter, start)
+  const p2 = polarToCartesian(c, c, rOuter, end)
+  const p3 = polarToCartesian(c, c, rInner, end)
+  const p4 = polarToCartesian(c, c, rInner, start)
+  const large = span > 180 ? 1 : 0
+  return `M ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rInner} ${rInner} 0 ${large} 0 ${p4.x} ${p4.y} Z`
+}

@@ -15,14 +15,10 @@ import { useAnimate } from 'framer-motion'
 import type { CoinEffect, Face } from '@/core/types'
 import { ECHO, EASING, SPRING, TOSS } from '@/lib/motion'
 import { CoinGlyph, CoinShell, resolveCoinFace } from '../coin'
+import { useCoinSize } from '../coin/coin-size'
 import { settleRotation } from './toss'
 import { emitBurst } from '@/components/juice/particles'
 import { playSfx } from '@/components/juice/sfx'
-
-/** The coin size (the 3D disc diameter, px). */
-const COIN_SIZE = 72
-/** The glyph diameter (the face fill: shell 8px ring + 6px face inset). */
-const GLYPH_SIZE = COIN_SIZE - 14
 
 /** Full toss: two spins. Quick re-flip (Echo): one spin. */
 const FULL_SPINS = 2
@@ -35,7 +31,7 @@ const ECHO_APEX = -32
 /** One 3D face of the toss disc: the new coin's shell + glyph, resolved for
  *  that face (the resolver applies the effect modifiers — color, border,
  *  glow, custom classes — exactly like the flat coin). */
-function TossFace({ face, effects }: { face: Face; effects: CoinEffect[] }) {
+function TossFace({ face, effects, size }: { face: Face; effects: CoinEffect[]; size: number }) {
   const resolved = resolveCoinFace({ face, effects })
   return (
     <div className={`toss-face toss-face--${face === 'H' ? 'heads' : 'tails'}`}>
@@ -44,10 +40,10 @@ function TossFace({ face, effects }: { face: Face; effects: CoinEffect[] }) {
         border={resolved.border || undefined}
         glow={resolved.glow || undefined}
         customClasses={resolved.customClasses}
-        size={COIN_SIZE}
+        size={size}
       >
         <div className="coin-glyph-layer">
-          <CoinGlyph face={face} effects={effects} size={GLYPH_SIZE} />
+          <CoinGlyph face={face} effects={effects} size={size - 14} />
         </div>
       </CoinShell>
     </div>
@@ -86,6 +82,8 @@ export function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps)
   const flipRef = useRef<HTMLDivElement>(null)
   const discRef = useRef<HTMLDivElement>(null)
   const [, animate] = useAnimate()
+  // 13a.16: the toss disc is the xl coin size (auto-adjusts to the viewport).
+  const coinSize = useCoinSize('xl')
   const rise = quick ? ECHO.rise : TOSS.rise
   const tumble = quick ? ECHO.tumble : TOSS.tumble
   const apex = quick ? ECHO_APEX : TOSS_APEX
@@ -129,8 +127,8 @@ export function FlipCoin({ face, index, effects, quick, onLand }: FlipCoinProps)
       <div ref={flipRef} className="toss-coin-flip" style={{ transformStyle: 'preserve-3d' }} role="img" aria-label={label}>
         {/* Each face carries the new coin's shell + RadialReveal glyph for
          *  its face stage (H front, T back). */}
-        <TossFace face="H" effects={effects} />
-        <TossFace face="T" effects={effects} />
+        <TossFace face="H" effects={effects} size={coinSize} />
+        <TossFace face="T" effects={effects} size={coinSize} />
       </div>
     </div>
   )

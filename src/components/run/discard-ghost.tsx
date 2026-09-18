@@ -38,7 +38,7 @@ function Ghost({ ghost, onDone }: { ghost: DiscardGhost; onDone: (key: number) =
       transition={transition as unknown as Transition}
       onAnimationComplete={() => onDone(ghost.key)}
     >
-      <Coin face={undefined} effects={ghost.coin.effects} size={56} />
+      <Coin face={undefined} effects={ghost.coin.effects} size="xl" />
     </motion.div>
   )
 }

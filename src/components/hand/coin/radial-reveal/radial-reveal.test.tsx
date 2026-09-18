@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RadialReveal } from './radial-reveal'
+import { wedgePath } from './radial-reveal-geometry'
 import { FaDumbbell, FaBolt } from 'react-icons/fa6'
 import { withIcon } from '@/components/ui/icon'
 
@@ -181,5 +182,33 @@ describe('RadialReveal (M19)', () => {
     expect(document.querySelector('.radial-reveal-hits path')).toBeNull()
     // The default icon is visible.
     expect(document.querySelector('.radial-reveal-default svg')).toBeTruthy()
+  })
+
+  it('a single wedge (a 2-effect coin) gets a full donut hit area, not a degenerate arc', () => {
+    // A full 360° span: an SVG arc from a point to itself is degenerate
+    // (zero area — the wedge was visible but unhoverable, so the radial
+    // reveal never fired on 2-effect coins). The donut is two 180° arcs per
+    // circle: outer clockwise, inner counter-clockwise.
+    const d = wedgePath(50, 50, 38, 0, 360)
+    expect(d.match(/A 50 50 0 1 1/g)).toHaveLength(2)
+    expect(d.match(/A 38 38 0 1 0/g)).toHaveLength(2)
+  })
+
+  it('radially wipes in the hovered item with a single wedge (2-effect coin)', () => {
+    render(
+      <RadialReveal
+        items={[{ color: '#1d90d6', icon: Bolt, label: 'Spark' }]}
+        defaultIcon={Dumbbell}
+        defaultColor="#c07a10"
+        defaultLabel="Weight"
+        size={100}
+      />,
+    )
+    const path = document.querySelector('.radial-reveal-hits path')
+    expect(path).toBeTruthy()
+    fireEvent.mouseEnter(path!)
+    const reveal = document.querySelector('.radial-reveal-reveal')
+    expect(reveal).toBeTruthy()
+    expect(reveal!.querySelector('svg')).toBeTruthy()
   })
 })

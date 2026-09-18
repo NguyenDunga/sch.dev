@@ -69,7 +69,7 @@ export function Recycler({ coins }: RecyclerProps) {
           {sorted.map((coin) => (
             <li key={coin.id} className="recycler-row">
               <span className="recycler-disc">
-                <CoinVisual face={undefined} effects={coin.effects} size={40} />
+                <CoinVisual face={undefined} effects={coin.effects} size="sm" />
               </span>
               <span className="recycler-effects">
                 {coin.effects.length === 0
