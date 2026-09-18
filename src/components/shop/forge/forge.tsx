@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { useRunStore } from '@/state/runStore'
 import { FORGE_COST } from '@/core/shop'
-import { forgeCoin, forgeRuleLabel } from '@/core/forge'
+import { forgeCoin, forgeRuleLabel } from '@/core/collection'
 import type { Coin } from '@/core/types'
 import { Coin as CoinVisual } from '@/components/hand/coin'
 import { Button } from '@/components/ui/button'

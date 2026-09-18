@@ -25,7 +25,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { readFileSync } from 'node:fs'
 import { useRunStore } from '@/state/runStore'
 import { makeLocalStorage } from '@/state/testHelpers'
-import { COIN_SIZES } from '@/components/hand/coin/coin-size'
+import { COIN_SIZES } from '@/components/hand/coin/visual/coin-size'
 import { RunScreen } from './run'
 import { ghostMotionProps, type Rect } from '@/components/run/discard-ghost'
 
@@ -187,7 +187,7 @@ describe('13a.12 — hit targets ≥44px (UX §3)', () => {
 
   it('coins, slots, and controls are all ≥ 2.75rem (44px)', () => {
     const coin = 'src/components/hand/play-slot/play-slot.css'
-    const run = 'src/style/run.css'
+    const run = 'src/style/screens/run.css'
     // 13a.16: the coin is sized by the COIN_SIZES scale (coin-size.ts) — the
     // play-scene sizes (md and up) must stay ≥44px (the UX §3 minimum; the xs
     // size is the shop header icon, not a play-scene hit target).

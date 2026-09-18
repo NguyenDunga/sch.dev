@@ -23,8 +23,8 @@
 // the ring sits inside the shell).
 
 import type { CoinEffect, Face } from '@/core/types'
-import { FACE_ICONS, FACE_DOWN_ICON } from './face-icons'
-import { EFFECT_FACE_CONFIGS, EFFECT_ICONS, WEIGHT_FACEDOWN } from './effect-icons'
+import { FACE_ICONS, FACE_DOWN_ICON } from './icons/face-icons'
+import { EFFECT_FACE_CONFIGS, EFFECT_ICONS, WEIGHT_FACEDOWN } from './icons/effect-icons'
 import { RadialReveal, type RadialRevealItem } from '../radial-reveal'
 import { highestPriorityEffect } from '../resolver/resolver'
 import { priorityStrength, priorityTint } from './priority-tint'

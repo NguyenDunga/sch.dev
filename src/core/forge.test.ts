@@ -6,7 +6,7 @@
 // first in table order); unmatched effects carry over.
 
 import { describe, expect, it } from 'vitest'
-import { effectName, forgeCoin, forgeRuleLabel, FORGE_RULES } from './forge'
+import { effectName, forgeCoin, forgeRuleLabel, FORGE_RULES } from './collection'
 import type { Coin, CoinEffect } from './types'
 
 const coin = (effects: CoinEffect[]): Coin => ({ id: 1, effects })

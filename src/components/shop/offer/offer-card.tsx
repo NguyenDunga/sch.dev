@@ -9,7 +9,7 @@ import type { ShopOffer, CoinEffectKind } from '@/core/types'
 import { Button } from '@/components/ui/button'
 import { ACTION_ICONS } from '@/components/run/action-icons'
 import { CHARM_ICONS } from '@/components/charm-bar/charm-icons'
-import { EFFECT_ICONS } from '@/components/hand/coin/coin-glyph/effect-icons'
+import { EFFECT_ICONS } from '@/components/hand/coin/coin-glyph/icons/effect-icons'
 import { CHARM_DESCRIPTIONS, COIN_DESCRIPTIONS } from './descriptions'
 
 interface OfferCardProps {

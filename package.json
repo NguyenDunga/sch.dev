@@ -19,7 +19,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-structure.mjs",
+    "check:structure": "node scripts/check-structure.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "qwen": "cross-env HTTPS_PROXY=http://proxybsh.bkav.com:3128 NODE_USE_ENV_PROXY=1 qwen"

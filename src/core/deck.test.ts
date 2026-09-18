@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCollection, discardToPile, drawFromDeck, shuffleCollection } from './deck'
+import { buildCollection, discardToPile, drawFromDeck, shuffleCollection } from './collection'
 import { BASE_DECK_SIZE, STARTER_WEIGHT_COINS } from './balance'
 import { createRng, type Rng } from './rng'
 import { isSome, none, some } from './helpers'

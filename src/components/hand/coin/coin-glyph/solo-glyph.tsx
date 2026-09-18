@@ -1,7 +1,7 @@
 
 import type { ComponentType } from 'react'
 import type { IconProps } from '@/components/ui/icon'
-import { fitTextSize } from '../fit-text'
+import { fitTextSize } from '../visual/fit-text'
 
 
 

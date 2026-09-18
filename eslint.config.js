@@ -29,16 +29,20 @@ export default defineConfig([
   {
     // NASA practice: no function longer than 60 lines.
     // Applies to all .ts files in src; test files excluded.
+    // Project rule: no source file bigger than 150 LOC (tests/CSS excluded).
     files: ['src/**/*.ts'],
     ignores: ['**/*.test.ts'],
     rules: {
+      'max-lines': ['error', { max: 150 }],
       'max-lines-per-function': ['error', { max: 60 }],
     },
   },
   {
+    // Project rule: no source file bigger than 150 LOC (tests/CSS excluded).
     files: ['src/**/*.tsx'],
     ignores: ['**/*.test.tsx'],
     rules: {
+      'max-lines': ['error', { max: 150 }],
       'max-lines-per-function': ['error', { max: 120 }],
     },
   }

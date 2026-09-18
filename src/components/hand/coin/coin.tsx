@@ -16,11 +16,11 @@
 // handled by the parent (hand-coin, play-slot, etc.).
 
 import type { CoinEffect, Face } from '@/core/types'
-import { CoinShell } from './coin-shell'
+import { CoinShell } from './visual/coin-shell'
 import { CoinGlyph } from './coin-glyph/coin-glyph'
-import { CoinMotion } from './coin-motion'
+import { CoinMotion } from './visual/coin-motion'
 import { resolveCoinFace } from './resolver/resolver'
-import { useCoinSize, type CoinSize } from './coin-size'
+import { useCoinSize, type CoinSize } from './visual/coin-size'
 import type { CoinEventHooks } from './coin-events'
 
 export interface CoinProps {

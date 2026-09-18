@@ -6,12 +6,12 @@
 // functions (≤60 lines, NASA practice); the store wires them up.
 
 import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
-import { shuffleCollection } from '@/core/deck'
+import { shuffleCollection } from '@/core/collection'
 import { emptyHand, none, some } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { Coin, Option, RunState } from '@/core/types'
 import type { GetFn, SetFn } from './storeTypes'
-import { generateOffers } from './shopActions'
+import { generateOffers } from './shop'
 
 const SAVE_KEY = 'fifty-fifty-run'
 // v3 (m13a): the state gained `earlyClearBonus` (13a.4) — v2 saves are

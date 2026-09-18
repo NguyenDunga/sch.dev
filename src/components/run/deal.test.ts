@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyHand, filledSlot } from '@/core/helpers'
 import type { Hand, HandSlot } from '@/core/types'
-import { computeDealIndex, sameIds, type PrevSlots } from './deal'
+import { computeDealIndex, sameIds, type PrevSlots } from './piles/deal'
 
 const noPrev: PrevSlots = { hand: new Set(), play: new Set() }
 

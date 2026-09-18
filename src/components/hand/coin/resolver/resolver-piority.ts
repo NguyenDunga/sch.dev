@@ -1,7 +1,7 @@
 import type { CoinEffect } from '@/core/types'
 import type { Face } from '@/core/types'
 import type { CoinVisualModifier } from '../coin-types'
-import { FACEDOWN_HEAD_BACK, FACEDOWN_TAIL_BACK } from '../facedown-backs'
+import { FACEDOWN_HEAD_BACK, FACEDOWN_TAIL_BACK } from '../visual/facedown-backs'
 import { WEIGHT_META, resolveWeight } from '../effect-weight/weight-config'
 import { HEADS_META, resolveHeads } from '../effect-heads/heads-config'
 import { TAILS_META, resolveTails } from '../effect-tails/tails-config'

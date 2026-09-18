@@ -10,9 +10,9 @@ import { MenuScreen } from '@/pages/menu'
 import { RunScreen } from '@/pages/run'
 import { ShopScreen } from '@/pages/shop'
 import { RunEndScreen } from '@/pages/run-end'
-import { DebugCoinPage } from '@/pages/debug-coin'
-import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles.tsx'
-import { ScreenShake } from '@/components/juice/screen-shake.tsx'
+import { DebugCoinPage } from '@/pages/debug/coin'
+import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles'
+import { ScreenShake } from '@/components/juice/screen-shake-layer'
 
 const SCREENS = {
   menu: MenuScreen,

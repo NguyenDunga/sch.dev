@@ -6,9 +6,9 @@
 
 /* Design tokens + per-screen layouts */
 @import "./style/tokens.css";
-@import "./style/run.css";
-@import "./style/menu.css";
-@import "./style/run-end.css";
+@import "./style/screens/run.css";
+@import "./style/screens/menu.css";
+@import "./style/screens/run-end.css";
 
 /* Component-level styles (kept in their folders) */
 @import "./components/component.css";

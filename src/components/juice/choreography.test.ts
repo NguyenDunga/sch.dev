@@ -16,7 +16,7 @@ import {
   takeSnapshot,
   TIER_RANK,
   type SnapshotCoin,
-} from './choreography'
+} from './choreo/choreography'
 
 /** A plain coin (no effects) with the given id. */
 const coin = (id: number): Coin => ({ id, effects: [] })

@@ -7,7 +7,7 @@
 
 import type { CoinEffect, Face } from '@/core/types'
 import type { CoinVisualModifier, ResolvedCoinFace, ResolverInput } from '../coin-types'
-import { FACEDOWN_HEAD_BACK, FACEDOWN_TAIL_BACK } from '../facedown-backs'
+import { FACEDOWN_HEAD_BACK, FACEDOWN_TAIL_BACK } from '../visual/facedown-backs'
 import { effectToModifier, facedownBackFor, PRIORITY } from './resolver-piority'
 
 // ── Base face colors ─────────────────────────────────────────────────────────

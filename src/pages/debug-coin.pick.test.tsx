@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
-import { DebugCoinPage } from '@/pages/debug-coin'
+import { DebugCoinPage } from '@/pages/debug/coin'
 
 afterEach(cleanup)
 

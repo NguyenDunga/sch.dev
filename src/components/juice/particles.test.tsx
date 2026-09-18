@@ -20,8 +20,8 @@ import {
   emitConfetti,
   resolveColor,
   tierColor,
-} from './particles'
-import { BlindClearConfetti, ParticleLayer } from './particles.tsx'
+} from './particles/particles'
+import { BlindClearConfetti, ParticleLayer } from './particles/particle-layer'
 
 /** A 2D-context stub: jsdom has no canvas; the engine only needs the draw
  *  calls to exist (we assert on call counts, not pixels). */

@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { resolveCoinFace, resolveCoinFaces } from './resolver'
-import { knownFace } from '../facedown-backs'
+import { knownFace } from '../visual/facedown-backs'
 import type { CoinEffect } from '@/core/types'
 
 // Helper: build a CoinEffect for testing

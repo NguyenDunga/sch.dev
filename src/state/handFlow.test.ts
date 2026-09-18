@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
-import { buildCollection, shuffleCollection } from '@/core/deck'
+import { buildCollection, shuffleCollection } from '@/core/collection'
 import { emptyHand, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace } from '@/core/scoring'

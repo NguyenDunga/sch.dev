@@ -16,10 +16,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, waitFor } from '@testing-library/react'
 import { shakeScreen } from './screen-shake'
-import { ScreenShake } from './screen-shake.tsx'
-import { SHAKE_AMPLITUDE, CLEAR_SHAKE_AMPLITUDE } from './choreography'
-import { ScoringChoreography } from './scoring-choreography'
-import type { ChoroSeq } from './choreography'
+import { ScreenShake } from './screen-shake-layer'
+import { SHAKE_AMPLITUDE, CLEAR_SHAKE_AMPLITUDE } from './choreo/choreography'
+import { ScoringChoreography } from './choreo/scoring-choreography'
+import type { ChoroSeq } from './choreo/choreography'
 import type { Score } from '@/core/types'
 
 /** The reduced-motion toggle (the module checks matchMedia directly). */
