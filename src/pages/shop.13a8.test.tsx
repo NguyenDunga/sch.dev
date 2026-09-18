@@ -132,10 +132,14 @@ describe('13a.14 — shop areas (draft)', () => {
     render(<ShopScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Forge' }))
     const pickButtons = () => Array.from(document.querySelectorAll('.forge-coin'))
+    // The rule line is always rendered (space reserved) — hidden until a rule fires.
+    const special = () => document.querySelector('.forge-special') as HTMLElement
+    expect(special().className).toContain('forge-special--hidden')
     fireEvent.click(pickButtons()[0])
     fireEvent.click(pickButtons()[1])
     // The preview shows the fired rule + the resulting coin.
-    expect(document.querySelector('.forge-special')?.textContent).toBe('Weight(H) + Weight(H) → Heads')
+    expect(special().className).not.toContain('forge-special--hidden')
+    expect(special().textContent).toBe('Weight(H) + Weight(H) → Heads')
     fireEvent.click(screen.getByRole('button', { name: 'Forge ($1)' }))
     const st = useRunStore.getState()
     expect(st.cash).toBe(9)
@@ -194,7 +198,7 @@ describe('13a.14 — shop areas (draft)', () => {
 
     // Default sort is price-desc → the first row is the $2 coin.
     fireEvent.click(sell()[0])
-    let st = useRunStore.getState()
+    const st = useRunStore.getState()
     expect(st.cash).toBe(12)
     expect([...st.deck.drawPile, ...st.deck.discardPile].map((c) => c.id)).toEqual([61])
     expect(sell()).toHaveLength(1)

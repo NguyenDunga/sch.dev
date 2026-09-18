@@ -76,32 +76,33 @@ export function Forge({ coins }: ForgeProps) {
               <span className="forge-slot-empty">—</span>
             )}
           </span>
-          {outcome?.special && (
-            <span className="forge-special">
-              {forgeRuleLabel(outcome.special.rule, outcome.special.a, outcome.special.b)}
-            </span>
-          )}
+          {/* Always rendered (space reserved) so the layout never jumps when
+              a special fires; invisible when no rule matched. */}
+          <span className={`forge-special${outcome?.special ? '' : ' forge-special--hidden'}`}>
+            {outcome?.special
+              ? forgeRuleLabel(outcome.special.rule, outcome.special.a, outcome.special.b)
+              : '\u00A0'}
+          </span>
         </div>
       </div>
 
-      <ul className="forge-picker">
+      <div className="forge-picker">
         {coins.map((coin) => {
           const picked = sourceId === coin.id || targetId === coin.id
           return (
-            <li key={coin.id}>
-              <button
-                type="button"
-                className={`forge-coin${picked ? ' forge-coin--picked' : ''}`}
-                aria-pressed={picked}
-                aria-label={`Coin with ${coin.effects.length} effect${coin.effects.length === 1 ? '' : 's'}`}
-                onClick={() => pick(coin.id)}
-              >
-                <CoinVisual face={undefined} effects={coin.effects} size={40} />
-              </button>
-            </li>
+            <button
+              key={coin.id}
+              type="button"
+              className={`forge-coin${picked ? ' forge-coin--picked' : ''}`}
+              aria-pressed={picked}
+              aria-label={`Coin with ${coin.effects.length} effect${coin.effects.length === 1 ? '' : 's'}`}
+              onClick={() => pick(coin.id)}
+            >
+              <CoinVisual face={undefined} effects={coin.effects} size={40} />
+            </button>
           )
         })}
-      </ul>
+      </div>
 
       <div className="forge-actions">
         <Button size="lg" sfx="buy" disabled={!canForge} onClick={forge}>
