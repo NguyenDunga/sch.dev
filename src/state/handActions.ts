@@ -147,7 +147,7 @@ export function movePlayCoinDraft(st: Draft, from: number, to: number): void {
   st.play[from] = b
 }
 
-export function discardDraft(st: Draft, handIndex: number): void {
+export function discardDraft(st: Draft, handIndex: number, rng: Rng): void {
   if (st.phase !== 'run' || st.handPhase !== 'play') return
   const slot = st.hand[handIndex]
   if (!slot || slot.kind !== 'filled') return
@@ -170,6 +170,15 @@ export function discardDraft(st: Draft, handIndex: number): void {
       st.deck.drawPile = st.deck.drawPile.slice(1)
       n--
     }
+  }
+  // Dead hand (player report): the discard left NO coin in the hand AND the
+  // play row — nothing can ever be picked or confirmed this hand (0 hand /
+  // 0 play, 0 deck once the pile is drained). End the blind now (win if the
+  // target is met, lose otherwise) instead of stranding the player in the
+  // play phase.
+  if (!st.hand.some(isFilled) && !st.play.some(isFilled)) {
+    st.handsLeft -= 1
+    endBlind(st, rng)
   }
 }
 

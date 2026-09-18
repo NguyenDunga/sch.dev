@@ -23,7 +23,7 @@ import {
 } from '@/core/shop'
 import { forgeCoin } from '@/core/forge'
 import { shuffleCollection } from '@/core/deck'
-import { emptyHand } from '@/core/helpers'
+import { emptyHand, isFilled } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { Coin, CoinEffect, CoinEffectId, RunState, ShopOffer } from '@/core/types'
 import type { Draft } from './storeTypes'
@@ -74,9 +74,19 @@ function sameOffer(a: ShopOffer, b: ShopOffer): boolean {
   return a.kind === 'coin' && b.kind === 'coin' && a.effect === b.effect
 }
 
-/** The next free coin id (collection ids are unique: base 0..size-1, purchases append). */
-function nextCoinId(deck: RunState['deck']): number {
-  return Math.max(...[...deck.drawPile, ...deck.discardPile].map((c) => c.id)) + 1
+/** The next free coin id (collection ids are unique: base 0..size-1, purchases
+ *  append). Scans the WHOLE collection — piles AND the hand/play rows:
+ *  keep-unplayed (13a.2) leaves unplayed coins in the hand when the shop
+ *  opens, and a pile-only scan could hand a purchase the id of a hand coin
+ *  (duplicate ids loop the run screen's deal detection — player report). */
+function nextCoinId(st: Draft): number {
+  const all = [
+    ...st.deck.drawPile,
+    ...st.deck.discardPile,
+    ...st.hand.filter(isFilled).map((s) => s.coin),
+    ...st.play.filter(isFilled).map((s) => s.coin),
+  ]
+  return Math.max(...all.map((c) => c.id)) + 1
 }
 
 /** A catalog id → the purchased coin's effect variant (M9.4): Weight rolls its
@@ -115,8 +125,16 @@ export function mergeCoinDraft(st: Draft, fromId: number, toId: number): void {
   const outcome = forgeCoin(from, to)
   to.effects = outcome.effects
   st.cash -= FORGE_COST
-  st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== fromId)
-  st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== fromId)
+  // First-match removal (ids are unique; a first-match splice is also safe if
+  // a legacy save ever held a duplicate — a filter would drop both copies).
+  removeFirstCoin(st.deck.drawPile, fromId)
+  removeFirstCoin(st.deck.discardPile, fromId)
+}
+
+/** Remove the FIRST coin with the id from a pile (no-op when absent). */
+function removeFirstCoin(pile: Coin[], id: number): void {
+  const i = pile.findIndex((c) => c.id === id)
+  if (i !== -1) pile.splice(i, 1)
 }
 
 export function moveCharmDraft(st: Draft, from: number, to: number): void {
@@ -158,7 +176,7 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
   } else if (offer.kind === 'coin') {
     // M9.4: new coin joins the collection (draw pile) with its effect variant;
     // Weight rolls its favoured face now, fixed for the run.
-    const coin: Coin = { id: nextCoinId(st.deck), effects: [purchasedEffect(offer.effect, rng)] }
+    const coin: Coin = { id: nextCoinId(st), effects: [purchasedEffect(offer.effect, rng)] }
     st.deck.drawPile = [...st.deck.drawPile, coin]
     st.rngState = rng.state()
   } else {
@@ -180,8 +198,9 @@ export function sellCoinDraft(st: Draft, id: number): void {
   const coin = collection.find((c) => c.id === id)
   if (!coin) return
   st.cash += recyclePrice(coin)
-  st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== id)
-  st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== id)
+  // First-match removal (as in mergeCoin — never drop a duplicate's twin).
+  removeFirstCoin(st.deck.drawPile, id)
+  removeFirstCoin(st.deck.discardPile, id)
 }
 
 // -- blind progression (M10.3) ---------------------------------------------------------

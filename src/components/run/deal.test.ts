@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyHand, filledSlot } from '@/core/helpers'
 import type { Hand, HandSlot } from '@/core/types'
-import { computeDealIndex, type PrevSlots } from './deal'
+import { computeDealIndex, sameIds, type PrevSlots } from './deal'
 
 const noPrev: PrevSlots = { hand: new Set(), play: new Set() }
 
@@ -43,5 +43,26 @@ describe('13.1 — computeDealIndex (deal detection)', () => {
 
   it('an empty hand deals nothing', () => {
     expect(computeDealIndex(emptyHand(8), noPrev)).toEqual(new Map())
+  })
+})
+
+describe('13.1 — sameIds (render-phase convergence)', () => {
+  it('a row equal to its prev ids is recognised (no re-deal loop)', () => {
+    const hand = handOf([10, 11, 12])
+    expect(sameIds(new Set([10, 11, 12]), hand)).toBe(true)
+  })
+
+  it('a changed row is not equal', () => {
+    expect(sameIds(new Set([10, 11]), handOf([10, 11, 12]))).toBe(false)
+  })
+
+  // Regression (player report 2026-07-22): a row holding two coins with the
+  // same id must still compare equal to its own prev — the old slot-count
+  // comparison (8 slots vs 7 unique ids) never settled, looping the
+  // render-phase setDealState ("Too many re-renders" → frozen screen).
+  it('a row with a duplicate id compares equal to its own prev (set equality)', () => {
+    const hand = handOf([10, 11, 10])
+    const prev = new Set(hand.map((s) => (s.kind === 'filled' ? s.coin.id : -1)).filter((i) => i >= 0))
+    expect(sameIds(prev, hand)).toBe(true)
   })
 })

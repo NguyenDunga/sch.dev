@@ -160,6 +160,39 @@ describe('M11.3 — resume in run: blind-start reset', () => {
     b.getState().resume()
     expect(b.getState().handsLeft).toBe(HANDS_PER_BLIND + 1)
   })
+
+  // Legacy-save repair (13a.16): a pre-fix purchase could collide with a
+  // keep-unplayed hand coin's id (nextCoinId scanned the piles only).
+  // Resuming such a save must unique-ify the collection (first occurrence
+  // keeps its id; the extra gets a fresh one) — duplicate ids loop the run
+  // screen's deal detection ("Too many re-renders" → frozen screen).
+  it('resuming a save with a duplicate coin id unique-ifies the collection', () => {
+    savedMidBlind('m11-3d', (s) => {
+      const state = s as { deck: { drawPile: { id: number; effects: unknown[] }[]; discardPile: unknown[] } }
+      return {
+        deck: {
+          drawPile: [...state.deck.drawPile, { id: 3, effects: [] }], // twin of coin 3
+          discardPile: state.deck.discardPile,
+        },
+      }
+    })
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+    const ids = [...st.deck.drawPile, ...st.deck.discardPile].map((c) => c.id)
+    expect(ids).toHaveLength(BASE_DECK_SIZE + 1) // the twin is kept, not dropped
+    expect(new Set(ids).size).toBe(ids.length) // unique again
+    expect(ids.filter((id) => id === 3)).toHaveLength(1) // first occurrence kept
+    expect(Math.max(...ids)).toBe(BASE_DECK_SIZE) // the twin got the next fresh id
+  })
+
+  it('resuming a save with unique ids is untouched (the repair is a no-op)', () => {
+    savedMidBlind('m11-3e')
+    const b = createRunStore()
+    b.getState().resume()
+    const ids = b.getState().deck.drawPile.map((c) => c.id)
+    expect([...ids].sort((x, y) => x - y)).toEqual(Array.from({ length: BASE_DECK_SIZE }, (_, i) => i))
+  })
 })
 
 describe('M11.4 — resume in shop: offers regenerated from rngState', () => {

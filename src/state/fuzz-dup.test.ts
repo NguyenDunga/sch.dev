@@ -84,9 +84,16 @@ function step(i: number) {
         act(`score@${i} (double)`, () => st.score(), true)
       }
     } else if (r === 9) act('save+resume', () => { st.save(); st.resume() })
-  } else if (s.handPhase === 'toss' || s.handPhase === 'score') {
+  } else if (s.handPhase === 'toss') {
     // transient — the UI may save here
     if (rnd(2) === 0) act(`save+resume@${i} (${s.handPhase})`, () => { st.save(); st.resume() })
+  } else if (s.handPhase === 'score') {
+    // The UI advances the hand when the scoring choreography settles
+    // (finishScore — double-fire: the settle effect + a fast user click).
+    // Without this the fuzzer never left 'score', never cleared a blind,
+    // and never reached the shop (the purchase-id-collision bug hid here).
+    if (rnd(3) === 0) act(`save+resume@${i} (score)`, () => { st.save(); st.resume() })
+    act(`finishScore@${i} (double)`, () => st.finishScore(), true)
   } else if (s.handPhase === 'buff') {
     if (rnd(3) === 0) act(`save+resume@${i} (buff)`, () => { st.save(); st.resume() })
     act(`score@${i} (double)`, () => st.score(), true)

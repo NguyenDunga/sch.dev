@@ -134,7 +134,7 @@ export function createRunStore() {
       pickCoin: (handIndex) => set((st) => pickCoinDraft(st, handIndex)),
       unpickCoin: (slotIndex) => set((st) => unpickCoinDraft(st, slotIndex)),
       movePlayCoin: (from, to) => set((st) => movePlayCoinDraft(st, from, to)),
-      discard: (handIndex) => set((st) => discardDraft(st, handIndex)),
+      discard: (handIndex) => set((st) => discardDraft(st, handIndex, rng)),
       confirmPlay: () => confirmPlay(get, set, rng),
       echoReflip: (slotIndex) => set((st) => echoReflipDraft(st, slotIndex, rng)),
       score: () => score(get, set, rng),

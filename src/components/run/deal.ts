@@ -35,13 +35,16 @@ export function idsOf(slots: HandSlot[]): Set<number> {
   return ids
 }
 
-/** Content equality of a prev id-set and a row's filled ids. */
+/** Content equality of a prev id-set and a row's filled ids. Set equality
+ *  (not a slot count): if a row ever held two coins with the same id, the
+ *  slot count would exceed the unique-id count and the comparison would
+ *  never settle — looping the render-phase deal detection ("Too many
+ *  re-renders", player report 2026-07-22). */
 export function sameIds(ids: Set<number>, slots: HandSlot[]): boolean {
-  let n = 0
-  for (const s of slots) {
-    if (s.kind !== 'filled') continue
-    n++
-    if (!ids.has(s.coin.id)) return false
+  const row = idsOf(slots)
+  if (row.size !== ids.size) return false
+  for (const id of row) {
+    if (!ids.has(id)) return false
   }
-  return n === ids.size
+  return true
 }

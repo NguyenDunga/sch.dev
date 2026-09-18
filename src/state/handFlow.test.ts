@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { BASE_DECK_SIZE, BLINDS, HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
 import { buildCollection, shuffleCollection } from '@/core/deck'
-import { none, some } from '@/core/helpers'
+import { emptyHand, none, some } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace } from '@/core/scoring'
 import type { Coin, Face, HandPhase, Option } from '@/core/types'
@@ -356,6 +356,74 @@ describe('M4.4 — discard', () => {
 
     expect([0, 1, 2].map((i) => after.hand[i].kind)).toEqual(['empty', 'empty', 'empty'])
     expect(after.deck.discardPile.map((c) => c.id)).toEqual(expect.arrayContaining(ids))
+  })
+
+  // Dead-hand guard (player report: stuck on 0 hand / 0 deck): discarding the
+  // last hand coin while the play row is empty leaves nothing that can ever
+  // be picked or confirmed — the blind must end (target missed → loss).
+  const deadHandStore = (seed: string, handCoin: Coin) => {
+    const store = drawnStore(seed)
+    store.setState((s) => ({
+      hand: s.hand.map((_slot, i) => (i === 0 ? { kind: 'filled', coin: handCoin, face: 'H', echoUsed: false } : { kind: 'empty' as const })),
+      play: emptyHand(PLAY_SIZE),
+      deck: { drawPile: [], discardPile: [] },
+      handsLeft: HANDS_PER_BLIND,
+    }))
+    return store
+  }
+
+  it('discarding the last hand coin with an empty play row ends the blind (target missed → runEnd)', () => {
+    const store = deadHandStore('m4-4f', { id: 950, effects: [] })
+
+    store.getState().discard(0)
+    const st = store.getState()
+
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
+    expect(st.handsLeft).toBe(HANDS_PER_BLIND - 1)
+    expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
+  })
+
+  it('a draw-enchant coin with an empty pile cannot redraw — the blind still ends', () => {
+    const store = deadHandStore('m4-4g', { id: 951, effects: [{ kind: 'draw', count: 2 }] })
+
+    store.getState().discard(0)
+    const st = store.getState()
+
+    expect(st.phase).toBe('runEnd')
+    expect(st.won).toBe(false)
+    expect(st.hand.every((s) => s.kind === 'empty')).toBe(true)
+  })
+
+  it('discarding the last hand coin with a coin in the play row keeps the hand alive', () => {
+    const store = deadHandStore('m4-4h', { id: 952, effects: [] })
+    store.setState((s) => ({
+      play: s.play.map((slot, i) => (i === 0 ? { kind: 'filled' as const, coin: { id: 953, effects: [] }, face: 'H', echoUsed: false } : slot)),
+    }))
+
+    store.getState().discard(0)
+    const st = store.getState()
+
+    expect(st.phase).toBe('run')
+    expect(st.handPhase).toBe('play')
+    expect(st.play[0].kind).toBe('filled') // still confirmable
+  })
+
+  it('a draw-enchant coin with a live pile redraws and the hand continues', () => {
+    const store = drawnStore('m4-4i')
+    const st = store.getState()
+    const keep = st.hand[1]
+    store.setState((s) => ({
+      hand: s.hand.map((_slot, i) => (i === 0 ? { kind: 'filled', coin: { id: 954, effects: [{ kind: 'draw', count: 1 }] }, face: 'H', echoUsed: false } : i === 1 ? keep : { kind: 'empty' as const })),
+      play: emptyHand(PLAY_SIZE),
+    }))
+
+    store.getState().discard(0)
+    const after = store.getState()
+
+    expect(after.phase).toBe('run')
+    expect(after.handPhase).toBe('play')
+    expect(after.hand.filter((s) => s.kind === 'filled')).toHaveLength(2) // kept coin + redraw
   })
 
   // Where each redraw lands: a full 8-coin hand with the draw coin at hand[0],

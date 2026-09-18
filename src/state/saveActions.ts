@@ -9,7 +9,7 @@ import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/bal
 import { shuffleCollection } from '@/core/deck'
 import { emptyHand, none, some } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
-import type { Option, RunState } from '@/core/types'
+import type { Coin, Option, RunState } from '@/core/types'
 import type { GetFn, SetFn } from './storeTypes'
 import { generateOffers } from './shopActions'
 
@@ -46,6 +46,31 @@ function parseSave(raw: string | null): Option<RunState> {
   return some(s)
 }
 
+/** Legacy-save repair (13a.16): unique-ify the collection ids. A pre-fix
+ *  purchase could collide with a keep-unplayed hand coin's id (nextCoinId
+ *  scanned the piles only); duplicate ids loop the run screen's deal
+ *  detection ("Too many re-renders" → frozen screen). First occurrence keeps
+ *  its id; extras get fresh ids (max + 1, ...). No-op when ids are unique. */
+function uniqueCollection(
+  drawPile: Coin[],
+  inHand: Coin[],
+  discardPile: Coin[],
+): { drawPile: Coin[]; discardPile: Coin[] } {
+  const all = [...drawPile, ...inHand, ...discardPile]
+  const seen = new Set<number>()
+  let nextId = Math.max(0, ...all.map((c) => c.id)) + 1
+  const unique = (c: Coin): Coin => {
+    if (seen.has(c.id)) {
+      const fresh = { ...c, id: nextId++ }
+      seen.add(fresh.id)
+      return fresh
+    }
+    seen.add(c.id)
+    return c
+  }
+  return { drawPile: [...drawPile, ...inHand].map(unique), discardPile: discardPile.map(unique) }
+}
+
 export function resume(set: SetFn, rng: Rng): void {
   const saved = parseSave(localStorage.getItem(SAVE_KEY))
   if (!saved.some) return
@@ -63,7 +88,7 @@ export function resume(set: SetFn, rng: Rng): void {
     // hand — they are part of the collection, so merge them back before the
     // hand is reset (the run-branch reshuffle then includes them).
     const inHand = s.hand.filter((sl) => sl.kind === 'filled').map((sl) => sl.coin)
-    st.deck = { drawPile: [...s.deck.drawPile, ...inHand], discardPile: s.deck.discardPile }
+    st.deck = uniqueCollection(s.deck.drawPile, inHand, s.deck.discardPile)
     st.handSize = s.handSize
     st.runScore = s.runScore
     st.earlyClearBonus = s.earlyClearBonus

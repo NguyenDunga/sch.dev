@@ -355,6 +355,76 @@ describe('13a.14 — sellCoin (Recycler: sell for money)', () => {
   })
 })
 
+describe('13a.16 — coin-id uniqueness (player report: stuck on duplicate ids)', () => {
+  /** A shop store whose HAND still holds the max-id coin (keep-unplayed,
+   *  13a.2) — the exact collision setup: the pile-only id scan sees a lower
+   *  max and hands the purchase the hand coin's id. */
+  function handHoldsMaxIdStore(seed: string) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState((s) => ({
+      phase: 'shop',
+      cash: 20,
+      shop: { offers: [{ kind: 'coin', effect: 'tax' }] },
+      hand: s.hand.map((slot, i) =>
+        i === 0 ? { kind: 'filled', coin: { id: 23, effects: [] }, face: 'H', echoUsed: false } : slot,
+      ),
+      deck: { drawPile: s.deck.drawPile.filter((c) => c.id !== 23), discardPile: [] },
+    }))
+    return store
+  }
+
+  /** A shop store whose collection already holds a duplicate pair (id 23)
+   *  — the legacy damage a pre-fix save could carry. */
+  function legacyDupStore(seed: string) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState((s) => ({
+      phase: 'shop',
+      cash: 20,
+      deck: {
+        drawPile: [...s.deck.drawPile, { id: 23, effects: [] }], // twin of the base 23
+        discardPile: s.deck.discardPile,
+      },
+    }))
+    return store
+  }
+
+  const allIds = (st: { deck: { drawPile: { id: number }[]; discardPile: { id: number }[] }; hand: { kind: string; coin?: { id: number } }[]; play: { kind: string; coin?: { id: number } }[] }) => [
+    ...st.deck.drawPile,
+    ...st.deck.discardPile,
+    ...st.hand.filter((s) => s.kind === 'filled').map((s) => s.coin!),
+    ...st.play.filter((s) => s.kind === 'filled').map((s) => s.coin!),
+  ]
+
+  it('buying a coin while the hand holds the max-id coin gets a fresh id (no collision)', () => {
+    const store = handHoldsMaxIdStore('dup-buy')
+    store.getState().buy({ kind: 'coin', effect: 'tax' })
+    const st = store.getState()
+    const ids = allIds(st).map((c) => c.id)
+    expect(new Set(ids).size).toBe(ids.length) // unique
+    expect(st.deck.drawPile.at(-1)?.id).toBe(24) // max(23 in hand) + 1, not max(piles) + 1 = 22
+  })
+
+  it('selling a coin whose id is duplicated removes only one copy (legacy-save safety)', () => {
+    const store = legacyDupStore('dup-sell')
+    const before = allIds(store.getState()).length
+    store.getState().sellCoin(23)
+    const st = store.getState()
+    expect(allIds(st).length).toBe(before - 1) // exactly one copy gone
+    expect(allIds(st).filter((c) => c.id === 23)).toHaveLength(1)
+  })
+
+  it('forging away a coin whose id is duplicated consumes only the source copy (legacy-save safety)', () => {
+    const store = legacyDupStore('dup-forge')
+    const before = allIds(store.getState()).length
+    store.getState().mergeCoin(23, 22) // forge one of the 23s into coin 22
+    const st = store.getState()
+    expect(allIds(st).length).toBe(before - 1) // the source consumed, the twin kept
+    expect(allIds(st).filter((c) => c.id === 23)).toHaveLength(1)
+  })
+})
+
 describe('M9.7 — hand-size upgrade', () => {
   function shopStore(seed: string, handSize: number, cash: number) {
     const store = createRunStore()
