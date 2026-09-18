@@ -20,7 +20,7 @@ import { emitBurst } from '@/components/juice/particles'
 import { playSfx } from '@/components/juice/sfx'
 
 /** The coin size (the 3D disc diameter, px). */
-const COIN_SIZE = 56
+const COIN_SIZE = 72
 /** The glyph diameter (the face fill: shell 8px ring + 6px face inset). */
 const GLYPH_SIZE = COIN_SIZE - 14
 

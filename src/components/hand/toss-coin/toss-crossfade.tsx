@@ -28,7 +28,7 @@ export function CrossfadeCoin({ face, effects, index, onLand }: CrossfadeCoinPro
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: DURATION.quick / 1000 }}
       >
-        <Coin face={face} effects={effects} size={56} />
+        <Coin face={face} effects={effects} size={72} />
       </motion.div>
     </div>
   )
