@@ -148,7 +148,7 @@ export const BEAT_BUDGET_MS = 2400
  *  before the animation ends (the cash fly + settle follow). A fixed pause,
  *  not a beat — it is not part of the beat budget. Reduced motion (UX §8):
  *  no rest — the fast sequence stays fast. */
-export const REST_MS = 1500
+export const REST_MS = 400
 
 const REDUCED_DURATIONS: BeatDurations = {
   reveal: 150,
