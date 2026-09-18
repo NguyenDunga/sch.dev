@@ -8,9 +8,9 @@
 //   - Leave nudges when cash is unspent (it carries over to the next blind)
 //   - an unaffordable offer shows its poor state (the card dims)
 //
-// The Forge/Recycler store logic (not yet wired — draft) will get its own
-// tests.
+// The Forge store logic is covered in core/forge.test.ts + state/charms.test.ts.
 
+import { act } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useRunStore } from '@/state/runStore'
@@ -115,6 +115,93 @@ describe('13a.14 — shop areas (draft)', () => {
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Sort' }), { target: { value: 'order' } })
     expect(rows()).toEqual(['2 effects', '1 effect', 'plain 50/50']) // deck order
+  })
+
+  it('the forge: two weight(H) coins forge into a heads coin (costs $1)', () => {
+    shopState()
+    useRunStore.setState({
+      cash: 10,
+      deck: {
+        drawPile: [
+          { id: 50, effects: [{ kind: 'weight', favored: 'H' }] },
+          { id: 51, effects: [{ kind: 'weight', favored: 'H' }] },
+        ],
+        discardPile: [],
+      },
+    })
+    render(<ShopScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Forge' }))
+    const pickButtons = () => Array.from(document.querySelectorAll('.forge-coin'))
+    fireEvent.click(pickButtons()[0])
+    fireEvent.click(pickButtons()[1])
+    // The preview shows the fired rule + the resulting coin.
+    expect(document.querySelector('.forge-special')?.textContent).toBe('Weight(H) + Weight(H) → Heads')
+    fireEvent.click(screen.getByRole('button', { name: 'Forge ($1)' }))
+    const st = useRunStore.getState()
+    expect(st.cash).toBe(9)
+    const collection = [...st.deck.drawPile, ...st.deck.discardPile]
+    expect(collection).toHaveLength(1)
+    expect(collection[0].effects).toEqual([{ kind: 'heads' }])
+    // The slots clear after the forge.
+    expect(document.querySelectorAll('.forge-coin--picked')).toHaveLength(0)
+  })
+
+  it('the forge button is disabled until two coins are picked and the cash is there', () => {
+    shopState()
+    useRunStore.setState({
+      cash: 0,
+      deck: {
+        drawPile: [
+          { id: 50, effects: [{ kind: 'tax' }] },
+          { id: 51, effects: [{ kind: 'tax' }] },
+        ],
+        discardPile: [],
+      },
+    })
+    render(<ShopScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Forge' }))
+    const forgeButton = () => screen.getByRole('button', { name: 'Forge ($1)' })
+    expect(forgeButton().hasAttribute('disabled')).toBe(true) // nothing picked
+
+    const pickButtons = () => Array.from(document.querySelectorAll('.forge-coin'))
+    fireEvent.click(pickButtons()[0])
+    expect(forgeButton().hasAttribute('disabled')).toBe(true) // one coin
+
+    fireEvent.click(pickButtons()[1])
+    expect(forgeButton().hasAttribute('disabled')).toBe(true) // two coins, no cash
+    expect(screen.getByText('need $1 cash')).toBeTruthy()
+
+    act(() => useRunStore.setState({ cash: 1 }))
+    expect(forgeButton().hasAttribute('disabled')).toBe(false)
+  })
+
+  it('the recycler: selling a coin removes it and pays its price', () => {
+    shopState()
+    useRunStore.setState({
+      cash: 10,
+      deck: {
+        drawPile: [
+          { id: 60, effects: [{ kind: 'tax' }, { kind: 'echo' }] }, // $2
+          { id: 61, effects: [] }, // $1
+        ],
+        discardPile: [],
+      },
+    })
+    render(<ShopScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Recycler' }))
+    const sell = () => screen.getAllByRole('button', { name: 'Sell' })
+    expect(sell()).toHaveLength(2)
+
+    // Default sort is price-desc → the first row is the $2 coin.
+    fireEvent.click(sell()[0])
+    let st = useRunStore.getState()
+    expect(st.cash).toBe(12)
+    expect([...st.deck.drawPile, ...st.deck.discardPile].map((c) => c.id)).toEqual([61])
+    expect(sell()).toHaveLength(1)
+
+    fireEvent.click(sell()[0])
+    expect(useRunStore.getState().cash).toBe(13)
+    expect(document.querySelector('.recycler-empty')).toBeTruthy()
   })
 
   it('the offers are grouped by kind (Charms / Coins / Hand size)', () => {

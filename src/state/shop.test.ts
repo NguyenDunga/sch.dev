@@ -1,7 +1,7 @@
 // M9 — Shop (shopActions via runStore).
 //
 // M9.1 offer generation, M9.2 one free reroll, M9.3 buy a charm, M9.4 buy a
-// coin (favoured-face roll), M9.6 removeCoin ($1 delete), M9.7 hand-size
+// coin (favoured-face roll), 13a.14 sellCoin (Recycler), M9.7 hand-size
 // upgrade (cap).
 
 import { describe, expect, it } from 'vitest'
@@ -253,7 +253,7 @@ describe('M9.4 — buy a coin (favoured-face roll + collection add)', () => {
   })
 })
 
-describe('M9.6 — removeCoin ($1 delete, no refund)', () => {
+describe('13a.14 — sellCoin (Recycler: sell for money)', () => {
   function shopStore(seed: string, cash: number) {
     const store = createRunStore()
     store.getState().startRun(seed)
@@ -268,41 +268,51 @@ describe('M9.6 — removeCoin ($1 delete, no refund)', () => {
     return store
   }
 
-  it('9.9 removing a coin costs $1 and deletes it (draw pile)', () => {
-    const store = shopStore('m9-6', 5)
-    store.getState().removeCoin(900)
+  it('selling a coin removes it and pays its recycle price ($1 per effect)', () => {
+    const store = shopStore('sell-1', 5)
+    store.getState().sellCoin(900) // 1 effect → $1
     const st = store.getState()
-    expect(st.cash).toBe(4)
+    expect(st.cash).toBe(6)
     expect(st.deck.drawPile.some((c) => c.id === 900)).toBe(false)
   })
 
-  it('9.9 removing a coin from the discard pile works too; delete only, never a refund', () => {
-    const store = shopStore('m9-6b', 5)
-    store.getState().removeCoin(901)
+  it('a plain coin sells for the $1 minimum (discard pile works too)', () => {
+    const store = shopStore('sell-2', 5)
+    store.getState().sellCoin(901) // plain → $1 minimum
     const st = store.getState()
-    expect(st.cash).toBe(4) // cash goes down, never up
+    expect(st.cash).toBe(6)
     expect(st.deck.discardPile.some((c) => c.id === 901)).toBe(false)
   })
 
-  it('9.9 no "sell charm" action exists — charms can only be bought, never sold', () => {
-    const store = shopStore('m9-6c', 5)
+  it('multi-effect coins sell for $1 per effect', () => {
+    const store = shopStore('sell-3', 0)
+    store.setState((s) => ({
+      deck: {
+        drawPile: [
+          { id: 902, effects: [{ kind: 'tax' }, { kind: 'echo' }] },
+          ...s.deck.drawPile,
+        ],
+        discardPile: s.deck.discardPile,
+      },
+    }))
+    store.getState().sellCoin(902) // 2 effects → $2
+    expect(store.getState().cash).toBe(2)
+  })
+
+  it('no "sell charm" action exists — charms can only be bought, never sold', () => {
+    const store = shopStore('sell-4', 5)
     expect('sellCharm' in store.getState()).toBe(false)
     expect('removeCharm' in store.getState()).toBe(false)
   })
 
-  it('no-ops: broke, unknown id, wrong phase', () => {
-    const store = shopStore('m9-6d', 0)
+  it('no-ops: unknown id, wrong phase', () => {
+    const store = shopStore('sell-5', 5)
     const before = store.getState()
-
-    store.getState().removeCoin(900) // broke
+    store.getState().sellCoin(4242) // unknown
     expect(store.getState()).toEqual(before)
 
-    store.setState({ cash: 5 })
-    store.getState().removeCoin(4242) // unknown
-    expect(store.getState().cash).toBe(5)
-
     store.setState({ phase: 'run' })
-    store.getState().removeCoin(900)
+    store.getState().sellCoin(900)
     expect(store.getState().cash).toBe(5)
   })
 })

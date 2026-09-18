@@ -4,7 +4,7 @@
 // save/resume live in the action modules:
 //   - handActions.ts  — startRun / drawHand / pickCoin / unpickCoin / discard /
 //     confirmPlay / echoReflip / score (+ blind end)
-//   - shopActions.ts  — buy / reroll / mergeCoin / removeCoin / moveCharm /
+//   - shopActions.ts  — buy / reroll / mergeCoin / sellCoin / moveCharm /
 //     leaveShop (+ offer generation)
 //   - saveActions.ts  — save / resume
 //
@@ -36,8 +36,8 @@ import {
   leaveShopDraft,
   mergeCoinDraft,
   moveCharmDraft,
-  removeCoinDraft,
   rerollDraft,
+  sellCoinDraft,
 } from './shopActions'
 import { hasSave, resume, save } from './saveActions'
 
@@ -65,10 +65,10 @@ export interface RunActions {
   /** score → draw (or endBlind): advance the hand once the scoring choreography
    *  has settled (the UI calls this when the ticker/animation are done). */
   finishScore: () => void
-  /** shop: toId gains all of fromId's effects (stack freely, no cap); fromId removed from the collection; free. */
+  /** shop: forge two coins — the special rules (core/forge) decide the result; fromId removed; costs FORGE_COST. */
   mergeCoin: (fromId: number, toId: number) => void
-  /** shop: remove a coin from the collection; cash -= REMOVE_COIN_COST ($1). Delete only — never a refund. */
-  removeCoin: (id: number) => void
+  /** shop: Recycler — sell a coin for its recycle price ($1 per effect, $1 minimum); the coin is removed. */
+  sellCoin: (id: number) => void
   /** run/shop: reorder the charms — array order is the charm-bar (scoring) order. */
   moveCharm: (from: number, to: number) => void
   /** shop: if the free reroll is unused, regenerate all offers (rng); rerollUsed = true. */
@@ -139,7 +139,7 @@ export function createRunStore() {
       score: () => score(get, set, rng),
       finishScore: () => finishScore(get, set, rng),
       mergeCoin: (fromId, toId) => set((st) => mergeCoinDraft(st, fromId, toId)),
-      removeCoin: (id) => set((st) => removeCoinDraft(st, id)),
+      sellCoin: (id) => set((st) => sellCoinDraft(st, id)),
       moveCharm: (from, to) => set((st) => moveCharmDraft(st, from, to)),
       reroll: () => set((st) => rerollDraft(st, rng)),
       buy: (offer) => set((st) => buyDraft(st, offer, rng)),

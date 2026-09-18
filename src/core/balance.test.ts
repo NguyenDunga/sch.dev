@@ -16,7 +16,7 @@ import {
   TAX_PAYOUT,
   WEIGHT_ODDS,
 } from './balance'
-import { CHARMS, COIN_EFFECTS, FREE_REROLLS, REMOVE_COIN_COST, SHOP_SLOTS } from './shop'
+import { CHARMS, COIN_EFFECTS, FREE_REROLLS, SHOP_SLOTS } from './shop'
 
 describe('TIERS', () => {
   it('6 tiers in priority order with baseline chips × mult', () => {
@@ -102,7 +102,6 @@ describe('constants', () => {
     expect(HEAVY_TARGET_BONUS).toBe(5)
     expect(BASE_DECK_SIZE).toBe(24)
     expect(STARTER_WEIGHT_COINS).toBe(8)
-    expect(REMOVE_COIN_COST).toBe(1)
     expect(TAX_PAYOUT).toBe(1)
     expect(JACKPOT_CHANCE).toBe(0.25)
     expect(JACKPOT_PAYOUT).toBe(4)

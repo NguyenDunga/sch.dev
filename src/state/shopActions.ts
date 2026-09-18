@@ -1,6 +1,6 @@
 // C8 — Shop actions (M9) + blind progression (M10) + charm reorder (M8).
 //
-// Shop phase: buy / reroll / mergeCoin / removeCoin over the generated offers;
+// Shop phase: buy / reroll / mergeCoin / sellCoin over the generated offers;
 // leaveShop advances to the next blind. moveCharm works in run + shop (the
 // charm-bar order is the scoring order). Action bodies are module-level
 // functions (≤60 lines, NASA practice); the store wires them up.
@@ -14,11 +14,13 @@ import {
 import {
   CHARMS,
   COIN_EFFECTS,
+  FORGE_COST,
   HAND_SIZE_CAP,
   HAND_SIZE_PRICE,
-  REMOVE_COIN_COST,
+  recyclePrice,
   SHOP_SLOTS,
 } from '@/core/shop'
+import { forgeCoin } from '@/core/forge'
 import { shuffleCollection } from '@/core/deck'
 import { emptyHand } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
@@ -92,6 +94,12 @@ function purchasedEffect(effectId: CoinEffectId, rng: Rng): CoinEffect {
 
 // -- shop actions -------------------------------------------------------------------
 
+/**
+ * M7.6 (13a.14): forge two coins — the target keeps its identity, the
+ * special rules (core/forge) decide the result (a matching pair is consumed
+ * and replaced; everything else stacks), the source is removed. Costs
+ * FORGE_COST (no-op when the cash is short).
+ */
 export function mergeCoinDraft(st: Draft, fromId: number, toId: number): void {
   if (st.phase !== 'shop') return
   if (fromId === toId) return
@@ -99,9 +107,10 @@ export function mergeCoinDraft(st: Draft, fromId: number, toId: number): void {
   const from = collection.find((c) => c.id === fromId)
   const to = collection.find((c) => c.id === toId)
   if (!from || !to) return
-  // Target gains all of the source's effects (stack freely, no cap);
-  // the source is removed from the collection. Free.
-  to.effects = [...to.effects, ...from.effects]
+  if (st.cash < FORGE_COST) return
+  const outcome = forgeCoin(from, to)
+  to.effects = outcome.effects
+  st.cash -= FORGE_COST
   st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== fromId)
   st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== fromId)
 }
@@ -151,15 +160,19 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
   st.shop.offers = st.shop.offers.filter((o) => !sameOffer(o, offer))
 }
 
-export function removeCoinDraft(st: Draft, id: number): void {
+/**
+ * 13a.14 Recycler: sell a coin from the collection for its recycle price
+ * ($1 per effect, $1 minimum). The coin is removed from the collection and
+ * the cash is gained (the opposite of the old $1-delete removeCoin).
+ */
+export function sellCoinDraft(st: Draft, id: number): void {
   if (st.phase !== 'shop') return
-  if (st.cash < REMOVE_COIN_COST) return // broke — reject
-  const inDraw = st.deck.drawPile.some((c) => c.id === id)
-  const inDiscard = st.deck.discardPile.some((c) => c.id === id)
-  if (!inDraw && !inDiscard) return // unknown coin — no-op
+  const collection = [...st.deck.drawPile, ...st.deck.discardPile]
+  const coin = collection.find((c) => c.id === id)
+  if (!coin) return
+  st.cash += recyclePrice(coin)
   st.deck.drawPile = st.deck.drawPile.filter((c) => c.id !== id)
   st.deck.discardPile = st.deck.discardPile.filter((c) => c.id !== id)
-  st.cash -= REMOVE_COIN_COST
 }
 
 // -- blind progression (M10.3) ---------------------------------------------------------

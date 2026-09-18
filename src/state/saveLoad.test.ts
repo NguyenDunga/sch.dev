@@ -279,7 +279,7 @@ describe('M11.6 — no autosave: no phase transition calls save', () => {
     if (offer) store.getState().buy(offer)
     store.getState().reroll()
     store.getState().mergeCoin(0, 1)
-    store.getState().removeCoin(2)
+    store.getState().sellCoin(2)
     store.getState().moveCharm(0, 0)
     // leave → next blind, play a hand there too
     store.getState().leaveShop()

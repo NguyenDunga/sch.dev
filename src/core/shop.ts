@@ -1,11 +1,12 @@
-// Shop data (13a.14) — the shop catalog and shop-side pricing, moved out of
-// balance.ts so all shop-related data lives in one shop module. Data only
-// (draft values from plan_balance-baseline.md — tunable in playtest).
+// Shop data (13a.14) — the shop catalog, shop-side pricing, and the
+// recycler's sell price, moved out of balance.ts so all shop-related data
+// lives in one shop module. Data + pure pricing helpers (draft values from
+// plan_balance-baseline.md — tunable in playtest).
 //
 // The run-side balance tables (tiers, blinds, boss rules, hand/deck sizing,
 // coin cash effects, face odds) stay in balance.ts.
 
-import type { CharmDef, CoinDef } from './types'
+import type { CharmDef, Coin, CoinDef } from './types'
 
 /** The charm catalog (shop offers + the charm bar's names). */
 export const CHARMS: CharmDef[] = [
@@ -39,9 +40,13 @@ export const HAND_SIZE_CAP = 10
 export const SHOP_SLOTS = 5
 /** Free rerolls per shop (M9.2 — the reroll is free, once). */
 export const FREE_REROLLS = 1
-/** Shop: delete a coin from the collection. */
-export const REMOVE_COIN_COST = 1
-/** Forge (13a.14 draft): the cost to merge two coins into one. */
+/** Forge (13a.14): the cost to merge two coins into one. */
 export const FORGE_COST = 1
-/** Recycler (13a.14 draft): sell price per coin effect (a plain coin sells for the $1 minimum). */
+/** Recycler (13a.14): sell price per coin effect (a plain coin sells for the $1 minimum). */
 export const RECYCLE_PRICE_PER_EFFECT = 1
+
+/** Recycler: the sell price of a coin — $1 per effect, $1 minimum (a plain
+ *  50/50 coin still sells for $1). */
+export function recyclePrice(coin: Coin): number {
+  return Math.max(1, coin.effects.length) * RECYCLE_PRICE_PER_EFFECT
+}

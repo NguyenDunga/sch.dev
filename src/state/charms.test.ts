@@ -1,10 +1,12 @@
 // M7.6 + M8 — mergeCoin and charm reordering (shopActions via runStore).
 //
-// M7.6: merging is free, target gains all source effects, source is deleted.
+// M7.6 (13a.14): forge — target keeps its identity, the special rules
+// (core/forge) decide the result, source is removed; costs FORGE_COST.
 // M8: moveCharm reorders the charm bar — array order is the scoring order.
 
 import { describe, expect, it } from 'vitest'
 import { HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { FORGE_COST } from '@/core/shop'
 import { emptyHand, filledSlot } from '@/core/helpers'
 import type { Face } from '@/core/types'
 import { createRunStore, type RunStore } from './runStore'
@@ -28,7 +30,7 @@ describe('M7.6 — mergeCoin (shop action)', () => {
     return store
   }
 
-  it('target gains all of the source effects; source removed from the collection; free', () => {
+  it('target gains the source effects (plain stack); source removed; costs FORGE_COST', () => {
     const store = shopStore()
     const cashBefore = store.getState().cash
     store.getState().mergeCoin(900, 901)
@@ -37,7 +39,31 @@ describe('M7.6 — mergeCoin (shop action)', () => {
     const target = [...st.deck.drawPile, ...st.deck.discardPile].find((c) => c.id === 901)
     expect(target?.effects).toEqual([{ kind: 'weight', favored: 'H' }])
     expect([...st.deck.drawPile, ...st.deck.discardPile].some((c) => c.id === 900)).toBe(false)
-    expect(st.cash).toBe(cashBefore) // free
+    expect(st.cash).toBe(cashBefore - FORGE_COST)
+  })
+
+  it('special rule: two weight(H) coins forge into a heads coin', () => {
+    const store = shopStore()
+    store.setState((s) => ({
+      deck: {
+        drawPile: s.deck.drawPile.map((c) =>
+          c.id === 901 ? { id: 901, effects: [{ kind: 'weight', favored: 'H' as Face }] } : c,
+        ),
+        discardPile: s.deck.discardPile,
+      },
+    }))
+    store.getState().mergeCoin(900, 901)
+    const target = store.getState().deck.drawPile.find((c) => c.id === 901)
+    expect(target?.effects).toEqual([{ kind: 'heads' }])
+  })
+
+  it('no-ops when the cash is short (FORGE_COST)', () => {
+    const store = shopStore()
+    store.setState({ cash: FORGE_COST - 1 })
+    const before = store.getState()
+    store.getState().mergeCoin(900, 901)
+    expect(store.getState().deck).toEqual(before.deck)
+    expect(store.getState().cash).toBe(before.cash)
   })
 
   it('effects stack (no cap): a coin with a face effect gains a second face effect', () => {

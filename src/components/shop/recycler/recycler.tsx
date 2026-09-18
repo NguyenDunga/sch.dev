@@ -2,21 +2,13 @@
 // per effect, with a $1 minimum (a plain 50/50 coin still sells for $1).
 // The list is sortable (price high→low by default, price low→high, or deck
 // order) and scrolls when the collection outgrows the panel.
-//
-// DRAFT: the coin list, prices, and sort are live; the Sell button is inert
-// until the store action (remove coin + cash += price) is wired.
 
 import { useMemo, useState } from 'react'
-import { RECYCLE_PRICE_PER_EFFECT } from '@/core/shop'
+import { useRunStore } from '@/state/runStore'
+import { RECYCLE_PRICE_PER_EFFECT, recyclePrice } from '@/core/shop'
 import type { Coin } from '@/core/types'
 import { Coin as CoinVisual } from '@/components/hand/coin'
 import { Button } from '@/components/ui/button'
-
-/** Sell price: $1 per effect, $1 minimum (a plain coin is worth the base).
- *  (draft helper — moves to core/state when the sell action is wired) */
-function recyclePrice(coin: Coin): number {
-  return Math.max(1, coin.effects.length) * RECYCLE_PRICE_PER_EFFECT
-}
 
 type RecyclerSort = 'priceDesc' | 'priceAsc' | 'order'
 
@@ -32,6 +24,7 @@ interface RecyclerProps {
 
 export function Recycler({ coins }: RecyclerProps) {
   const [sort, setSort] = useState<RecyclerSort>('priceDesc')
+  const sellCoin = useRunStore((s) => s.sellCoin)
 
   // The sorted view (deck order is the collection order — draw pile first).
   const sorted = useMemo(() => {
@@ -84,15 +77,13 @@ export function Recycler({ coins }: RecyclerProps) {
                   : `${coin.effects.length} effect${coin.effects.length > 1 ? 's' : ''}`}
               </span>
               <span className="recycler-price">${recyclePrice(coin)}</span>
-              <Button size="xs" disabled>
+              <Button size="xs" sfx="cash" onClick={() => sellCoin(coin.id)}>
                 Sell
               </Button>
             </li>
           ))}
         </ul>
       )}
-
-      <p className="area-draft-note">draft — sell action wiring next</p>
     </section>
   )
 }
