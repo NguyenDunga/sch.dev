@@ -14,11 +14,40 @@
   justify-content: center;
 }
 
+/* 13a.13: the hand is always ONE line. No wrap — when space runs out the
+   coins shrink (see below) instead of reflowing to a second line. The
+   min-height pins the row height so picking the last coin (all slots empty)
+   never moves the play row. */
 .hand-row {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
-  flex-wrap: wrap;
+  align-items: center;
+  min-height: 4rem;
+}
+
+/* Every hand item owns a constant 64px footprint (the 56px coin + 4px
+   padding) and only shrinks — never grows, never wraps — so slot positions
+   stay put when coins are picked or dealt. */
+.hand-row .hand-coin {
+  flex: 0 1 4rem;
+  min-width: 0;
+  box-sizing: border-box;
+  /* Query container: the coin scales with the button's content box. */
+  container-type: inline-size;
+}
+
+/* 100cqw = button width − 8px padding. At the natural 64px footprint the
+   scale is exactly 1; under pressure the coin shrinks to fill the (shrunk)
+   slot exactly, matching the empty slot's inset circle. */
+.hand-row .hand-coin .coin {
+  scale: calc(100cqw / 56px);
+}
+
+.hand-row .hand-slot--empty {
+  flex: 0 1 4rem;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* -- 13a.5: multi-select + drag ------------------------------------------------ */

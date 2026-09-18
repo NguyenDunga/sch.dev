@@ -27,18 +27,13 @@ interface DraggableHandCoinProps {
   /** 13a.6: per-coin discard control (the D key while the coin is focused).
    *  The store does the move (`discard`). */
   onDiscard?: (el: HTMLElement) => void
-  /** 13a.6: the pointer entered this coin (the quick-discard hotspot tracks
-   *  the hovered coin). */
-  onHover?: () => void
-  /** 13a.6: the pointer left this coin. */
-  onHoverEnd?: () => void
   /** 13a.6: register this coin's element (the discard ghost's flight origin). */
   registerRef?: (el: HTMLButtonElement | null) => void
 }
 
 export function DraggableHandCoin({
   coin, index, enabled, shaking, shakeKey, dealIndex, selected,
-  onPick, onToggleSelect, onRangeSelect, onDiscard, onHover, onHoverEnd, registerRef,
+  onPick, onToggleSelect, onRangeSelect, onDiscard, registerRef,
 }: DraggableHandCoinProps) {
   const { listeners, setNodeRef, isDragging } = useDraggable({
     id: `${DRAG_ID_PREFIX}${index}`,
@@ -83,8 +78,6 @@ export function DraggableHandCoin({
       onSelectClick={onSelectClick}
       onPick={onPick}
       onDiscard={onDiscard}
-      onHover={onHover}
-      onHoverEnd={onHoverEnd}
     />
   )
 }

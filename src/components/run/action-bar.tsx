@@ -1,8 +1,8 @@
 // Action bar (C6) — the bottom controls of the run screen. Play phase: the
 // explicit Confirm (play → toss). Buff phase: the explicit Score (buff →
 // score). No auto-score timer (SDD C6). 13a.6: the Discard mode toggle is
-// gone — discard is the well drop / the per-coin D key / the quick-discard
-// hotspot. Uses the themed Button (full state set, UX §3).
+// gone — discard is the well drop or the per-coin D key. Uses the themed
+// Button (full state set, UX §3).
 
 import type { HandPhase } from '@/core/types'
 import { Button } from '@/components/ui/button'

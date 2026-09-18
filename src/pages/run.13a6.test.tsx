@@ -1,15 +1,12 @@
 // @vitest-environment jsdom
 //
 // 13a.6 — drop-zone score & discard areas (UX §3, WBS 13a.6):
-//   - the Discard mode toggle is GONE (drag-to-well / D key / the corner
-//     quick-discard hotspot replace it)
+//   - the Discard mode toggle is GONE (drag-to-well / D key replace it)
 //   - the discard well is an always-live drop target (the dnd routing is
 //     unit-tested in coin-dnd.test.tsx; the pointer drag itself needs real
 //     pointer geometry, like 13a.5)
 //   - the per-coin D key is the keyboard discard path (no-pointer users):
 //     focus a coin, press D — the draw-enchant redraw pip still works
-//   - the corner quick-discard hotspot discards the hovered coin (pointer
-//     handoff) or the whole selection
 //   - every path calls the same store `discard` (UX §0 — no number changes
 //     beyond the discard itself)
 
@@ -71,13 +68,11 @@ function discardInvariants() {
 }
 
 describe('13a.6 — the Discard mode toggle is gone', () => {
-  it('no Discard toggle button in the play phase (the quick-discard hotspot is not a toggle)', () => {
+  it('no Discard toggle button in the play phase', () => {
     freshRun('13a6-no-toggle')
     // The old mode toggle was a button named exactly "Discard" / "Discarding".
     expect(screen.queryByRole('button', { name: 'Discard' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Discarding' })).toBeNull()
-    // The corner quick-discard hotspot is present (its own accessible name).
-    expect(screen.getByRole('button', { name: /quick discard/i })).toBeTruthy()
     // A plain tap still PICKS (no mode to be stuck in).
     const before = useRunStore.getState().play
     fireEvent.click(screen.getAllByRole('button', { name: /pick coin/i })[0])
@@ -150,71 +145,5 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
     const coin = screen.getAllByRole('button', { name: /pick coin/i })[0]
     fireEvent.keyDown(coin, { key: 'd' })
     expect(useRunStore.getState()).toEqual(before)
-  })
-})
-
-describe('13a.6 — the corner quick-discard hotspot', () => {
-  it('hovering the hotspot discards the hovered coin (pointer handoff)', async () => {
-    freshRun('13a6-hover')
-    const invariants = discardInvariants()
-    const coin = screen.getAllByRole('button', { name: /pick coin 3/i })[0]
-    const chip = screen.getByRole('button', { name: /quick discard/i })
-
-    // The pointer handoff: enter the coin, leave it, enter the hotspot —
-    // within the grace window (synchronous here, the 120ms timer never fires).
-    fireEvent.pointerEnter(coin)
-    fireEvent.pointerLeave(coin)
-    fireEvent.pointerEnter(chip)
-
-    expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(7)
-    expect(screen.getByRole('img', { name: 'Discard pile, 1 coins' })).toBeTruthy()
-    expect(discardInvariants()).toEqual(invariants)
-    await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })
-  })
-
-  it('with no hovered coin, the hotspot discards the whole selection', () => {
-    freshRun('13a6-sel')
-    const invariants = discardInvariants()
-    // Ctrl+A selects all 8; the click path (no hover) discards the selection.
-    fireEvent.keyDown(window, { key: 'a', ctrlKey: true })
-    expect(document.querySelectorAll('.hand-coin--selected')).toHaveLength(8)
-
-    fireEvent.click(screen.getByRole('button', { name: /quick discard/i }))
-
-    expect(screen.queryAllByRole('button', { name: /pick coin/i })).toHaveLength(0)
-    expect(screen.getByRole('img', { name: 'Discard pile, 8 coins' })).toBeTruthy()
-    expect(discardInvariants()).toEqual(invariants)
-    // The selection is cleared after the discard.
-    expect(document.querySelectorAll('.hand-coin--selected')).toHaveLength(0)
-  })
-
-  it('with nothing hovered or selected, the hotspot discards nothing', () => {
-    freshRun('13a6-noop')
-    const before = useRunStore.getState()
-    fireEvent.pointerEnter(screen.getByRole('button', { name: /quick discard/i }))
-    expect(useRunStore.getState()).toEqual(before)
-  })
-
-  it('a tap (pointerenter + click of the same gesture) discards only once', () => {
-    freshRun('13a6-tap')
-    const coin = screen.getAllByRole('button', { name: /pick coin 5/i })[0]
-    const chip = screen.getByRole('button', { name: /quick discard/i })
-    // Touch tap: pointerenter (handoff) and the click land within the 300ms
-    // guard — one tap must be one discard, not two.
-    fireEvent.pointerEnter(coin)
-    fireEvent.pointerLeave(coin)
-    fireEvent.pointerEnter(chip)
-    fireEvent.click(chip)
-
-    expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(7)
-    expect(screen.getByRole('img', { name: 'Discard pile, 1 coins' })).toBeTruthy()
-  })
-
-  it('the hotspot is absent outside the play phase', () => {
-    freshRun('13a6-phase')
-    fireEvent.keyDown(window, { key: '1' })
-    fireEvent.keyDown(window, { key: 'Enter' }) // → buff
-    expect(useRunStore.getState().handPhase).toBe('buff')
-    expect(screen.queryByRole('button', { name: /quick discard/i })).toBeNull()
   })
 })

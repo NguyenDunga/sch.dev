@@ -50,11 +50,6 @@ interface HandCoinProps {
   /** 13a.6: per-coin discard control — the D key while the coin is focused
    *  (the keyboard path to `discard` for no-pointer users). */
   onDiscard?: (el: HTMLElement) => void
-  /** 13a.6: the pointer entered this coin (the quick-discard hotspot tracks
-   *  the hovered coin). */
-  onHover?: () => void
-  /** 13a.6: the pointer left this coin. */
-  onHoverEnd?: () => void
 }
 
 /** The a11y label: position, selection state, effect kinds, the discard key. */
@@ -65,7 +60,7 @@ function coinAriaLabel(index: number, enabled: boolean, selected: boolean, effec
 }
 
 export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function HandCoin(
-  { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick, onDiscard, onHover, onHoverEnd },
+  { coin, index, enabled, shaking, shakeKey, dealIndex, selected, dragging, dragProps, onSelectClick, onPick, onDiscard },
   ref,
 ) {
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>) => {
@@ -93,8 +88,6 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
       disabled={!enabled}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      onPointerLeave={onHoverEnd}
-      onPointerEnter={() => onHover?.()}
       {...dragProps}
       aria-label={coinAriaLabel(index, enabled, !!selected, coin.effects)}
     >

@@ -49,10 +49,21 @@
   outline-offset: 2px;
 }
 
-/* empty hand slot placeholder (keeps the row layout stable). */
+/* Empty hand slot placeholder: its box is EXACTLY the hand-coin button's
+   box (64px, border-box, same flex shrink) and the dashed circle is drawn
+   4px inside it — the coin's own footprint. Filled and empty slots are the
+   same size and shrink identically, so picking/dealing a coin never changes
+   the row's dimensions. */
 .hand-slot--empty {
+  position: relative;
   width: 4rem;
-  height: 5.2rem;
-  border-radius: 9999px;
+  aspect-ratio: 1;
+}
+
+.hand-slot--empty::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
   border: 2px dashed var(--line);
 }

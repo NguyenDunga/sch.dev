@@ -17,7 +17,7 @@
 //      * the store result of a hand played under reduced motion is
 //        identical to the same hand played without it (juice never
 //        mutates state, UX §0).
-//   3. Hit targets are ≥44px (UX §3): coin, play slot, quick-discard,
+//   3. Hit targets are ≥44px (UX §3): coin, play slot,
 //      charm chip, discard well.
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -194,7 +194,6 @@ describe('13a.12 — hit targets ≥44px (UX §3)', () => {
     expect(sizeMatch).toBeTruthy()
     expect(parseInt(sizeMatch![1], 10)).toBeGreaterThanOrEqual(44)
     expect(cssRem(coin, 'play-slot', 'min-height')).toBeGreaterThanOrEqual(2.75)
-    expect(cssRem(run, 'quick-discard', 'min-height')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(run, 'charm-chip', 'min-height')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(run, 'discard-well-hole', 'width')).toBeGreaterThanOrEqual(2.75)
     expect(cssRem(run, 'discard-well-hole', 'height')).toBeGreaterThanOrEqual(2.75)

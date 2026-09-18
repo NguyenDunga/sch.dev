@@ -9,21 +9,20 @@
 // (coin → well, fade). 13a.1 auto-advances a no-Echo buff straight to
 // scoring. 13a.5 adds drag-and-drop + multi-select. 13a.6 replaces the
 // discard-mode toggle with always-live drop zones: drag a coin to the play
-// row to pick, drag it into the discard well to discard, plus a corner
-// quick-discard hotspot and a per-coin D key (the keyboard discard path).
+// row to pick, drag it into the discard well to discard, plus a per-coin D
+// key (the keyboard discard path).
 // UI is a thin layer — it reads RunState and calls store actions; juice
 // never mutates state (UX §0).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { ACTION_ICONS } from '@/lib/icons'
 import { BLINDS } from '@/core/balance'
 import { isFilled, none, some } from '@/core/helpers'
 import { projectScore } from '@/core/scoring'
 import type { BossRuleId, CharmId, Coin, Hand, HandPhase, Option, Play } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
-import { dropTargets, discardTargets, selectedInOrder, useCoinSelection, type CoinSelection } from '@/components/hand/coin-dnd'
+import { dropTargets, discardTargets, useCoinSelection, type CoinSelection } from '@/components/hand/coin-dnd'
 import { CoinDnd, DiscardWellDrop, DraggableHandCoin, PlayDropZone, PlaySlotDnd } from '@/components/hand/coin-dnd'
 import { knownFace } from '@/components/hand/coin'
 import { ScoreTicker } from '@/components/hand/score-ticker/score-ticker'
@@ -31,7 +30,6 @@ import type { TossProjection } from '@/components/hand/score-ticker/score-ticker
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
-import { OnboardingHint } from '@/components/run/onboarding-hint'
 import { CharmBar } from '@/components/charm-bar/charm-bar'
 import { Deck } from '@/components/run/piles'
 import { DiscardGhostLayer } from '@/components/run/discard-ghost.tsx'
@@ -200,50 +198,18 @@ function usePlayRowDnd(
   return { handleDropToPlay, handleUnpick, handleQuickPlay, handleMovePlay }
 }
 
-/** 13a.6 — track the coin the pointer is over (the quick-discard hotspot's
- *  target). A short grace window covers the handoff to the hotspot: the
- *  coin's pointerleave fires BEFORE the hotspot's pointerenter, so the
- *  hovered coin stays valid a moment after the pointer leaves it. */
-function useHoveredCoin() {
-  const hovered = useRef<number | null>(null)
-  const clearTimer = useRef<number | null>(null)
-  const onHover = (i: number) => {
-    hovered.current = i
-    if (clearTimer.current !== null) {
-      window.clearTimeout(clearTimer.current)
-      clearTimer.current = null
-    }
-  }
-  const onHoverEnd = () => {
-    if (clearTimer.current !== null) window.clearTimeout(clearTimer.current)
-    clearTimer.current = window.setTimeout(() => {
-      hovered.current = null
-      clearTimer.current = null
-    }, 120)
-  }
-  useEffect(() => {
-    const t = clearTimer
-    return () => {
-      if (t.current !== null) window.clearTimeout(t.current)
-    }
-  }, [])
-  return { hovered, onHover, onHoverEnd }
-}
-
-/** 13a.6 — the discard paths: drag-to-well, the per-coin D key, and the
- *  corner quick-discard hotspot. All call the same store `discard` (UX §0);
- *  the ghost (13.1) plays the flight from the coin's element to the well.
- *  Kept out of useHandFlow for the 60-line limit. */
+/** 13a.6 — the discard paths: drag-to-well and the per-coin D key. All call
+ *  the same store `discard` (UX §0); the ghost (13.1) plays the flight from
+ *  the coin's element to the well. Kept out of useHandFlow for the 60-line
+ *  limit. */
 function useDiscardFlow(
   hand: Hand,
   wellRef: RefObject<HTMLDivElement | null>,
   selection: CoinSelection,
-  hovered: RefObject<number | null>,
 ) {
   const discard = useRunStore((s) => s.discard)
   const { ghosts, spawn: spawnDiscardGhost, remove: removeGhost } = useDiscardGhost(wellRef)
   const coinRefs = useRef(new Map<number, HTMLElement>()) // coin elements (ghost origin)
-  const lastQuickDiscard = useRef(0) // pointerenter + click of one tap = one discard
 
   /** Discard one hand coin (store action + ghost flight + the "shhk"). */
   const discardOne = (i: number, el?: HTMLElement | null) => {
@@ -262,31 +228,13 @@ function useDiscardFlow(
     selection.clear()
   }
 
-  /** The corner quick-discard hotspot: discards the hovered coin (pointer
-   *  handoff), else the whole selection. A tap fires pointerenter AND
-   *  click — the 300ms guard makes one tap one discard. */
-  const handleQuickDiscard = () => {
-    const now = Date.now()
-    if (now - lastQuickDiscard.current < 300) return
-    lastQuickDiscard.current = now
-    const i = hovered.current
-    if (i !== null && hand[i]?.kind === 'filled') {
-      discardOne(i, coinRefs.current.get(i))
-      return
-    }
-    if (selection.selected.size > 0) {
-      for (const j of selectedInOrder(hand, selection.selected)) discardOne(j, coinRefs.current.get(j))
-      selection.clear()
-    }
-  }
-
   /** Register a coin's element (the discard ghost's flight origin). */
   const registerCoin = (i: number, el: HTMLButtonElement | null) => {
     if (el) coinRefs.current.set(i, el)
     else coinRefs.current.delete(i)
   }
 
-  return { discardOne, handleDropToDiscard, handleQuickDiscard, registerCoin, ghosts, removeGhost }
+  return { discardOne, handleDropToDiscard, registerCoin, ghosts, removeGhost }
 }
 
 /** Hand controls (12.6 + 13.1 + 13a.5 + 13a.6): pick / 6th-pick shake /
@@ -303,8 +251,7 @@ function useHandFlow(
   const confirmPlay = useRunStore((s) => s.confirmPlay)
   const { shake, bump: onPlayFull } = useShakeFeedback()
   const lastPick = useRef<{ id: number; t: number } | null>(null) // 13a.5 quick-play guard
-  const hover = useHoveredCoin() // 13a.6 — the quick-discard hotspot's target
-  const discardFlow = useDiscardFlow(hand, wellRef, selection, hover.hovered)
+  const discardFlow = useDiscardFlow(hand, wellRef, selection)
 
   /** Pick one hand coin (or the 6th-pick shake when the play is full); shared by click, keys, drag. */
   const pickOne = (i: number) => {
@@ -321,7 +268,7 @@ function useHandFlow(
   }
 
   /** 13a.6: a plain tap always picks — the discard-mode toggle is gone
- *  (discard is the well drop / the D key / the quick-discard hotspot). */
+ *  (discard is the well drop or the per-coin D key). */
   const handleHandTap = (i: number) => {
     const slot = hand[i]
     if (slot?.kind !== 'filled') return
@@ -341,30 +288,9 @@ function useHandFlow(
     pickOne,
     handleHandTap,
     handleConfirm,
-    onCoinHover: hover.onHover,
-    onCoinHoverEnd: hover.onHoverEnd,
     ...dnd,
     ...discardFlow,
   }
-}
-
-/** 13a.6: the corner quick-discard hotspot — hovering it discards the
- *  hovered coin (pointer handoff) or the whole selection; click works too
- *  (the no-pointer path: select the coins, Tab here, Enter). */
-function QuickDiscardChip({ onQuickDiscard }: { onQuickDiscard: () => void }) {
-  return (
-    <button
-      type="button"
-      className="quick-discard"
-      onPointerEnter={onQuickDiscard}
-      onClick={onQuickDiscard}
-      aria-label="Quick discard: discards the hovered coin or the selected coins"
-      title="Quick discard — hover a coin, then this"
-    >
-      <ACTION_ICONS.discard.icon size={16} strokeWidth={2.5} aria-hidden />
-      <span>Discard</span>
-    </button>
-  )
 }
 
 interface HandRowProps {
@@ -380,17 +306,11 @@ interface HandRowProps {
   onRangeSelect: (i: number) => void
   /** 13a.5: double-click quick-play (caught on the row — the coin moves away). */
   onQuickPlay: () => void
-  /** 13a.6: hover tracking (the quick-discard hotspot's target). */
-  onHover: (i: number) => void
-  onHoverEnd: () => void
   registerRef: (i: number, el: HTMLButtonElement | null) => void
-  /** 13a.6: the corner quick-discard hotspot. */
-  onQuickDiscard: () => void
 }
 
 /** The face-down hand row: tappable coins (pick), draggable to the play row
- *  (13a.5) or the discard well (13a.6), multi-selectable — plus the corner
- *  quick-discard hotspot (13a.6). */
+ *  (13a.5) or the discard well (13a.6), multi-selectable. */
 function HandRow({
   hand,
   canPick,
@@ -402,10 +322,7 @@ function HandRow({
   onToggleSelect,
   onRangeSelect,
   onQuickPlay,
-  onHover,
-  onHoverEnd,
   registerRef,
-  onQuickDiscard,
 }: HandRowProps) {
   return (
     <div className="hand-zone">
@@ -425,8 +342,6 @@ function HandRow({
               onDiscard={(el) => onDiscard(i, el)}
               onToggleSelect={() => onToggleSelect(i)}
               onRangeSelect={() => onRangeSelect(i)}
-              onHover={() => onHover(i)}
-              onHoverEnd={onHoverEnd}
               registerRef={(el) => registerRef(i, el)}
             />
           ) : (
@@ -434,7 +349,6 @@ function HandRow({
           ),
         )}
       </div>
-      {canPick && <QuickDiscardChip onQuickDiscard={onQuickDiscard} />}
     </div>
   )
 }
@@ -462,10 +376,7 @@ interface PlayAreaProps {
   onToggleSelect: (i: number) => void
   onRangeSelect: (i: number) => void
   onQuickPlay: () => void
-  onHover: (i: number) => void
-  onHoverEnd: () => void
   registerRef: (i: number, el: HTMLButtonElement | null) => void
-  onQuickDiscard: () => void
   getReflip: (i: number) => (() => void) | undefined
   /** 13b.8: a tossed coin has landed (index) — drives the projection / sfx /
    *  auto-score from the toss animation (no setTimeout). */
@@ -473,12 +384,11 @@ interface PlayAreaProps {
 }
 
 /** The play row (5 slots, a drop target — 13a.5) + the deck/discard-well
- *  piles (the well is a drop target too — 13a.6) + the face-down hand row
- *  with the corner quick-discard hotspot (13a.6). */
+ *  piles (the well is a drop target too — 13a.6) + the face-down hand row. */
 function PlayArea({
   play, hand, revealed, canPick, shake, deals, wellRef, selection,
   onPick, onDiscard, onUnpick, onToggleSelect, onRangeSelect, onQuickPlay,
-  onHover, onHoverEnd, registerRef, onQuickDiscard, getReflip, onLand,
+  registerRef, getReflip, onLand,
 }: PlayAreaProps) {
   return (
     <div className="play-area">
@@ -523,10 +433,7 @@ function PlayArea({
         onToggleSelect={onToggleSelect}
         onRangeSelect={onRangeSelect}
         onQuickPlay={onQuickPlay}
-        onHover={onHover}
-        onHoverEnd={onHoverEnd}
         registerRef={registerRef}
-        onQuickDiscard={onQuickDiscard}
       />
     </div>
   )
@@ -755,10 +662,7 @@ interface PlayAreaHostProps {
   onDropToDiscard: (i: number) => void
   onMovePlay: (from: number, to: number) => void
   onQuickPlay: () => void
-  onHover: (i: number) => void
-  onHoverEnd: () => void
   registerRef: (i: number, el: HTMLButtonElement | null) => void
-  onQuickDiscard: () => void
   getReflip: (i: number) => (() => void) | undefined
   /** 13b.8: a tossed coin has landed (index). */
   onLand: (i: number) => void
@@ -766,7 +670,7 @@ interface PlayAreaHostProps {
 
 /** 13a.5 + 13a.6: the play area wrapped in the dnd context — a hand coin can
  *  be press-dragged onto the play row to pick it, or into the discard well
- *  to discard it (the click / D-key / hotspot fallbacks stay), and a play
+ *  to discard it (the click / D-key fallbacks stay), and a play
  *  coin can be dragged to another slot to reorder the row. */
 function PlayAreaHost({
   play,
@@ -784,10 +688,7 @@ function PlayAreaHost({
   onDropToDiscard,
   onMovePlay,
   onQuickPlay,
-  onHover,
-  onHoverEnd,
   registerRef,
-  onQuickDiscard,
   getReflip,
   onLand,
 }: PlayAreaHostProps) {
@@ -808,10 +709,7 @@ function PlayAreaHost({
         onToggleSelect={selection.toggle}
         onRangeSelect={(i) => selection.rangeSelect(i, hand)}
         onQuickPlay={onQuickPlay}
-        onHover={onHover}
-        onHoverEnd={onHoverEnd}
         registerRef={registerRef}
-        onQuickDiscard={onQuickDiscard}
         getReflip={getReflip}
         onLand={onLand}
       />
@@ -885,22 +783,21 @@ export function RunScreen() {
   return (
     <main className="run-screen" onClick={onBackgroundClick}>
       <RunTop onSave={save} />
-      <OnboardingHint /> // 13a.10 — first-run hint (overlay, never blocks input)
-      <CharmBar />
-       <ScoreTicker
+      <ScoreTicker
         score={lastScore}
         projection={projection}
         choro={choro.seq ? { runId: choro.seq.runId, beat: choro.beat, skipped: choro.skipped } : null}
         chipsRef={choro.chipsRef}
         cashRef={choro.cashRef}
       />
+      <CharmBar />
       <PlayAreaHost
         play={play} hand={hand} revealed={flags.revealed} canPick={flags.canPick}
         shake={flow.shake} deals={deals} wellRef={wellRef} selection={selection}
         onPick={flow.handleHandTap} onDiscard={flow.discardOne} onUnpick={flow.handleUnpick}
         onDropToPlay={flow.handleDropToPlay} onDropToDiscard={flow.handleDropToDiscard} onMovePlay={flow.handleMovePlay}
-        onQuickPlay={flow.handleQuickPlay} onHover={flow.onCoinHover} onHoverEnd={flow.onCoinHoverEnd}
-        registerRef={flow.registerCoin} onQuickDiscard={flow.handleQuickDiscard} getReflip={flags.getReflip}
+        onQuickPlay={flow.handleQuickPlay}
+        registerRef={flow.registerCoin} getReflip={flags.getReflip}
         onLand={projection ? projection.handleLand : () => {}}
       />
       <RunActions
