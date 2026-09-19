@@ -65,6 +65,8 @@ function useInfoHover(rows: InfoRow[], title: string): { onMouseOver: (e) => voi
 - [x] 21.10 Bug fix: keep-unplayed hand coins merged into the draw pile when the shop opens (`enterShopDraft`), so the Recycler/Forge see and can sell the whole collection (they were invisible/unsellable and re-appeared after selling every copy).
 - [x] 21.11 Bug fix: the deck button (`DeckInspector`) shows only the draw pile (the remaining coins), not the discard pile (which lives in the discard well); title "Your deck" → "Draw pile".
 - [x] 21.12 Plain coin face-down glyph: question mark → solid circle (`FaCircle`).
+- [x] 21.13 Doc sync (Double-Side → Heads/Tails): the SDD (`software_design_data.md` `CoinEffect` / `CoinEffectId` / RNG item 6 / `COIN_EFFECTS` count 11→12), the SDD component doc (face resolution + `buy`), and the balance-baseline (coin table Double-Side row → Heads + Tails; resolution order; shop description) were still carrying the pre-M18 `doubleSide`. Updated to match the implemented Heads/Tails (M18 replaced Double-Side with Heads + Tails; the docs lagged).
+- [x] 21.14 Shop offer category labels: each offer tile now shows a small tinted badge (Coin / Charm / Hand Size) so the offer type reads at a glance (coin = gold, charm = purple, hand = teal).
 
 ## Exit gate
 
@@ -80,6 +82,8 @@ function useInfoHover(rows: InfoRow[], title: string): { onMouseOver: (e) => voi
 - **Shop scroll:** `height: 100dvh` + `minmax(0, 1fr)` → internal scroll on short viewports.
 - **Balance:** Alternating 35×3 → 45×4 (180, 90% of Jackpot's 200); EV/hand 58.44 → 63.13.
 - **Bug fixes:** keep-unplayed hand coins now merge into the draw pile when the shop opens (visible + sellable in the Recycler/Forge — they were invisible and re-appeared after selling every copy); the deck button shows only the draw pile (the discard pile lives in the discard well); plain coin face-down glyph is a solid circle (was a question mark).
+- **Doc sync:** Double-Side → Heads/Tails across the SDD + balance-baseline (the pre-M18 `doubleSide` was still in the docs; M18 replaced it with Heads + Tails in code).
+- **Shop category labels:** each offer tile shows a tinted Coin / Charm / Hand Size badge so the offer type reads at a glance.
 - Exit gate: `tsc` + `eslint` + `check-structure` + `vitest` (613/613) + `vite build` all green.
 
 ## Process notes

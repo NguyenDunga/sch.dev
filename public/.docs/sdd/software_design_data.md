@@ -14,20 +14,20 @@ type Option<T> = { some: true; value: T } | { some: false }
 
 type DrawCount = 1 | 2 | 3
 
-// Coin effects as a tagged union: each variant carries exactly its own data. A Weight/Double-Side
-// coin always has a favoured face; a Chaos coin can never carry one. (Replaces the old
-// `effects: CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
+// Coin effects as a tagged union: each variant carries exactly its own data. A Weight coin always
+// has a favoured face; Heads/Tails force a fixed face; a Chaos coin can never carry one. (Replaces
+// the old `effects: CoinEffectId[]` + shared `faceParams?` — a merged coin just holds both variants.)
 type CoinEffect =
   | { kind: 'weight'; favored: Face }
-  | { kind: 'doubleSide'; favored: Face }
+  | { kind: 'heads' } | { kind: 'tails' }
   | { kind: 'chaos' } | { kind: 'echo' } | { kind: 'magnetic' } | { kind: 'reverse' }
   | { kind: 'tax' } | { kind: 'jackpot' }
   | { kind: 'draw'; count: DrawCount }
 type CoinEffectKind = CoinEffect['kind']
 
 // Shop catalog id (Draw sold as 3 tiers). At purchase a Draw-N id → { kind: 'draw'; count: N },
-// and Weight/Double-Side roll their favoured face into the effect variant.
-type CoinEffectId = 'weight' | 'doubleSide' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
+// and Weight rolls its favoured face into the effect variant. Heads/Tails are fixed.
+type CoinEffectId = 'weight' | 'heads' | 'tails' | 'chaos' | 'echo' | 'magnetic' | 'reverse' | 'tax' | 'jackpot' | 'draw1' | 'draw2' | 'draw3'
 
 interface Coin { id: number; effects: CoinEffect[] }                   // effects carry their own params — no shared optional
 
@@ -97,7 +97,7 @@ interface RunState {
   3. **Per play-phase discard** — draw-enchant redraws: pop N coins from the draw pile (no rng); coins enter the hand face-down
   4. **Per-slot toss** — face rolls in fixed order: odds roll (base 50/50, Weight 75/25, Magnetic 75/25, or Chaos's random-odds roll + face roll); then Echo re-flips in the buff phase (same rolls, once per Echo coin, player-timed)
   5. **Per-hand score** — one chance roll per Jackpot coin in the play (25%); Tax pays flat (no roll)
-  6. **Shop** — on shop open the keep-unplayed hand coins (13a.2) are merged into the draw pile (no rng) so the Recycler/Forge see and can sell the whole collection; then shuffle the remaining offer pool with the rng, take up to 5; on each reroll; plus one roll per purchased Weight (favored face) / Double-Side (face) coin
+  6. **Shop** — on shop open the keep-unplayed hand coins (13a.2) are merged into the draw pile (no rng) so the Recycler/Forge see and can sell the whole collection; then shuffle the remaining offer pool with the rng, take up to 5; on each reroll; plus one roll per purchased Weight (favored face) coin
 
   Same seed + same player choices → identical run (charter objective 3).
 
@@ -120,7 +120,7 @@ Data-only tables (current values: [balance-baseline](../prm/plan/plan_balance-ba
 - `BLINDS: Blind[12]` — 4 rounds × small/big/boss; targets **150 → 1750** (m13a: halved from the old 300 → 3500; Heavy Target ×1.5 applied at runtime → **2625**); rewards $4/$6/$10
 - `BOSS_RULES: BossRule[4]` — No Alternating · Short Fuse · No Jackpots · Heavy Target (target ×1.5, +$5)
 - `CHARMS: CharmDef[5]` — pool with categories and prices (Re-Toss removed 2026-09-13; Extra Hand re-priced $10 → $15 in m13a, 13a.11). *Config layout (M21):* each charm/coin owns one file under `src/config/` behind a compiler-complete registry — `CHARMS: Record<CharmId, CharmConfig>` / `COIN_EFFECTS: Record<CoinEffectKind, CoinEffectConfig>` (the Record key **is** the kind); `CHARM_CATALOG` / `COIN_CATALOG` are the derived `CharmDef[]` / `CoinDef[]` sold in the shop; `blurb(params)` is a function of the balance tables so displayed numbers can't drift.
-- `COIN_EFFECTS: CoinDef[11]` — 9 effect types (Draw split into 3 tiers → 11 entries): Weight · Double-Side · Chaos · Echo · Magnetic · Reverse · Tax · Jackpot · Draw-1 · Draw-2 · Draw-3 (prices in balance-baseline)
+- `COIN_EFFECTS: CoinDef[12]` — 10 effect types (Draw split into 3 tiers → 12 entries): Weight · Heads · Tails · Chaos · Echo · Magnetic · Reverse · Tax · Jackpot · Draw-1 · Draw-2 · Draw-3 (prices in balance-baseline)
 - Constants: `HANDS_PER_BLIND = 4` (m13a, was 10) · `SHORT_FUSE_HANDS = 3` (m13a, was 8) · `HAND_SIZE = 8` · `PLAY_SIZE = 5` · `HAND_SIZE_UPGRADE_PRICE = 10` (draft) · `HAND_SIZE_CAP = 10` (draft) · `START_CASH = 4` · `SHOP_SLOTS = 5` · `FREE_REROLLS = 1` · `PAYDAY_BONUS = 5` · `HEAVY_TARGET_BONUS = 5` · `LEFTOVER_HAND_BONUS = 1` (m13a early clear: +$1 per unused hand, draft — 13a.4) · `BASE_DECK_SIZE = 24` (m13a, was 80 — see m13a recalc Deck-drain check) · starter composition (`buildCollection`): **16 plain + 8 Weight(Heads)** (m13a — aligned favored face; the recalc's headline finding) · `REMOVE_COIN_COST = 1` · `TAX_PAYOUT = 1` · `JACKPOT_CHANCE = 0.25` · `JACKPOT_PAYOUT = 4`
 
 ## Data Flow Summary

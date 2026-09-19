@@ -47,7 +47,7 @@ interface OfferTileProps {
   onBuy: (offer: ShopOffer) => void
 }
 
-/** One offer tile: icon disc · title · price · Buy (hover → detail). */
+/** One offer tile: category · icon disc · title · price · Buy (hover → detail). */
 function OfferTile({ offer, cash, charms, handSize, onBuy }: OfferTileProps) {
   const rows = offerRows(offer, handSize)
   const hover = useInfoHover(rows, offerTitle(offer))
@@ -58,12 +58,14 @@ function OfferTile({ offer, cash, charms, handSize, onBuy }: OfferTileProps) {
   const disabled = cash < price || owned || atCap
   const Icon = rows[0].icon
   const name = rows[0].name
+  const category = offer.kind === 'coin' ? 'Coin' : offer.kind === 'charm' ? 'Charm' : 'Hand Size'
   return (
     <div
       className={`offer-tile offer-tile--${offer.kind}${poor ? ' offer-tile--poor' : ''}`}
       onMouseOver={hover.onMouseOver}
       onMouseOut={hover.onMouseOut}
     >
+      <span className="offer-tile-category">{category}</span>
       <span className="offer-tile-visual" aria-hidden>
         <Icon size={22} strokeWidth={2} />
       </span>

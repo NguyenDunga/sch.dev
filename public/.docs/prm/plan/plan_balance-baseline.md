@@ -76,7 +76,8 @@ Effects are **permanent to individual coins** (not charm-dependent). A coin can 
 | Coin | Effect | Price |
 | --- | --- | --- |
 | Weight | 75/25 lean toward a fixed face; the favored face is rolled on purchase and fixed for the run | $5 |
-| Double-Side | 100/0 fixed face; the face is rolled on purchase | $8 |
+| Heads | always lands on Heads (100/0 fixed) | $8 |
+| Tails | always lands on Tails (100/0 fixed) | $8 |
 | Chaos | random odds (uniform 0–100%) on every flip | $6 |
 | Echo | may be flipped twice per hand: after it lands, the player may click the coin to re-flip it once; the final face counts | $7 |
 | Magnetic | 75/25 bias toward the face of the coin in the slot to its left (resolved at flip time; no bias if the left slot is empty) | $6 |
@@ -86,7 +87,7 @@ Effects are **permanent to individual coins** (not charm-dependent). A coin can 
 | Draw-1 / Draw-2 / Draw-3 | discarding this coin redraws 1 / 2 / 3 coins from the draw pile | $5 / $8 / $12 |
 
 **Face resolution order** (a coin with several face effects, in priority order):
-1. **Odds stage** — Magnetic (75% toward left neighbor) > Double-Side (100/0) > Chaos (random 0–100) > Weight (75/25) > base (50/50); the highest-priority odds effect present sets the odds
+1. **Odds stage** — Magnetic (75% toward left neighbor) > Heads/Tails (100/0 fixed) > Chaos (random 0–100) > Weight (75/25) > base (50/50); the highest-priority odds effect present sets the odds
 2. **Roll** the face with the resolved odds
 3. **Reverse** — invert the face
 4. **Echo** — the player may re-run steps 1–3 once (re-flip)
@@ -107,7 +108,7 @@ Cash effects (Tax, Jackpot) pay **cash** at score time, outside the chips × mul
 
 The 3 coin-modifier charms (Weighted Coin / Double-Sided / Always Heads) were removed 2026-09-13 — their role is now filled by per-coin effects. The Re-Toss charm was removed 2026-09-13 (Q&A round 2) — unlimited discard supersedes it.
 
-Shop: 5 offers drawn from a combined pool — the 5 charms (no duplicates of owned charms) + the coin effects (coins may be bought multiple times; each purchase adds one new coin to the collection, with Weight/Double-Side faces rolled on purchase) + the hand-size upgrade (draft price $10 / cap 10), 1 free reroll per shop (rerolls all 5 offers). With the 24-coin base deck, a bought coin is ~4% of the collection (vs ~1.2% at 80) — it appears ~3× as often, so upgrades matter (the m13a goal).
+Shop: 5 offers drawn from a combined pool — the 5 charms (no duplicates of owned charms) + the coin effects (coins may be bought multiple times; each purchase adds one new coin to the collection, with Weight's favored face rolled on purchase) + the hand-size upgrade (draft price $10 / cap 10), 1 free reroll per shop (rerolls all 5 offers). With the 24-coin base deck, a bought coin is ~4% of the collection (vs ~1.2% at 80) — it appears ~3× as often, so upgrades matter (the m13a goal).
 
 Shop actions (2026-09-13 Q&A round 2):
 - **Merge (sacrifice)** — merge one owned coin into another: the target gains the source coin's effects (stack freely, no cap per coin); the source coin is consumed; free
