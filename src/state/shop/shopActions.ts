@@ -127,13 +127,15 @@ export function leaveShopDraft(st: Draft, rng: Rng): void {
   st.handsLeft = baseHands + (st.charms.includes('extraHand') ? 1 : 0)
   st.blindScore = 0
   st.earlyClearBonus = 0
-  // 13a.2 keep-unplayed: the hand may still hold unplayed coins from the
-  // last hand — they are part of the collection and go back into it.
+  // 13a.2 keep-unplayed: the hand is normally empty here — the keep-unplayed
+  // coins were merged into the deck when the shop opened (enterShopDraft). This
+  // is a safety net: if any hand coins remain, they are part of the collection
+  // and go back into it.
   const inHand = st.hand.filter((s) => s.kind === 'filled').map((s) => s.coin)
   st.hand = emptyHand(st.handSize)
   st.play = emptyHand(PLAY_SIZE)
-  // Whole collection (draw + discard + kept hand coins) → shuffled draw pile;
-  // discard cleared.
+  // Whole collection (draw + discard + any kept hand coins) → shuffled draw
+  // pile; discard cleared.
   st.deck = shuffleCollection(rng, { drawPile: [...st.deck.drawPile, ...inHand], discardPile: st.deck.discardPile })
   st.shop = { offers: [] }
   st.rngState = rng.state()

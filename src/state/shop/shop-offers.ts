@@ -7,7 +7,7 @@
 import { HAND_SIZE_CAP, SHOP_SLOTS } from '@/core/shop'
 import { COIN_CATALOG } from '@/config/coins'
 import { CHARM_CATALOG } from '@/config/charms'
-import { isFilled } from '@/core/helpers'
+import { emptyHand, isFilled } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { CoinEffect, CoinEffectId, RunState, ShopOffer } from '@/core/types'
 import type { Draft } from '../storeTypes'
@@ -23,6 +23,14 @@ export function enterShopDraft(st: Draft, rng: Rng): void {
   // 13a.15: the reroll price counter resets after a boss blind (a new round
   // starts) — it persists across the shops of a round.
   if (st.blindIndex % 3 === 2) st.rerollCount = 0
+  // 13a.2 keep-unplayed: the hand may still hold unplayed coins from the last
+  // hand. Merge them into the deck NOW (not at leaveShop) so the shop's
+  // Recycler/Forge see the WHOLE collection and can sell/merge them — leaving
+  // them in the hand meant they were invisible in the shop and re-appeared in
+  // the deck after selling every copy of a coin (player report).
+  const inHand = st.hand.filter(isFilled).map((s) => s.coin)
+  st.deck.drawPile = [...st.deck.drawPile, ...inHand]
+  st.hand = emptyHand(st.handSize)
   st.shop = { offers: generateOffers(rng, st.charms, st.handSize) }
 }
 
