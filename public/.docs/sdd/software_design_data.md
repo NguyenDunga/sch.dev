@@ -97,7 +97,7 @@ interface RunState {
   3. **Per play-phase discard** — draw-enchant redraws: pop N coins from the draw pile (no rng); coins enter the hand face-down
   4. **Per-slot toss** — face rolls in fixed order: odds roll (base 50/50, Weight 75/25, Magnetic 75/25, or Chaos's random-odds roll + face roll); then Echo re-flips in the buff phase (same rolls, once per Echo coin, player-timed)
   5. **Per-hand score** — one chance roll per Jackpot coin in the play (25%); Tax pays flat (no roll)
-  6. **Shop** — shuffle the remaining offer pool with the rng, take up to 5; on shop open and on each reroll; plus one roll per purchased Weight (favored face) / Double-Side (face) coin
+  6. **Shop** — on shop open the keep-unplayed hand coins (13a.2) are merged into the draw pile (no rng) so the Recycler/Forge see and can sell the whole collection; then shuffle the remaining offer pool with the rng, take up to 5; on each reroll; plus one roll per purchased Weight (favored face) / Double-Side (face) coin
 
   Same seed + same player choices → identical run (charter objective 3).
 

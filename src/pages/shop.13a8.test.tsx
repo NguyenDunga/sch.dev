@@ -75,12 +75,12 @@ describe('13a.14 — shop areas (draft)', () => {
     shopState()
     render(<ShopScreen />)
     // The deck is hidden until the icon is clicked.
-    expect(screen.queryByText('Your deck')).toBeNull()
+    expect(screen.queryByText('Draw pile')).toBeNull()
 
     const icon = screen.getByRole('button', { name: 'Show deck' })
     fireEvent.click(icon)
     expect(icon.getAttribute('aria-expanded')).toBe('true')
-    const panel = screen.getByRole('dialog', { name: 'Your deck' })
+    const panel = screen.getByRole('dialog', { name: 'Draw pile' })
     expect(panel).toBeTruthy()
     expect(screen.getByText('24 coins')).toBeTruthy()
     expect(panel.querySelectorAll('.deck-item')).toHaveLength(24)
@@ -88,7 +88,7 @@ describe('13a.14 — shop areas (draft)', () => {
     expect(panel.querySelectorAll('button')).toHaveLength(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('dialog', { name: 'Your deck' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: 'Draw pile' })).toBeNull()
   })
 
   it('the recycler list is sortable (price high→low by default)', () => {

@@ -20,6 +20,11 @@
 
 7. **Balance pass — Alternating tier.** Alternating raised **35×3 → 45×4** (180, 90% of Jackpot's 200 — "almost as good as a jackpot"). EV/hand for a full plain 5-coin play: **58.44 → 63.13** (2020/32 over all 32 five-coin patterns).
 
+8. **Bug fixes (collection consistency + deck/discard split).** Two player-reported state bugs, both fixed the same day:
+   - **Keep-unplayed coins were invisible/unsellable in the shop.** The shop's collection was `[...drawPile, ...discardPile]`, which excluded the 13a.2 keep-unplayed hand coins (they live in `st.hand`). So the shop showed a smaller set than the real collection, and the kept coins couldn't be sold — `leaveShop` then merged them back into the deck, so a coin you'd "sold all of" reappeared. **Fix:** `enterShopDraft` merges the keep-unplayed hand coins into the draw pile **when the shop opens** (not at leave), so the Recycler/Forge see and can sell the whole collection; `leaveShop`'s keep-unplayed merge is now a safety net (the hand is empty when the shop opens).
+   - **The deck button showed the discard pile too.** `DeckInspector` rendered `[...drawPile, ...discardPile]`, so discarded coins appeared in both the deck panel and the trash-well. **Fix:** the deck shows only the **draw pile** (the remaining coins); the discard pile belongs to the discard well. Title "Your deck" → "Draw pile".
+   - **Plain coin face-down glyph** changed from a question mark (`FaCircleQuestion`) to a solid circle (`FaCircle`) — a plain coin has no effect to hide, so the "?" was misleading (the wiki button keeps its own `?`).
+
 ## Contract
 
 ```ts
@@ -57,6 +62,9 @@ function useInfoHover(rows: InfoRow[], title: string): { onMouseOver: (e) => voi
 - [x] 21.7 Shop scroll fix: `height: 100dvh` + `minmax(0, 1fr)` panel row → internal scroll on short viewports (no page scroll).
 - [x] 21.8 Balance: Alternating 35×3 → 45×4 (180); EV/hand 58.44 → 63.13; SDD + balance-baseline re-pinned.
 - [x] 21.9 Gate: `tsc` + `eslint` + `check-structure` + `vitest` (613) + `vite build` all green.
+- [x] 21.10 Bug fix: keep-unplayed hand coins merged into the draw pile when the shop opens (`enterShopDraft`), so the Recycler/Forge see and can sell the whole collection (they were invisible/unsellable and re-appeared after selling every copy).
+- [x] 21.11 Bug fix: the deck button (`DeckInspector`) shows only the draw pile (the remaining coins), not the discard pile (which lives in the discard well); title "Your deck" → "Draw pile".
+- [x] 21.12 Plain coin face-down glyph: question mark → solid circle (`FaCircle`).
 
 ## Exit gate
 
@@ -71,6 +79,7 @@ function useInfoHover(rows: InfoRow[], title: string): { onMouseOver: (e) => voi
 - **Unified shop grid:** all three offer kinds as tiles (icon disc + title + price + Buy); hover → detail; owned/max/poor states; replaces the sectioned offer-card layout.
 - **Shop scroll:** `height: 100dvh` + `minmax(0, 1fr)` → internal scroll on short viewports.
 - **Balance:** Alternating 35×3 → 45×4 (180, 90% of Jackpot's 200); EV/hand 58.44 → 63.13.
+- **Bug fixes:** keep-unplayed hand coins now merge into the draw pile when the shop opens (visible + sellable in the Recycler/Forge — they were invisible and re-appeared after selling every copy); the deck button shows only the draw pile (the discard pile lives in the discard well); plain coin face-down glyph is a solid circle (was a question mark).
 - Exit gate: `tsc` + `eslint` + `check-structure` + `vitest` (613/613) + `vite build` all green.
 
 ## Process notes

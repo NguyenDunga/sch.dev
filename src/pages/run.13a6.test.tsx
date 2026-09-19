@@ -133,9 +133,10 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
 
     // The Draw-2 coin is gone; a full hand has one empty slot, so only one
     // of the two redraws lands: 24 − 8 dealt − 1 redraw = 15 left in the draw
-    // pile (m13a deck) + 1 discarded = 16 coins in the deck inspector.
+    // pile (m13a deck). The deck inspector shows only the draw pile (the 1
+    // discarded coin is in the discard well, not the deck).
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(8)
-    expect(screen.getByRole('button', { name: 'Show deck' }).querySelector('.pile-count')?.textContent).toBe('16')
+    expect(screen.getByRole('button', { name: 'Show deck' }).querySelector('.pile-count')?.textContent).toBe('15')
     await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })
   })
 

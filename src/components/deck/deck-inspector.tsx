@@ -1,7 +1,9 @@
 // Deck inspector — the single shared deck button (shop header + run play
 // area). A clickable deck pile: face-down coin stack + the number of coins in
-// the deck (draw pile + discard pile). Clicking toggles the read-only
-// PilePanel (shared with the discard well).
+// the DRAW pile (the coins still left to draw). Clicking toggles the read-only
+// PilePanel (shared with the discard well). The discard pile lives in the
+// discard well, not here — showing it in both was the source of the
+// "discarded coins appear in the deck" confusion.
 //
 // Ceramic Tactile (UX §2): the pile is the visual origin of the `deal`
 // animation in the play area; the button itself stays flat (no blurred
@@ -14,9 +16,8 @@ import { PilePanel } from './pile-panel'
 
 export function DeckInspector() {
   const drawPile = useRunStore((s) => s.deck.drawPile)
-  const discardPile = useRunStore((s) => s.deck.discardPile)
   const [open, setOpen] = useState(false)
-  const count = drawPile.length + discardPile.length
+  const count = drawPile.length
 
   return (
     <>
@@ -36,10 +37,10 @@ export function DeckInspector() {
       </button>
       {open && (
         <PilePanel
-          title="Your deck"
-          coins={[...drawPile, ...discardPile]}
-          emptyText="No coins in the collection"
-          note="Merge in the Forge · Sell in the Recycler"
+          title="Draw pile"
+          coins={drawPile}
+          emptyText="No coins left to draw"
+          note="Discarded coins are in the discard well"
           onClose={() => setOpen(false)}
         />
       )}
