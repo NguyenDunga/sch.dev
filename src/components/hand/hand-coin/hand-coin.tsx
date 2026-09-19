@@ -23,6 +23,8 @@ import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent
 import { motion } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { SPRING } from '@/lib/motion'
+import { effectRows } from '@/lib/effect-info'
+import { useInfoHover } from '../coin/coin-info/coin-info-context'
 import type { Coin } from '@/core/types'
 import { Coin as CoinVisual } from '../coin'
 
@@ -69,6 +71,9 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
     onPick(e.currentTarget)
   }
 
+  // Hover (rest ~600ms) → the coin-info popover (what each effect on this coin does).
+  const coinHover = useInfoHover(effectRows(coin.effects), 'Coin effects')
+
   /** 13a.6: the per-coin discard control — D while the coin is focused (the global shortcuts ignore D). */
   const handleKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
     if ((e.key === 'd' || e.key === 'D') && enabled) {
@@ -88,6 +93,8 @@ export const HandCoin = forwardRef<HTMLButtonElement, HandCoinProps>(function Ha
       disabled={!enabled}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onMouseOver={coinHover.onMouseOver}
+      onMouseOut={coinHover.onMouseOut}
       {...dragProps}
       aria-label={coinAriaLabel(index, enabled, !!selected, coin.effects)}
     >

@@ -4,27 +4,27 @@
 //
 // Coin effects (v1 core set of 11):
 //   Face (resolveFace): weight, heads, tails, chaos, magnetic, reverse
-//   Cash (scoreHand step 5): tax +$1/coin, jackpot +$4/coin (25% roll)
+//   Cash (scoreHand step 5): tax +cash/coin, jackpot +cash/coin (chance roll)
 //   Draw / re-flip (store-driven): draw (redraw N), echo (one re-flip)
+// Behavior params come from the coin/charm registries (src/config).
 //
 // Source of truth: public/.docs/sdd/software_design_component.md (C3).
 
 import type { Rng } from '../rng'
 import { chance } from '../rng'
 import { isFilled, none, some } from '../helpers'
-import {
-  JACKPOT_CHANCE,
-  JACKPOT_FEVER_MULT,
-  JACKPOT_PAYOUT,
-  PLUS_CHIPS_BONUS,
-  PLUS_MULT_BONUS,
-  TAX_PAYOUT,
-  TIERS,
-} from '../balance'
+import { TIERS } from '../balance'
+import { COIN_EFFECTS } from '@/config/coins'
+import { CHARMS } from '@/config/charms'
 import type { BossRuleId, CharmId, Face, Option, Play, Score, TierId } from '../types'
 
 // resolveFace (M7) lives in resolve-face.ts (150-LOC file rule).
 export { resolveFace } from './resolve-face'
+
+// Coin cash + booster params — from the config registries (src/config).
+const TAX_PAYOUT = COIN_EFFECTS.tax.params.payout ?? 0
+const JACKPOT_CHANCE = COIN_EFFECTS.jackpot.params.chance ?? 0
+const JACKPOT_PAYOUT = COIN_EFFECTS.jackpot.params.payout ?? 0
 
 /**
  * M5: highest-value tier matched by the tossed coins, or `none`.
@@ -97,11 +97,13 @@ function tierScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[]): { t
   let chips = base?.chips ?? 0
   let mult = base?.mult ?? 0
 
-  // 3. Boosters, left→right, only the three scoring boosters
+  // 3. Boosters, left→right, only the three scoring boosters (params from
+  //    the charm registry, src/config/charms)
   for (const charm of charms) {
-    if (charm === 'plusChips') chips += PLUS_CHIPS_BONUS
-    else if (charm === 'plusMult') mult += PLUS_MULT_BONUS
-    else if (charm === 'jackpotFever' && tier === 'jackpot') chips *= JACKPOT_FEVER_MULT
+    const p = CHARMS[charm].params
+    if (charm === 'plusChips') chips += p.chips ?? 0
+    else if (charm === 'plusMult') mult += p.mult ?? 0
+    else if (charm === 'jackpotFever' && tier === 'jackpot') chips *= p.chipsMult ?? 1
   }
 
   // 4. Score

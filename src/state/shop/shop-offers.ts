@@ -4,12 +4,9 @@
 // of offers. The shop ACTIONS (buy / reroll / mergeCoin / sellCoin /
 // moveCharm / leaveShop) live in shopActions.ts.
 
-import {
-  CHARMS,
-  COIN_EFFECTS,
-  HAND_SIZE_CAP,
-  SHOP_SLOTS,
-} from '@/core/shop'
+import { HAND_SIZE_CAP, SHOP_SLOTS } from '@/core/shop'
+import { COIN_CATALOG } from '@/config/coins'
+import { CHARM_CATALOG } from '@/config/charms'
 import { isFilled } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
 import type { CoinEffect, CoinEffectId, RunState, ShopOffer } from '@/core/types'
@@ -38,10 +35,10 @@ export function enterShopDraft(st: Draft, rng: Rng): void {
  */
 export function generateOffers(rng: Rng, charms: RunState['charms'], handSize: number): ShopOffer[] {
   const pool: ShopOffer[] = [
-    ...CHARMS.filter((c) => !charms.includes(c.id)).map(
+    ...CHARM_CATALOG.filter((c) => !charms.includes(c.id)).map(
       (c): ShopOffer => ({ kind: 'charm', charm: c.id }),
     ),
-    ...COIN_EFFECTS.map((c): ShopOffer => ({ kind: 'coin', effect: c.effect })),
+    ...COIN_CATALOG.map((c): ShopOffer => ({ kind: 'coin', effect: c.effect })),
   ]
   if (handSize < HAND_SIZE_CAP) pool.push({ kind: 'handSize' })
   for (let i = pool.length - 1; i > 0; i--) {

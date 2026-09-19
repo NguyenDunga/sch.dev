@@ -7,24 +7,17 @@ import {
   TIERS,
   HANDS_PER_BLIND,
   HEAVY_TARGET_BONUS,
-  JACKPOT_CHANCE,
-  JACKPOT_PAYOUT,
-  MAGNETIC_ODDS,
-  PAYDAY_BONUS,
   SHORT_FUSE_HANDS,
   START_CASH,
-  STARTER_WEIGHT_COINS,
-  TAX_PAYOUT,
-  WEIGHT_ODDS,
 } from './balance'
-import { CHARMS, COIN_EFFECTS, SHOP_SLOTS } from './shop'
+import { SHOP_SLOTS } from './shop'
 
 describe('TIERS', () => {
   it('6 tiers in priority order with baseline chips × mult', () => {
     expect(TIERS).toEqual([
       { id: 'jackpot', name: 'Jackpot', chips: 50, mult: 4 },
       { id: 'fourRow', name: '4-in-a-row', chips: 40, mult: 3 },
-      { id: 'alternating', name: 'Alternating', chips: 35, mult: 3 },
+      { id: 'alternating', name: 'Alternating', chips: 45, mult: 4 },
       { id: 'fourSame', name: '4-same', chips: 30, mult: 2 },
       { id: 'tripleRun', name: 'Triple-run', chips: 20, mult: 2 },
       { id: 'threeSame', name: '3-same', chips: 15, mult: 1 },
@@ -61,51 +54,13 @@ describe('BOSS_RULES', () => {
   })
 })
 
-describe('CHARMS', () => {
-  it('5-charm pool with baseline categories and prices (Re-Toss removed 2026-09-13; Extra Hand $10→$15 in 13a.11)', () => {
-    expect(CHARMS.map((c) => [c.id, c.category, c.price])).toEqual([
-      ['plusChips', 'scoring', 5],
-      ['plusMult', 'scoring', 8],
-      ['extraHand', 'flip', 15],
-      ['payday', 'economy', 5],
-      ['jackpotFever', 'pattern', 12],
-    ])
-  })
-})
-
-describe('COIN_EFFECTS', () => {
-  it('v1 core set: 7 effect coins + 3 draw tiers, with baseline prices', () => {
-    expect(COIN_EFFECTS.map((c) => [c.effect, c.price])).toEqual([
-      ['weight', 5],
-      ['heads', 8],
-      ['tails', 8],
-      ['chaos', 6],
-      ['echo', 7],
-      ['magnetic', 6],
-      ['reverse', 5],
-      ['tax', 5],
-      ['jackpot', 10],
-      ['draw1', 5],
-      ['draw2', 8],
-      ['draw3', 12],
-    ])
-  })
-})
-
 describe('constants', () => {
   it('baseline constants (m13a rebalance 2026-09-15 — 4 hands, 24 mixed deck, halved targets)', () => {
     expect(HANDS_PER_BLIND).toBe(4)
     expect(SHORT_FUSE_HANDS).toBe(3)
     expect(START_CASH).toBe(4 * DIFFICULTY)
     expect(SHOP_SLOTS).toBe(5)
-    expect(PAYDAY_BONUS).toBe(5 * DIFFICULTY)
     expect(HEAVY_TARGET_BONUS).toBe(5 * DIFFICULTY)
     expect(BASE_DECK_SIZE).toBe(24)
-    expect(STARTER_WEIGHT_COINS).toBe(3 * DIFFICULTY)
-    expect(TAX_PAYOUT).toBe(DIFFICULTY)
-    expect(JACKPOT_CHANCE).toBe(0.25)
-    expect(JACKPOT_PAYOUT).toBe(4)
-    expect(WEIGHT_ODDS).toBe(0.75)
-    expect(MAGNETIC_ODDS).toBe(0.75)
   })
 })

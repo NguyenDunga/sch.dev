@@ -4,15 +4,13 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CHARMS } from '@/core/shop'
-import { CHARM_ICONS } from './charm-icons'
+import { CHARMS } from '@/config/charms'
 import type { CharmId } from '@/core/types'
 
 export function CharmChip({ id }: { id: CharmId }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  const def = CHARMS.find((c) => c.id === id)
-  const iconDef = CHARM_ICONS[id]
-  const Icon = iconDef.icon
+  const def = CHARMS[id]
+  const Icon = def.icon.icon
 
   return (
     <button
@@ -22,11 +20,11 @@ export function CharmChip({ id }: { id: CharmId }) {
       className={`charm-chip charm-chip--${id}${isDragging ? ' charm-chip--dragging' : ''}`}
       {...attributes}
       {...listeners}
-      title={`${def?.name ?? id} (${def?.category ?? ''})`}
-      aria-label={`${def?.name ?? id}, drag to reorder`}
+      title={`${def.name} (${def.category})`}
+      aria-label={`${def.name}, drag to reorder`}
     >
       <Icon size={18} strokeWidth={2} aria-hidden className="charm-chip-icon" />
-      <span className="charm-chip-name">{def?.name ?? id}</span>
+      <span className="charm-chip-name">{def.name}</span>
     </button>
   )
 }

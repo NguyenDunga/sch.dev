@@ -1,0 +1,197 @@
+/* Wiki — the "?" reference dialog (tabbed: patterns / coins / charms / …). */
+
+.wiki-button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+
+.wiki-button:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.wiki-button[aria-expanded='true'] {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.wiki-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.wiki-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - var(--sp-8)));
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-hard-lg);
+  overflow: hidden;
+}
+
+.wiki-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.wiki-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wiki-close {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.wiki-close:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.wiki-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.wiki-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.wiki-tab:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.wiki-tab--active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.wiki-body {
+  overflow-y: auto;
+  padding: var(--sp-4);
+}
+
+/* -- tab content ---------------------------------------------------------- */
+
+.wiki-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.wiki-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.wiki-table th,
+.wiki-table td {
+  padding: var(--sp-2) var(--sp-2);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.wiki-table th {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.wiki-table td {
+  color: var(--ink);
+}
+
+.wiki-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.wiki-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wiki-item {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+
+.wiki-item-icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--ink);
+}
+
+.wiki-item-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wiki-item-price {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.wiki-item-blurb {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}

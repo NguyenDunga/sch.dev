@@ -44,10 +44,16 @@ export interface IconDef {
   short?: string
 }
 
+/** One face-stage glyph: icon + color. */
+export interface FaceGlyph {
+  icon: ComponentType<IconProps>
+  color: string
+}
+
 /** Per-effect, per-face-stage glyph + color (M19): one icon + color for each
  *  face stage (H / T / face-down). */
 export interface EffectFaceConfig {
-  H: { icon: ComponentType<IconProps>; color: string }
-  T: { icon: ComponentType<IconProps>; color: string }
-  facedown: { icon: ComponentType<IconProps>; color: string }
+  H: FaceGlyph
+  T: FaceGlyph
+  facedown: FaceGlyph
 }

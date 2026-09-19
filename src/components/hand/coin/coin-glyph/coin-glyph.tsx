@@ -15,7 +15,8 @@
 // the H / T face fills are solid color, so a same-tone icon drawn directly on
 // them would be invisible.
 //
-// Each effect carries its own per-face-stage glyph + color (EFFECT_FACE_CONFIGS).
+// Each effect carries its own per-face-stage glyph + color (the coin config,
+// src/config/coins).
 // The coin's face stage (H / T / face-down) selects which glyph + color each
 // effect shows; the ring is tinted by the face stage.
 //
@@ -23,8 +24,8 @@
 // the ring sits inside the shell).
 
 import type { CoinEffect, Face } from '@/core/types'
+import { COIN_EFFECTS } from '@/config/coins'
 import { FACE_ICONS, FACE_DOWN_ICON } from './icons/face-icons'
-import { EFFECT_FACE_CONFIGS, EFFECT_ICONS, WEIGHT_FACEDOWN } from './icons/effect-icons'
 import { RadialReveal, type RadialRevealItem } from '../radial-reveal'
 import { highestPriorityEffect } from '../resolver/resolver'
 import { priorityStrength, priorityTint } from './priority-tint'
@@ -37,10 +38,13 @@ import { SoloGlyph } from './solo-glyph'
  *  Special case: Weight's face-down glyph depends on its favoured face. */
 function glyphFor(effect: CoinEffect, stage: FaceStage) {
   if (effect.kind === 'weight' && stage === 'facedown') {
-    return WEIGHT_FACEDOWN[effect.favored]
+    return COIN_EFFECTS.weight.facedownByFavored?.[effect.favored] ?? COIN_EFFECTS.weight.face[stage]
   }
-  return EFFECT_FACE_CONFIGS[effect.kind][stage]
+  return COIN_EFFECTS[effect.kind].face[stage]
 }
+
+/** The effect's badge (icon + label + short). */
+const badge = (kind: CoinEffect['kind']) => COIN_EFFECTS[kind].icon
 
 interface CoinGlyphProps {
   face?: Face
@@ -72,8 +76,8 @@ export function CoinGlyph({ face, effects, size = 42 }: CoinGlyphProps) {
       <SoloGlyph
         icon={cfg.icon}
         color={cfg.color}
-        label={`${STAGE_LABELS[stage]}, ${EFFECT_ICONS[top.kind].label}`}
-        text={EFFECT_ICONS[top.kind].short}
+        label={`${STAGE_LABELS[stage]}, ${badge(top.kind).label}`}
+        text={badge(top.kind).short}
         size={size}
       />
     )
@@ -90,7 +94,7 @@ export function CoinGlyph({ face, effects, size = 42 }: CoinGlyphProps) {
     .filter((e) => e !== top)
     .map((e) => {
       const cfg = glyphFor(e, stage)
-      return { color: tint(e, cfg.color), icon: cfg.icon, label: EFFECT_ICONS[e.kind].label, short: EFFECT_ICONS[e.kind].short }
+      return { color: tint(e, cfg.color), icon: cfg.icon, label: badge(e.kind).label, short: badge(e.kind).short }
     })
 
   // Keep the ring + icon positive even for tiny coins (the debug page tests
@@ -103,8 +107,8 @@ export function CoinGlyph({ face, effects, size = 42 }: CoinGlyphProps) {
       items={items}
       defaultIcon={topCfg.icon}
       defaultColor={topCfg.color}
-      defaultLabel={`${STAGE_LABELS[stage]}, ${EFFECT_ICONS[top.kind].label}`}
-      defaultShort={EFFECT_ICONS[top.kind].short}
+      defaultLabel={`${STAGE_LABELS[stage]}, ${badge(top.kind).label}`}
+      defaultShort={badge(top.kind).short}
       size={size}
       ringWidth={ringWidth}
       iconSize={iconSize}

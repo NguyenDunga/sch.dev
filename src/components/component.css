@@ -1,4 +1,6 @@
 @import "./ui/button/button.css";
 @import "./hand/hand.css";
+@import "./hand/coin/coin-info/coin-info.css";
 @import "./shop/shop.css";
+@import "./wiki/wiki.css";
 @import "./juice/choreo/choreo.css";

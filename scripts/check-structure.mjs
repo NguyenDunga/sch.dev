@@ -11,6 +11,10 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git', '.qwen'])
 const MAX_TS = 5
 const MAX_CSS = 3
+// Exception: the config registries (src/config/coins, src/config/charms) hold
+// ONE FILE PER COIN / CHARM — the per-item file layout is the point (adding a
+// coin = one new file + one registry line), so they may exceed MAX_TS.
+const CONFIG_MAX_TS = 15
 const isTest = (f) => /\.test\.(ts|tsx)$/.test(f)
 
 let bad = 0
@@ -22,9 +26,10 @@ function walk(dir, isDir) {
   const ts = files.filter((f) => /\.(ts|tsx)$/.test(f) && !isTest(f)).length
   const css = files.filter((f) => f.endsWith('.css')).length
   const rel = relative(root, dir)
-  if (ts > MAX_TS || css > MAX_CSS) {
+  const maxTs = rel.split(/[\\/]/).includes('config') ? CONFIG_MAX_TS : MAX_TS
+  if (ts > maxTs || css > MAX_CSS) {
     bad++
-    console.error(`✗ ${rel || '.'}: ${ts} ts/tsx (max ${MAX_TS}), ${css} css (max ${MAX_CSS})`)
+    console.error(`✗ ${rel || '.'}: ${ts} ts/tsx (max ${maxTs}), ${css} css (max ${MAX_CSS})`)
   }
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory() && !SKIP_DIRS.has(entry.name)) walk(join(dir, entry.name), true)

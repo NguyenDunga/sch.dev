@@ -13,6 +13,8 @@ import { motion } from 'framer-motion'
 import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import type { Face, HandSlot } from '@/core/types'
 import { SPRING } from '@/lib/motion'
+import { effectRows } from '@/lib/effect-info'
+import { useInfoHover } from '../coin/coin-info/coin-info-context'
 import { Coin } from '../coin'
 import { TossCoin } from '../toss-coin'
 
@@ -81,6 +83,9 @@ export function PlaySlot({
   dragProps,
   predisplayFace,
 }: PlaySlotProps) {
+  // Hover (rest ~600ms) → the coin-info popover (empty slot: no coin, no entries).
+  const coinHover = useInfoHover(slot.kind === 'filled' ? effectRows(slot.coin.effects) : [], 'Coin effects')
+
   if (slot.kind === 'empty') {
     return (
       <div ref={slotRef} className={`play-slot${over ? ' play-slot--over' : ''}`} aria-hidden>
@@ -89,7 +94,15 @@ export function PlaySlot({
     )
   }
 
-  if (revealed) return <RevealedSlot slot={slot} index={index} onReflip={onReflip} onLand={onLand} />
+  if (revealed) {
+    // `display: contents` wrapper: hover info on the tossed coin without
+    // changing the layout (the over/out handlers bubble from the children).
+    return (
+      <div className="contents" onMouseOver={coinHover.onMouseOver} onMouseOut={coinHover.onMouseOut}>
+        <RevealedSlot slot={slot} index={index} onReflip={onReflip} onLand={onLand} />
+      </div>
+    )
+  }
 
   const coin = slot.coin
 
@@ -110,6 +123,8 @@ export function PlaySlot({
       layout
       transition={SPRING.snappy}
       onClick={onUnpick}
+      onMouseOver={coinHover.onMouseOver}
+      onMouseOut={coinHover.onMouseOut}
       {...dragProps}
       aria-label={`slot ${index + 1}, unpick`}
     >

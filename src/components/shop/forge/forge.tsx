@@ -25,14 +25,8 @@ export function Forge({ coins }: ForgeProps) {
   const target = targetId !== null ? coins.find((c) => c.id === targetId) : undefined
 
   const pick = (id: number) => {
-    if (sourceId === id) {
-      setSourceId(null)
-      return
-    }
-    if (targetId === id) {
-      setTargetId(null)
-      return
-    }
+    if (sourceId === id) return setSourceId(null)
+    if (targetId === id) return setTargetId(null)
     if (sourceId === null) setSourceId(id)
     else if (targetId === null) setTargetId(id)
   }
@@ -67,40 +61,37 @@ export function Forge({ coins }: ForgeProps) {
             <ForgeSlot label="Target" coin={target} onClear={() => setTargetId(null)} />
           </div>
           <div className="forge-slot forge-slot--result">
-              <span className="forge-slot-label">Result</span>
-              <span className="forge-slot-disc">
-                {outcome ? (
-                  <CoinVisual face={undefined} effects={outcome.effects} size="xl" />
-                ) : (
-                  <span className="forge-slot-empty">—</span>
-                )}
-              </span>
-              {/* Always rendered (space reserved) so the layout never jumps when
-              a special fires; invisible when no rule matched. */}
-              <span className={`forge-special${outcome?.special ? '' : ' forge-special--hidden'}`}>
-                {outcome?.special
-                  ? forgeRuleLabel(outcome.special.rule, outcome.special.a, outcome.special.b)
-                  : '\u00A0'}
-              </span>
-            </div>
+            <span className="forge-slot-label">Result</span>
+            <span className="forge-slot-disc">
+              {outcome ? <CoinVisual face={undefined} effects={outcome.effects} size="xl" /> : <span className="forge-slot-empty">—</span>}
+            </span>
+            {/* Always rendered (space reserved) so the layout never jumps when
+                a special fires; invisible when no rule matched. */}
+            <span className={`forge-special${outcome?.special ? '' : ' forge-special--hidden'}`}>
+              {outcome?.special ? forgeRuleLabel(outcome.special.rule, outcome.special.a, outcome.special.b) : '\u00A0'}
+            </span>
+          </div>
         </div>
 
         <div className="forge-picker">
-          {coins.map((coin) => {
-            const picked = sourceId === coin.id || targetId === coin.id
-            return (
-              <button
-                key={coin.id}
-                type="button"
-                className={`forge-coin${picked ? ' forge-coin--picked' : ''}`}
-                aria-pressed={picked}
-                aria-label={`Coin with ${coin.effects.length} effect${coin.effects.length === 1 ? '' : 's'}`}
-                onClick={() => pick(coin.id)}
-              >
-                <CoinVisual face={undefined} effects={coin.effects} size="sm" />
-              </button>
-            )
-          })}
+          {/* Plain coins (no effects) can't meaningfully merge — hide them. */}
+          {coins
+            .filter((coin) => coin.effects.length > 0)
+            .map((coin) => {
+              const picked = sourceId === coin.id || targetId === coin.id
+              return (
+                <button
+                  key={coin.id}
+                  type="button"
+                  className={`forge-coin${picked ? ' forge-coin--picked' : ''}`}
+                  aria-pressed={picked}
+                  aria-label={`Coin with ${coin.effects.length} effect${coin.effects.length === 1 ? '' : 's'}`}
+                  onClick={() => pick(coin.id)}
+                >
+                  <CoinVisual face={undefined} effects={coin.effects} size="sm" />
+                </button>
+              )
+            })}
         </div>
       </div>
       <div className="forge-actions">

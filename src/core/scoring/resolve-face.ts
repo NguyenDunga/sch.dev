@@ -9,10 +9,14 @@
 // Echo re-flip (buff phase) = the store calls this again.
 
 import type { Rng } from '../rng'
-import { MAGNETIC_ODDS, WEIGHT_ODDS } from '../balance'
+import { COIN_EFFECTS } from '@/config/coins'
 import type { Coin, CoinEffectKind, Face, Option } from '../types'
 
 const opposite = (f: Face): Face => (f === 'H' ? 'T' : 'H')
+
+// Face-effect odds — from the coin configs (src/config/coins).
+const WEIGHT_ODDS = COIN_EFFECTS.weight.params.odds ?? 0.5
+const MAGNETIC_ODDS = COIN_EFFECTS.magnetic.params.odds ?? 0.5
 
 /**
  * M7: face resolution — odds stage → roll → Reverse.

@@ -7,15 +7,9 @@
 // lines, NASA practice); the store wires them up.
 
 import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
-import {
-  CHARMS,
-  COIN_EFFECTS,
-  FORGE_COST,
-  HAND_SIZE_CAP,
-  HAND_SIZE_PRICE,
-  recyclePrice,
-  rerollCost,
-} from '@/core/shop'
+import { FORGE_COST, HAND_SIZE_CAP, HAND_SIZE_PRICE, recyclePrice, rerollCost } from '@/core/shop'
+import { coinPrice } from '@/config/coins'
+import { CHARMS } from '@/config/charms'
 import { forgeCoin } from '@/core/collection'
 import { shuffleCollection } from '@/core/collection'
 import { emptyHand } from '@/core/helpers'
@@ -81,9 +75,9 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
   if (st.phase !== 'shop') return
   const price =
     offer.kind === 'charm'
-      ? CHARMS.find((c) => c.id === offer.charm)?.price
+      ? CHARMS[offer.charm].price
       : offer.kind === 'coin'
-        ? COIN_EFFECTS.find((c) => c.effect === offer.effect)?.price
+        ? coinPrice(offer.effect)
         : HAND_SIZE_PRICE
   if (price === undefined || st.cash < price) return // broke — reject
   if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)

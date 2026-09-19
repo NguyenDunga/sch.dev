@@ -5,7 +5,7 @@
 // play coin dragged to another slot to reorder the row.
 
 import { CoinDnd, PlayDropZone, PlaySlotDnd, DiscardWellDrop } from '@/components/hand/coin-dnd'
-import { Deck } from '@/components/run/piles'
+import { DeckInspector } from '@/components/deck/deck-inspector'
 import { knownFace } from '@/components/hand/coin'
 import type { Hand, Play } from '@/core/types'
 import type { RefObject } from 'react'
@@ -69,7 +69,7 @@ export function PlayArea({
       </PlayDropZone>
       <div className="piles-row">
         <DiscardWellDrop wellRef={wellRef} />
-        <Deck />
+        <DeckInspector />
       </div>
       <HandRow
         hand={hand}

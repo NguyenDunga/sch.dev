@@ -1,4 +1,5 @@
-import { BASE_DECK_SIZE, STARTER_WEIGHT_COINS } from '../balance'
+import { BASE_DECK_SIZE } from '../balance'
+import { STARTER_WEIGHT_COINS } from '@/config/coins'
 import { none, some } from '../helpers'
 import type { Rng } from '../rng'
 import type { Coin, Deck, Option } from '../types'

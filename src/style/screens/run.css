@@ -43,6 +43,13 @@
   flex: 1;
 }
 
+/* The top-bar action cluster (wiki "?" + save). */
+.run-top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
 .blind-header {
   width: 100%;
   display: flex;
@@ -240,6 +247,25 @@
   gap: var(--sp-1);
 }
 
+/* The deck pile is the shared deck-inspector button (shop header + play
+   area): flat button reset + hard-offset hover/pressed states. */
+.deck-inspector {
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.deck-inspector:hover .deck-stack {
+  translate: 0 -2px;
+}
+
+.deck-inspector[aria-expanded='true'] .deck-stack {
+  translate: 1px 1px;
+}
+
 .deck-stack {
   position: relative;
   width: 2.75rem;
@@ -270,6 +296,24 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-1);
+  /* It's a button (toggles the discard-pile panel): flat reset + hover. */
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.discard-well:hover .discard-well-hole {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.discard-well[aria-expanded='true'] .discard-well-hole {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 .discard-well-hole {

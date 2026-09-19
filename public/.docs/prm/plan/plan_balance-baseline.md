@@ -14,12 +14,12 @@ A hand scores exactly one tier: the highest-value one it matches (sequence speci
 | --- | --- | --- | --- | --- | --- |
 | 1 | Jackpot (5-same) | HHHHH | 50 | 4 | 6.25% |
 | 2 | 4-in-a-row | HHHHT | 40 | 3 | 12.5% |
-| 3 | Alternating | HTHTH | 35 | 3 | 6.25% |
+| 3 | Alternating | HTHTH | 45 | 4 | 6.25% |
 | 4 | 4-same | HHTHH | 30 | 2 | 18.75% |
 | 5 | Triple-run (3 consecutive same) | HHHTT | 20 | 2 | 18.75% |
 | 6 | 3-same | HTHHT | 15 | 1 | 37.5% |
 
-EV per hand (plain 50/50): **58.44** (exact 1870/32). With the mixed starter deck the naive EV/hand ≈ **62** (skilled ≈ 69), so per-blind base EV over 4 hands ≈ **255** vs the round-1 small target 150. The odds shift with aligned Heads coins: jackpot rate ~6% → ~11% (skilled). **Critical:** 75/25 coins only help if their favored face is *aligned* — random/opposing favored faces cancel under a face-down draw and collapse EV back to the 58.4 baseline, which is why the 8 starter Weight coins all favor Heads.
+EV per hand (plain 50/50): **63.13** (exact 2020/32; raised from 58.44 / 1870/32 when Alternating went 35×3 → 45×4 in the 2026-09-16 balance pass). With the mixed starter deck the naive EV/hand ≈ **62** (skilled ≈ 69), so per-blind base EV over 4 hands ≈ **255** vs the round-1 small target 150. The odds shift with aligned Heads coins: jackpot rate ~6% → ~11% (skilled). **Critical:** 75/25 coins only help if their favored face is *aligned* — random/opposing favored faces cancel under a face-down draw and collapse EV back to the 63.1 baseline, which is why the 8 starter Weight coins all favor Heads.
 
 ## Blind Targets & Rewards (m13a — halved from the 10-hand baseline)
 
@@ -67,7 +67,7 @@ Drain per blind (keep-unplayed, 4 hands, draw-to-8, play 5): hand 1 draws 8, han
 
 Per-blind base EV: plain ≈ 234, recommended mixed starter ≈ **255**, spicy (12 plain + 12 Weight-H) ≈ 284. Round-1 small (150) vs 255 = 1.7× headroom — a clear but non-trivial warm-up.
 
-**Critical finding:** 75/25 coins only spice the game if their favored face is **aligned**. Random/opposing favored faces cancel under a face-down draw and collapse EV back to the 58.4 baseline — hence the starter's 8 Weight coins all favor **Heads** (matches the "Heads = win" convention) and each coin's favored face must be visible (WBS 13a.9).
+**Critical finding:** 75/25 coins only spice the game if their favored face is **aligned**. Random/opposing favored faces cancel under a face-down draw and collapse EV back to the 63.1 baseline — hence the starter's 8 Weight coins all favor **Heads** (matches the "Heads = win" convention) and each coin's favored face must be visible (WBS 13a.9).
 
 ## Coin Effects (v1 core set, 2026-09-13 Q&A round 2)
 
@@ -123,3 +123,4 @@ Scoring pipeline: see [Scope Statement](plan_scope-statement.md) → Scoring Pip
 | 2026-09-14 | Pre-m13a baseline: 10 hands/blind; base deck **80** all-plain (10 × 8, all hands full); Short Fuse **8**; targets 300/500/800 … 1500/2400/3500; **all hand coins dumped to discard after scoring**; per-blind EV 584 @ 1.95× round-1 | 8-coin hand flow, no-wilds deck calc (Q&A round 4) |
 | 2026-09-15 | **m13a rebalance:** 4 hands/blind; base deck **24 = 16 plain + 8 Weight(Heads)**; Short Fuse **3**; targets **halved** (150/250/400 … 750/1200/1750); **keep-unplayed** (only played coins discarded); early-clear payout; mixed-deck odds (scripts `tmp/balance-m13a.mjs`) | Rebalance for a faster, weightier loop where upgrades matter (WBS m13a) |
 | 2026-09-16 | **13a.11 hand-economy re-tune:** Extra Hand **$10 → $15** (playtest: +1 hand ≈ +5–9pp clear rate on mid blinds, 1.4–3× on the hard ones — worth more than $10). Short Fuse **stays at 3 hands**: the round-2 boss (750) has a structural wall — 3×200 (max tier) = 600 < 750, so 3 hands can't clear it without boosters (4×200 = 800 is the only no-booster path); with a booster it's a jackpot-gate (1.3% with Jackpot-Fever + 4 Weight-H), not impossible. The boss's difficulty is set by the target, not the hand count. Playtest: `src/core/playtest-13a11.test.ts` | WBS 13a.11 — re-price so neither hand-economy option dominates |
+| 2026-09-16 | **Alternating tier raised 35×3 → 45×4** (180, 90% of Jackpot's 200 — "almost as good as a jackpot"). Plain-50/50 EV/hand **58.44 → 63.13** (1870/32 → 2020/32). The tier table's other rows are unchanged | WBS M21 — make a perfect alternating hand a near-jackpot reward |

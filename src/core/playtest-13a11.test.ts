@@ -31,20 +31,24 @@ import {
   BLINDS,
   HANDS_PER_BLIND,
   HAND_SIZE,
-  JACKPOT_CHANCE,
-  JACKPOT_PAYOUT,
-  JACKPOT_FEVER_MULT,
-  MAGNETIC_ODDS,
   PLAY_SIZE,
-  PLUS_CHIPS_BONUS,
-  PLUS_MULT_BONUS,
   SHORT_FUSE_HANDS,
-  WEIGHT_ODDS,
 } from '@/core/balance'
+import { COIN_EFFECTS } from '@/config/coins'
+import { CHARMS } from '@/config/charms'
 import { isFilled, none, some, emptyHand } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import { resolveFace, scoreHand } from '@/core/scoring'
 import type { BossRuleId, CharmId, Coin, Face, HandSlot, Option, TierId } from '@/core/types'
+
+// Behavior params — from the config registries (src/config).
+const WEIGHT_ODDS = COIN_EFFECTS.weight.params.odds ?? 0.5
+const MAGNETIC_ODDS = COIN_EFFECTS.magnetic.params.odds ?? 0.5
+const JACKPOT_CHANCE = COIN_EFFECTS.jackpot.params.chance ?? 0
+const JACKPOT_PAYOUT = COIN_EFFECTS.jackpot.params.payout ?? 0
+const PLUS_CHIPS_BONUS = CHARMS.plusChips.params.chips ?? 0
+const PLUS_MULT_BONUS = CHARMS.plusMult.params.mult ?? 0
+const JACKPOT_FEVER_MULT = CHARMS.jackpotFever.params.chipsMult ?? 1
 
 const RUNS = 150 // full-run context: seeds per variant
 const BLIND_RUNS = 200 // isolated blind cells: seeds per cell
@@ -81,7 +85,7 @@ function faceProbs(coin: Coin): [number, number, number] {
 const TIER_BASE: Record<TierId, [number, number]> = {
   jackpot: [50, 4],
   fourRow: [40, 3],
-  alternating: [35, 3],
+  alternating: [45, 4],
   fourSame: [30, 2],
   tripleRun: [20, 2],
   threeSame: [15, 1],

@@ -3,7 +3,8 @@
 // 13a.14 — Shop areas (draft): Trade / Forge / Recycler tabs.
 //   - the three areas are tabs, one visible at a time (Trade is the default)
 //   - the deck lives behind a small header icon (shop-only, read-only)
-//   - the Trade area keeps the 13a.8 offer grouping (Charms / Coins / Hand size)
+//   - the Trade area shows all offers in one unified inventory grid (hover a
+//     tile for its detail; no per-kind sections)
 //   - Reroll is labeled "free, once" (and "Rerolled" after use)
 //   - Leave nudges when cash is unspent (it carries over to the next blind)
 //   - an unaffordable offer shows its poor state (the card dims)
@@ -51,7 +52,7 @@ describe('13a.14 — shop areas (draft)', () => {
     // Trade is visible by default; Forge/Recycler are not.
     expect(screen.queryByRole('region', { name: 'Forge' })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Recycler' })).toBeNull()
-    expect(screen.getByRole('region', { name: 'Charms' })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Trade' })).toBeTruthy()
   })
 
   it('switching tabs shows the Forge / Recycler areas', () => {
@@ -208,22 +209,14 @@ describe('13a.14 — shop areas (draft)', () => {
     expect(document.querySelector('.recycler-empty')).toBeTruthy()
   })
 
-  it('the offers are grouped by kind (Charms / Coins / Hand size)', () => {
+  it('all offers live in one unified grid (no per-kind sections)', () => {
     shopState()
     render(<ShopScreen />)
-    const charms = screen.getByRole('region', { name: 'Charms' })
-    const coins = screen.getByRole('region', { name: 'Coins' })
-    const handSize = screen.getByRole('region', { name: 'Hand size' })
-    expect(charms.querySelectorAll('.offer-card')).toHaveLength(2)
-    expect(coins.querySelectorAll('.offer-card')).toHaveLength(2)
-    expect(handSize.querySelectorAll('.offer-card')).toHaveLength(1)
-    // The section order is charm → coin → hand size.
-    expect(
-      charms.compareDocumentPosition(coins) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
-    expect(
-      coins.compareDocumentPosition(handSize) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
+    const trade = screen.getByRole('region', { name: 'Trade' })
+    // All five offers (2 charms + 2 coins + 1 hand size) are tiles in one grid.
+    expect(trade.querySelectorAll('.offer-tile')).toHaveLength(5)
+    // No per-kind section labels remain (the old Charms / Coins / Hand size groups).
+    expect(trade.querySelector('.offer-section-label')).toBeNull()
   })
 
   it('Reroll shows its escalating price and gets pricier after use', () => {
@@ -262,13 +255,13 @@ describe('13a.14 — shop areas (draft)', () => {
     useRunStore.setState({ cash: 0 })
     render(<ShopScreen />)
     // Every offer costs money → all five cards are in the poor state.
-    expect(document.querySelectorAll('.offer-card--poor')).toHaveLength(5)
-    expect(document.querySelectorAll('.offer-card:not(.offer-card--poor)')).toHaveLength(0)
+    expect(document.querySelectorAll('.offer-tile--poor')).toHaveLength(5)
+    expect(document.querySelectorAll('.offer-tile:not(.offer-tile--poor)')).toHaveLength(0)
 
     cleanup()
     shopState()
     useRunStore.setState({ cash: 100 })
     render(<ShopScreen />)
-    expect(document.querySelectorAll('.offer-card--poor')).toHaveLength(0)
+    expect(document.querySelectorAll('.offer-tile--poor')).toHaveLength(0)
   })
 })

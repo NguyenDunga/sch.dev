@@ -5,7 +5,9 @@
 // (Recycler), M9.7 hand-size upgrade (cap).
 
 import { describe, expect, it } from 'vitest'
-import { CHARMS, COIN_EFFECTS, HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/shop'
+import { HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/shop'
+import { COIN_CATALOG } from '@/config/coins'
+import { CHARM_CATALOG } from '@/config/charms'
 import { createRunStore, type RunStore } from './runStore'
 
 describe('M9.1 — shop offer generation', () => {
@@ -42,8 +44,8 @@ describe('M9.1 — shop offer generation', () => {
   it('every offer comes from the pool (unowned charms + coin effects + hand-size)', () => {
     const store = shopStore('m9-1c', ['extraHand'])
     const pool = new Set([
-      ...CHARMS.filter((c) => c.id !== 'extraHand').map((c) => `charm:${c.id}`),
-      ...COIN_EFFECTS.map((c) => `coin:${c.effect}`),
+      ...CHARM_CATALOG.filter((c) => c.id !== 'extraHand').map((c) => `charm:${c.id}`),
+      ...COIN_CATALOG.map((c) => `coin:${c.effect}`),
       'handSize',
     ])
     for (const offer of store.getState().shop.offers) {

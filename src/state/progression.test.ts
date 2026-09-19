@@ -5,11 +5,14 @@
 // hand budget loses, M10.8 full 12-blind walk.
 
 import { describe, expect, it } from 'vitest'
-import { BLINDS, EARLY_CLEAR_BONUS_PER_HAND, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PAYDAY_BONUS, PLAY_SIZE, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { BLINDS, EARLY_CLEAR_BONUS_PER_HAND, HANDS_PER_BLIND, HAND_SIZE, HEAVY_TARGET_BONUS, HEAVY_TARGET_MULT, PLAY_SIZE, SHORT_FUSE_HANDS, START_CASH } from '@/core/balance'
+import { CHARMS } from '@/config/charms'
 import { SHOP_SLOTS } from '@/core/shop'
 import { filledSlot } from '@/core/helpers'
 import type { Face } from '@/core/types'
 import { createRunStore, type RunStore } from './runStore'
+
+const PAYDAY_BONUS = CHARMS.payday.params.bonus ?? 0
 
 describe('M10.3 — leaveShop (next blind)', () => {
   it('advances the blind: reshuffle, discard cleared, blindScore/hand/play reset, phase run', () => {
@@ -177,10 +180,10 @@ describe('M10.6 — a round’s boss rule fires only on its boss blind', () => {
     return store.getState().blindScore
   }
 
-  it('No Alternating (round 1 boss): HTHTH scores 105 on small/big, 0 on the boss blind', () => {
+  it('No Alternating (round 1 boss): HTHTH scores 180 on small/big, 0 on the boss blind', () => {
     const faces: Face[] = ['H', 'T', 'H', 'T', 'H']
-    expect(scorePlayOnBlind('m10-6', 0, faces)).toBe(105) // round 1 small — no rule
-    expect(scorePlayOnBlind('m10-6b', 1, faces)).toBe(105) // round 1 big — no rule
+    expect(scorePlayOnBlind('m10-6', 0, faces)).toBe(180) // round 1 small — no rule
+    expect(scorePlayOnBlind('m10-6b', 1, faces)).toBe(180) // round 1 big — no rule
     expect(scorePlayOnBlind('m10-6c', 2, faces)).toBe(0) // round 1 boss — noAlternating
   })
 

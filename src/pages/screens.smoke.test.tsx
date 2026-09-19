@@ -59,7 +59,7 @@ describe('M12.11 — screen smoke tests (render from valid RunState without thro
     useRunStore.setState({ phase: 'shop', shop: { offers: OFFERS } })
     const { container } = render(<ShopScreen />)
     expect(container.querySelector('.shop-title')?.textContent).toBe('Shop')
-    expect(container.querySelectorAll('.offer-card')).toHaveLength(5)
+    expect(container.querySelectorAll('.offer-tile')).toHaveLength(5)
     expect(screen.getByRole('button', { name: /leave/i })).toBeTruthy()
   })
 

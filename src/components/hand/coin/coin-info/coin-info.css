@@ -1,0 +1,89 @@
+/* Coin info — the right-click floating panel (one row per effect). */
+
+.coin-info {
+  position: fixed;
+  z-index: 80;
+  width: 280px;
+  max-height: min(420px, calc(100vh - 16px));
+  overflow-y: auto;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-hard);
+  padding: var(--sp-3);
+}
+
+.coin-info-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+
+.coin-info-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.coin-info-close {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: var(--text-lg);
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.coin-info-close:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.coin-info-plain {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+
+.coin-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coin-info-item {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+
+.coin-info-icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--ink);
+}
+
+.coin-info-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.coin-info-blurb {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}

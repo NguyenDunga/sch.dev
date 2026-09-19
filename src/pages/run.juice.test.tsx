@@ -18,10 +18,12 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useRunStore } from '@/state/runStore'
-import { TAX_PAYOUT } from '@/core/balance'
+import { COIN_EFFECTS } from '@/config/coins'
 import { makeLocalStorage } from '@/state/testHelpers'
 import { RunScreen } from './run'
 import type { Face } from '@/core/types'
+
+const TAX_PAYOUT = COIN_EFFECTS.tax.params.payout ?? 0
 import { some } from '@/core/helpers'
 
 /**
@@ -90,9 +92,13 @@ describe('13.1 — run screen piles + discard ghost', () => {
     useRunStore.getState().startRun('juice-piles')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
-    // 24-coin base deck (m13a), 8 drawn → 16 left; nothing discarded yet.
-    expect(screen.getByRole('img', { name: 'Draw pile, 16 coins' })).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Discard pile, 0 coins' })).toBeTruthy()
+    // 24-coin base deck (m13a), 8 drawn → 16 left; nothing discarded yet, so
+    // the deck inspector (shared button) shows 16 + 0 = 16 coins.
+    const deck = screen.getByRole('button', { name: 'Show deck' })
+    expect(deck.querySelector('.pile-count')?.textContent).toBe('16')
+    // The well is a button (toggles the discard-pile panel) showing its count.
+    const well = screen.getByRole('button', { name: 'Show discard pile' })
+    expect(well.querySelector('.pile-count')?.textContent).toBe('0')
   })
 
   it('discarding a coin (per-coin D key) spawns a ghost and moves the coin to the discard pile', async () => {
@@ -107,7 +113,8 @@ describe('13.1 — run screen piles + discard ghost', () => {
 
     // The coin left the hand; the discard pile grew.
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(7)
-    expect(screen.getByRole('img', { name: 'Discard pile, 1 coins' })).toBeTruthy()
+    const well = screen.getByRole('button', { name: 'Show discard pile' })
+    expect(well.querySelector('.pile-count')?.textContent).toBe('1')
 
     // A ghost is in flight (portaled to <body>) and removes itself when the
     // 180ms flight completes.
@@ -137,9 +144,10 @@ describe('13.1 — run screen piles + discard ghost', () => {
 
     // The Draw-2 coin is gone; a full hand has one empty slot, so only one
     // of the two redraws lands (the store logic is covered in handFlow.test):
-    // 24 − 8 dealt − 1 redraw = 15 left in the draw pile (m13a deck).
+    // 24 − 8 dealt − 1 redraw = 15 left in the draw pile (m13a deck) + 1
+    // discarded = 16 coins in the deck inspector.
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(8)
-    expect(screen.getByRole('img', { name: 'Draw pile, 15 coins' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Show deck' }).querySelector('.pile-count')?.textContent).toBe('16')
     // The redrawn coins fly in from the deck (the ghost of the discarded
     // coin is still in flight).
     await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })

@@ -8,41 +8,29 @@
 
 import { useState } from 'react'
 import { useRunStore } from '@/state/runStore'
-import { BLINDS, HEAVY_TARGET_BONUS, PAYDAY_BONUS } from '@/core/balance'
+import { BLINDS, HEAVY_TARGET_BONUS } from '@/core/balance'
+import { CHARMS } from '@/config/charms'
 import { rerollCost } from '@/core/shop'
-import { Coin as CoinVisual } from '@/components/hand/coin'
 import { ShopTabs } from '@/components/shop/tabs/shop-tabs'
 import type { ShopTab } from '@/components/shop/tabs/shop-tabs'
 import { TradeArea } from '@/components/shop/trade/trade'
 import { Forge } from '@/components/shop/forge/forge'
 import { Recycler } from '@/components/shop/recycler/recycler'
-import { DeckPanel } from '@/components/shop/deck/deck-panel'
+import { DeckInspector } from '@/components/deck/deck-inspector'
+import { WikiButton } from '@/components/wiki/wiki-button'
 import { Button } from '@/components/ui/button'
 
-/** The top bar: deck icon (toggles the deck panel) + title + cash. */
-function ShopHeader({
-  cash,
-  deckOpen,
-  onToggleDeck,
-}: {
-  cash: number
-  deckOpen: boolean
-  onToggleDeck: () => void
-}) {
+/** The top bar: deck inspector (toggles the deck panel) + title + wiki ("?") + cash. */
+function ShopHeader({ cash }: { cash: number }) {
   return (
     <header className="shop-header">
-      {/* 13a.14: the deck lives behind a small icon (shop-only, read-only). */}
-      <button
-        type="button"
-        className="shop-deck-icon"
-        aria-label="Show deck"
-        aria-expanded={deckOpen}
-        onClick={onToggleDeck}
-      >
-        <CoinVisual face={undefined} effects={[]} size="xs" />
-      </button>
+      {/* The deck lives behind the shared deck inspector (read-only). */}
+      <DeckInspector />
       <h1 className="shop-title">Shop</h1>
-      <span className="shop-cash">${cash}</span>
+      <div className="shop-header-actions">
+        <WikiButton />
+        <span className="shop-cash">${cash}</span>
+      </div>
     </header>
   )
 }
@@ -57,7 +45,7 @@ function RewardLine() {
   const blind = BLINDS[blindIndex]
   const isHeavy = blind.kind === 'boss' && blind.rule === 'heavyTarget'
   const reward =
-    blind.reward + (charms.includes('payday') ? PAYDAY_BONUS : 0) + (isHeavy ? HEAVY_TARGET_BONUS : 0)
+    blind.reward + (charms.includes('payday') ? (CHARMS.payday.params.bonus ?? 0) : 0) + (isHeavy ? HEAVY_TARGET_BONUS : 0)
 
   return (
     <p className="shop-reward" role="status">
@@ -104,16 +92,14 @@ export function ShopScreen() {
   const cash = useRunStore((s) => s.cash)
   const drawPile = useRunStore((s) => s.deck.drawPile)
   const discardPile = useRunStore((s) => s.deck.discardPile)
-  // 13a.14: the active area (local UI state) + the deck panel (behind the
-  // header icon).
+  // 13a.14: the active area (local UI state).
   const [tab, setTab] = useState<ShopTab>('trade')
-  const [deckOpen, setDeckOpen] = useState(false)
 
   const collection = [...drawPile, ...discardPile]
 
   return (
     <main className="shop-screen">
-      <ShopHeader cash={cash} deckOpen={deckOpen} onToggleDeck={() => setDeckOpen((v) => !v)} />
+      <ShopHeader cash={cash} />
       <RewardLine />
       {/* 13a.14: the three shop areas, one visible at a time. */}
       <ShopTabs active={tab} onChange={setTab} />
@@ -123,7 +109,6 @@ export function ShopScreen() {
         {tab === 'recycler' && <Recycler coins={collection} />}
       </div>
       <ShopFooter />
-      {deckOpen && <DeckPanel coins={collection} onClose={() => setDeckOpen(false)} />}
     </main>
   )
 }

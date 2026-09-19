@@ -1,43 +1,46 @@
-// Deck + discard well (13.1) — the two piles flanking the hand row.
+// Discard well (13.1) — the pile flanking the hand row. (The draw pile is
+// the shared DeckInspector button in components/deck.)
 //
-// Presentational (UX §0: juice never mutates state): the deck shows the
-// draw-pile count and is the visual origin of the `deal` animation (coins
-// fly from here to the hand); the discard well shows the discard-pile count
-// and is the target of the `discard` animation (the ghost coin flies here).
+// Clicking the well toggles the read-only PilePanel (shared with the deck):
+// the coins discarded this blind. The well is also the target of the
+// `discard` animation (the ghost coin flies to `wellRef`).
 //
 // Ceramic Tactile (UX §2): flat discs, 2px --ink sticker border, hard offset
 // only (no blurred shadows).
 
+import { useState } from 'react'
 import type { RefObject } from 'react'
 import { ACTION_ICONS } from '../action-icons'
-import { Coin } from '@/components/hand/coin'
+import { PilePanel } from '@/components/deck/pile-panel'
 import { useRunStore } from '@/state/runStore'
 
-/** The draw pile: a small stack of face-down discs + its count. */
-export function Deck() {
-  const count = useRunStore((s) => s.deck.drawPile.length)
-  return (
-    <div className="deck" role="img" aria-label={`Draw pile, ${count} coins`}>
-      <div className="deck-stack" aria-hidden>
-        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--2" />
-        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--1" />
-        <Coin face={undefined} effects={[]} size="sm" className="deck-disc deck-disc--top" />
-      </div>
-      <span className="pile-count">{count}</span>
-    </div>
-  )
-}
-
 /** The discard well: a sunk dashed circle + its count. `wellRef` marks the
- *  element the discard ghost flies to (13.1). */
+ *  element the discard ghost flies to (13.1). Clicking toggles the panel. */
 export function DiscardWell({ wellRef }: { wellRef: RefObject<HTMLDivElement | null> }) {
-  const count = useRunStore((s) => s.deck.discardPile.length)
+  const discardPile = useRunStore((s) => s.deck.discardPile)
+  const [open, setOpen] = useState(false)
   return (
-    <div className="discard-well" role="img" aria-label={`Discard pile, ${count} coins`}>
-      <div className="discard-well-hole" ref={wellRef} aria-hidden>
-        <ACTION_ICONS.discard.icon size={18} strokeWidth={2} aria-hidden />
-      </div>
-      <span className="pile-count">{count}</span>
-    </div>
+    <>
+      <button
+        type="button"
+        className="discard-well"
+        aria-label={open ? 'Hide discard pile' : 'Show discard pile'}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <div className="discard-well-hole" ref={wellRef} aria-hidden>
+          <ACTION_ICONS.discard.icon size={18} strokeWidth={2} aria-hidden />
+        </div>
+        <span className="pile-count">{discardPile.length}</span>
+      </button>
+      {open && (
+        <PilePanel
+          title="Discard pile"
+          coins={discardPile}
+          emptyText="Nothing discarded this blind"
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   )
 }

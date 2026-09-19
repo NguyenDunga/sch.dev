@@ -85,7 +85,9 @@ describe('13a.6 — the Discard mode toggle is gone', () => {
     // The well is wrapped in the droppable (the drag routing is unit-tested
     // in coin-dnd.test.tsx — routeDrop('hand-N', 'discard-well')).
     expect(document.querySelector('.discard-well-drop')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Discard pile, 0 coins' })).toBeTruthy()
+    // The well is a button (toggles the discard-pile panel) showing its count.
+    const well = screen.getByRole('button', { name: 'Show discard pile' })
+    expect(well.querySelector('.pile-count')?.textContent).toBe('0')
   })
 })
 
@@ -99,7 +101,8 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
 
     // The coin left the hand; the discard pile grew.
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(7)
-    expect(screen.getByRole('img', { name: 'Discard pile, 1 coins' })).toBeTruthy()
+    const well = screen.getByRole('button', { name: 'Show discard pile' })
+    expect(well.querySelector('.pile-count')?.textContent).toBe('1')
     // Nothing else changed (UX §0).
     expect(discardInvariants()).toEqual(invariants)
     // The ghost is in flight (portaled to <body>) and removes itself.
@@ -129,9 +132,10 @@ describe('13a.6 — the per-coin D key (keyboard discard path)', () => {
     fireEvent.keyDown(coin, { key: 'd' })
 
     // The Draw-2 coin is gone; a full hand has one empty slot, so only one
-    // of the two redraws lands: 24 − 8 dealt − 1 redraw = 15 left (m13a deck).
+    // of the two redraws lands: 24 − 8 dealt − 1 redraw = 15 left in the draw
+    // pile (m13a deck) + 1 discarded = 16 coins in the deck inspector.
     expect(screen.getAllByRole('button', { name: /pick coin/i })).toHaveLength(8)
-    expect(screen.getByRole('img', { name: 'Draw pile, 15 coins' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Show deck' }).querySelector('.pile-count')?.textContent).toBe('16')
     await waitFor(() => expect(document.querySelector('.discard-ghost')).toBeNull(), { timeout: 2000 })
   })
 

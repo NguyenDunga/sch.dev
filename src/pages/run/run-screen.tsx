@@ -14,6 +14,7 @@ import { ScoreTicker } from '@/components/hand/score-ticker/score-ticker'
 import { BlindHeader } from '@/components/run/blind-header'
 import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
+import { WikiButton } from '@/components/wiki/wiki-button'
 import { CharmBar } from '@/components/charm-bar/charm-bar'
 import { useTossLanding } from './hooks/use-toss-landing'
 import { useHandShortcuts } from './hooks/use-hand-shortcuts'
@@ -57,12 +58,15 @@ function RunActions({
   )
 }
 
-/** The top bar: blind header + save button. */
+/** The top bar: blind header + wiki ("?") + save button. */
 function RunTop({ onSave }: { onSave: () => void }) {
   return (
     <div className="run-top">
       <BlindHeader />
-      <SaveButton onSave={onSave} />
+      <div className="run-top-actions">
+        <WikiButton />
+        <SaveButton onSave={onSave} />
+      </div>
     </div>
   )
 }

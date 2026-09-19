@@ -20,9 +20,9 @@ import {
   EARLY_CLEAR_BONUS_PER_HAND,
   HEAVY_TARGET_BONUS,
   HEAVY_TARGET_MULT,
-  PAYDAY_BONUS,
   PLAY_SIZE,
 } from '@/core/balance'
+import { CHARMS } from '@/config/charms'
 import { discardToPile } from '@/core/collection'
 import { emptyHand, none, scoreTotal, some } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
@@ -134,7 +134,7 @@ export function endBlind(st: Draft, rng: Rng): void {
     // Reward: base + Payday charm + Heavy Target bonus + early-clear bonus.
     st.cash +=
       blind.reward +
-      (st.charms.includes('payday') ? PAYDAY_BONUS : 0) +
+      (st.charms.includes('payday') ? (CHARMS.payday.params.bonus ?? 0) : 0) +
       (isHeavy ? HEAVY_TARGET_BONUS : 0) +
       st.earlyClearBonus
     if (st.blindIndex >= BLINDS.length - 1) {

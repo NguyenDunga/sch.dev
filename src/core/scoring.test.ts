@@ -7,8 +7,13 @@ import { matchTier, projectScore, resolveFace, scoreHand } from './scoring'
 import { filledSlot, none, some } from './helpers'
 import { createRng } from './rng'
 import type { Rng } from './rng'
-import { JACKPOT_PAYOUT, TAX_PAYOUT, TIERS } from './balance'
+import { TIERS } from './balance'
+import { COIN_EFFECTS } from '@/config/coins'
 import type { BossRuleId, Coin, CoinEffect, Face, Option, Play, TierId } from './types'
+
+// Coin cash params — from the config registry (src/config/coins).
+const TAX_PAYOUT = COIN_EFFECTS.tax.params.payout ?? 0
+const JACKPOT_PAYOUT = COIN_EFFECTS.jackpot.params.payout ?? 0
 
 /** Build a 5-slot play from a string: 'H'/'T' = tossed coin, '.' = empty slot. */
 function play(s: string): Play {
@@ -369,7 +374,7 @@ describe('M6.10 — null tier: total 0, no tier cash, but per-coin cash still pa
 })
 
 describe('balance baseline — exhaustive 32-hand EV (plan_balance-baseline.md, corrected 2026-09-12)', () => {
-  it('EV per hand = 1870/32, computed from TIERS over all 32 five-coin patterns', () => {
+  it('EV per hand = 2020/32, computed from TIERS over all 32 five-coin patterns', () => {
     // Baseline distribution: jackpot 2, fourRow 4, alternating 2, fourSame 6, tripleRun 6, threeSame 12.
     const expected =
       (2 * tierValue('jackpot') +
@@ -385,7 +390,7 @@ describe('balance baseline — exhaustive 32-hand EV (plan_balance-baseline.md, 
       const score = scoreHand(play(s), noBoss, [], freshRng())
       total += score.kind === 'scored' ? score.total : 0
     }
-    expect(expected).toBe(58.4375) // pins the baseline number
+    expect(expected).toBe(63.125) // pins the baseline number (Alternating 45×4, 2026-09-16)
     expect(total / 32).toBe(expected)
   })
 })

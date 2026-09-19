@@ -13,6 +13,7 @@ import { RunEndScreen } from '@/pages/run-end'
 import { DebugCoinPage } from '@/pages/debug/coin'
 import { BlindClearConfetti, ParticleLayer } from '@/components/juice/particles'
 import { ScreenShake } from '@/components/juice/screen-shake-layer'
+import { CoinInfoProvider } from '@/components/hand/coin/coin-info/coin-info'
 
 const SCREENS = {
   menu: MenuScreen,
@@ -66,12 +67,16 @@ export default function App() {
     // screen slides) for users who prefer reduced motion, keeping only
     // opacity/color changes — same final state and numbers.
     <MotionConfig reducedMotion="user">
-      {/* 13.6 — the app-root shake wrapper: the resolve shake (run) and the
-          target-clear shake (run → shop) both move the whole screen. */}
-      <ScreenShake>
-        <Screens />
-      </ScreenShake>
-      <JuiceLayer />
+      {/* Right-click coin info: one floating panel, shared by every coin
+          surface (hand / play / deck / discard / shop offer). */}
+      <CoinInfoProvider>
+        {/* 13.6 — the app-root shake wrapper: the resolve shake (run) and the
+            target-clear shake (run → shop) both move the whole screen. */}
+        <ScreenShake>
+          <Screens />
+        </ScreenShake>
+        <JuiceLayer />
+      </CoinInfoProvider>
     </MotionConfig>
   )
 }

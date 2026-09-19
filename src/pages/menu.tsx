@@ -9,6 +9,7 @@ import { withIcon } from '@/components/ui/icon'
 import { FaDice } from 'react-icons/fa6'
 import { Button } from '@/components/ui/button'
 import { generateSeed } from '@/core/rng'
+import { WikiButton } from '@/components/wiki/wiki-button'
 import { useRunStore } from '@/state/runStore'
 
 const DicesIcon = withIcon(FaDice)
@@ -95,6 +96,8 @@ export function MenuScreen() {
             Resume
           </Button>
         )}
+
+        <WikiButton />
       </div>
     </main>
   )
