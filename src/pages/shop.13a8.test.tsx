@@ -265,3 +265,54 @@ describe('13a.14 — shop areas (draft)', () => {
     expect(document.querySelectorAll('.offer-tile--poor')).toHaveLength(0)
   })
 })
+
+describe('M22 — pattern (tier) upgrade offer tiles', () => {
+  beforeAll(() => {
+    vi.stubGlobal('localStorage', makeLocalStorage())
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('a tierUpgrade offer renders: Pattern badge, tier-named title, price, Buy', () => {
+    useRunStore.getState().startRun('m22-ui')
+    useRunStore.setState({
+      phase: 'shop',
+      cash: 20,
+      shop: {
+        offers: [
+          { kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } },
+          { kind: 'tierUpgrade', upgrade: { tier: 'alternating', stat: 'mult' } },
+        ],
+      },
+    })
+    render(<ShopScreen />)
+
+    // The Pattern category badge + the tier-named titles.
+    expect(screen.getAllByText('Pattern')).toHaveLength(2)
+    expect(screen.getByText('+10 chips to Jackpot')).toBeTruthy()
+    expect(screen.getByText('+1 mult to Alternating')).toBeTruthy()
+    // The fixed price + a Buy button per tile.
+    expect(screen.getAllByText('$8')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Buy +10 chips to Jackpot' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Buy +1 mult to Alternating' })).toBeTruthy()
+    // The tile carries the tierUpgrade modifier (the Pattern badge tint).
+    expect(document.querySelectorAll('.offer-tile--tierUpgrade')).toHaveLength(2)
+  })
+
+  it('buying a tierUpgrade tile applies the upgrade and removes the offer', () => {
+    useRunStore.getState().startRun('m22-ui-buy')
+    useRunStore.setState({
+      phase: 'shop',
+      cash: 20,
+      shop: { offers: [{ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } }] },
+    })
+    render(<ShopScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Buy +10 chips to Jackpot' }))
+    const st = useRunStore.getState()
+    expect(st.cash).toBe(20 - 8)
+    expect(st.tierUpgrades.jackpot).toEqual({ chips: 10, mult: 0 })
+    expect(st.shop.offers).toHaveLength(0)
+  })
+})

@@ -16,6 +16,7 @@ import { ActionBar } from '@/components/run/action-bar'
 import { SaveButton } from '@/components/run/save-button'
 import { WikiButton } from '@/components/wiki/wiki-button'
 import { CharmBar } from '@/components/charm-bar/charm-bar'
+import { TierReference } from '@/components/run/tier-reference/tier-reference'
 import { useTossLanding } from './hooks/use-toss-landing'
 import { useHandShortcuts } from './hooks/use-hand-shortcuts'
 import {
@@ -78,6 +79,7 @@ export function RunScreen() {
   const lastScore = useRunStore((s) => s.lastScore)
   const blindIndex = useRunStore((s) => s.blindIndex)
   const charms = useRunStore((s) => s.charms)
+  const tierUpgrades = useRunStore((s) => s.tierUpgrades)
   const unpickCoin = useRunStore((s) => s.unpickCoin)
   const score = useRunStore((s) => s.score)
   const finishScore = useRunStore((s) => s.finishScore)
@@ -100,7 +102,7 @@ export function RunScreen() {
   const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
   // 13b.8 — the toss timing glue (projection + whoosh sfx + auto-score) is
   // driven by the toss animation's landing events (onLand), not setTimeout.
-  const projection = useTossLanding(handPhase, play, boss, charms, choro.handleScore)
+  const projection = useTossLanding(handPhase, play, boss, charms, tierUpgrades, choro.handleScore)
   return (
     <main className="run-screen" onClick={onBackgroundClick}>
       <RunTop onSave={save} />
@@ -113,6 +115,7 @@ export function RunScreen() {
         cashRef={choro.cashRef}
       />
       <CharmBar />
+      <TierReference />
       <PlayAreaHost
         play={play} hand={hand} revealed={flags.revealed} canPick={flags.canPick}
         shake={flow.shake} deals={deals} wellRef={wellRef} selection={selection}

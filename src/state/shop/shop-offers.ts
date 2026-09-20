@@ -4,6 +4,7 @@
 // of offers. The shop ACTIONS (buy / reroll / mergeCoin / sellCoin /
 // moveCharm / leaveShop) live in shopActions.ts.
 
+import { TIERS } from '@/core/balance'
 import { HAND_SIZE_CAP, SHOP_SLOTS } from '@/core/shop'
 import { COIN_CATALOG } from '@/config/coins'
 import { CHARM_CATALOG } from '@/config/charms'
@@ -37,7 +38,9 @@ export function enterShopDraft(st: Draft, rng: Rng): void {
 /**
  * M9.1: draw SHOP_SLOTS offers from the combined pool — unowned charms + all
  * coin effects (coins may be offered repeatedly across shops) + the hand-size
- * upgrade (while under the cap). Sampled without replacement (Fisher–Yates),
+ * upgrade (while under the cap) + the 12 pattern upgrades (M22: 6 tiers ×
+ * chips/mult — always in the pool; buying the same tier again stacks, so
+ * there is no owned/cap filter). Sampled without replacement (Fisher–Yates),
  * so no offer duplicates within one shop and no owned charm is ever offered.
  * The pool is always ≥ 5 (11 coin entries alone), so the shop always fills.
  */
@@ -47,6 +50,12 @@ export function generateOffers(rng: Rng, charms: RunState['charms'], handSize: n
       (c): ShopOffer => ({ kind: 'charm', charm: c.id }),
     ),
     ...COIN_CATALOG.map((c): ShopOffer => ({ kind: 'coin', effect: c.effect })),
+    // M22: the 12 pattern upgrades (6 tiers × chips/mult).
+    ...TIERS.flatMap((t) =>
+      (['chips', 'mult'] as const).map(
+        (stat): ShopOffer => ({ kind: 'tierUpgrade', upgrade: { tier: t.id, stat } }),
+      ),
+    ),
   ]
   if (handSize < HAND_SIZE_CAP) pool.push({ kind: 'handSize' })
   for (let i = pool.length - 1; i > 0; i--) {
@@ -61,7 +70,9 @@ export function sameOffer(a: ShopOffer, b: ShopOffer): boolean {
   if (a.kind !== b.kind) return false
   if (a.kind === 'handSize' || b.kind === 'handSize') return a.kind === b.kind
   if (a.kind === 'charm' && b.kind === 'charm') return a.charm === b.charm
-  return a.kind === 'coin' && b.kind === 'coin' && a.effect === b.effect
+  if (a.kind === 'coin' && b.kind === 'coin') return a.effect === b.effect
+  // M22: the same tier upgrade = same tier AND same stat.
+  return a.kind === 'tierUpgrade' && b.kind === 'tierUpgrade' && a.upgrade.tier === b.upgrade.tier && a.upgrade.stat === b.upgrade.stat
 }
 
 /** The next free coin id (collection ids are unique: base 0..size-1, purchases

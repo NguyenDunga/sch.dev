@@ -7,9 +7,10 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { WikiButton } from './wiki-button'
 import { WIKI_TABS } from './wiki-tabs'
-import { TIERS } from '@/core/balance'
+import { TIERS, zeroTierUpgrades } from '@/core/balance'
 import { COIN_CATALOG } from '@/config/coins'
 import { CHARM_CATALOG } from '@/config/charms'
+import { useRunStore } from '@/state/runStore'
 
 afterEach(() => cleanup())
 
@@ -35,6 +36,28 @@ describe('WikiButton', () => {
       expect(screen.getByText(tier.name)).toBeTruthy()
     }
     expect(screen.getByText(/Highest tier wins/)).toBeTruthy()
+  })
+
+  it('M22: the Patterns tab shows effective values with purchased upgrades ("50 → 60 (+10)")', () => {
+    useRunStore.setState({
+      tierUpgrades: {
+        ...zeroTierUpgrades(),
+        jackpot: { chips: 10, mult: 0 },
+        alternating: { chips: 0, mult: 1 },
+      },
+    })
+    try {
+      render(<WikiButton />)
+      fireEvent.click(screen.getByRole('button', { name: 'Help — 50/50 reference' }))
+      // Upgraded tiers: base → effective (+amount).
+      expect(screen.getByText('50 → 60 (+10)')).toBeTruthy() // jackpot chips
+      expect(screen.getByText('4 → 5 (+1)')).toBeTruthy() // alternating mult
+      // Unupgraded tiers fall back to the plain base value.
+      expect(screen.getByText('40')).toBeTruthy() // fourRow chips
+      expect(screen.getByText('15')).toBeTruthy() // threeSame chips
+    } finally {
+      useRunStore.setState({ tierUpgrades: zeroTierUpgrades() })
+    }
   })
 
   it('the Coins tab lists every catalog coin with its price', () => {

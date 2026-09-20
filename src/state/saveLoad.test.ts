@@ -5,7 +5,7 @@
 // autosave. The node test env has no localStorage — stub it per suite.
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
+import { BASE_DECK_SIZE, HANDS_PER_BLIND, HAND_SIZE, SHORT_FUSE_HANDS, zeroTierUpgrades } from '@/core/balance'
 import { SHOP_SLOTS } from '@/core/shop'
 import { filledSlot, none } from '@/core/helpers'
 import { createRunStore } from './runStore'
@@ -15,7 +15,7 @@ describe('M11.1 — save()', () => {
   beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
   afterAll(() => vi.unstubAllGlobals())
 
-  it('writes { version: 3, state } to the fifty-fifty-run key (incl. rngState + collection)', () => {
+  it('writes { version: 4, state } to the fifty-fifty-run key (incl. rngState + collection + tierUpgrades)', () => {
     const store = createRunStore()
     store.getState().startRun('m11-1')
     store.getState().drawHand()
@@ -24,7 +24,7 @@ describe('M11.1 — save()', () => {
     const raw = localStorage.getItem('fifty-fifty-run')
     expect(raw).not.toBeNull()
     const saved = JSON.parse(raw as string)
-    expect(saved.version).toBe(3)
+    expect(saved.version).toBe(4)
     expect(saved.state.seed).toBe('m11-1')
     expect(saved.state.phase).toBe('run')
     expect(saved.state.rngState).toEqual(store.getState().rngState)
@@ -436,10 +436,54 @@ describe('Coverage — remaining edges (100% gate)', () => {
     const store = createRunStore()
     store.getState().startRun('cov-rs')
     const st = store.getState()
-    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 3, state: { ...st, phase: 'runEnd' } }))
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 4, state: { ...st, phase: 'runEnd' } }))
     const before = store.getState()
     store.getState().resume()
     expect(store.getState()).toEqual(before)
+  })
+})
+
+describe('M22 — save version 4 + the v3 migration', () => {
+  beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
+  afterAll(() => vi.unstubAllGlobals())
+
+  it('a pre-M22 (v3) save loads with every tier upgrade at zero', () => {
+    const a = createRunStore()
+    a.getState().startRun('m22-v3')
+    a.getState().drawHand()
+    a.getState().save()
+    // Strip the v4 field and downgrade the version → a genuine v3 save.
+    const raw = JSON.parse(localStorage.getItem('fifty-fifty-run')!)
+    delete raw.state.tierUpgrades
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 3, state: raw.state }))
+
+    const b = createRunStore()
+    expect(b.getState().hasSave()).toBe(true) // v3 is loadable (migrated)
+    b.getState().resume()
+    const st = b.getState()
+    expect(st.phase).toBe('run')
+    expect(st.tierUpgrades).toEqual(zeroTierUpgrades())
+  })
+
+  it('a v4 save round-trips the purchased upgrades', () => {
+    const a = createRunStore()
+    a.getState().startRun('m22-v4')
+    a.getState().drawHand()
+    a.setState({
+      tierUpgrades: {
+        ...zeroTierUpgrades(),
+        jackpot: { chips: 10, mult: 0 },
+        alternating: { chips: 0, mult: 2 },
+      },
+    })
+    a.getState().save()
+
+    const b = createRunStore()
+    b.getState().resume()
+    const st = b.getState()
+    expect(st.tierUpgrades.jackpot).toEqual({ chips: 10, mult: 0 })
+    expect(st.tierUpgrades.alternating).toEqual({ chips: 0, mult: 2 })
+    expect(st.tierUpgrades.threeSame).toEqual({ chips: 0, mult: 0 })
   })
 })
 
@@ -447,15 +491,15 @@ describe('M11.7 — hasSave (C5: Resume visible only when a resumable save exist
   beforeAll(() => vi.stubGlobal('localStorage', makeLocalStorage()))
   afterAll(() => vi.unstubAllGlobals())
 
-  function writeSave(state: unknown): void {
-    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version: 3, state }))
+  function writeSave(state: unknown, version: number = 4): void {
+    localStorage.setItem('fifty-fifty-run', JSON.stringify({ version, state }))
   }
 
   it('false when no save exists', () => {
     expect(createRunStore().getState().hasSave()).toBe(false)
   })
 
-  it('true for a valid v3 save in a resumable phase (seen by a fresh store)', () => {
+  it('true for a valid save in a resumable phase (seen by a fresh store)', () => {
     const store = createRunStore()
     store.getState().startRun('has-save')
     store.getState().drawHand()

@@ -1,4 +1,4 @@
-import type { Blind, BossRuleId, Tier } from './types'
+import type { Blind, BossRuleId, Tier, TierUpgrades } from './types'
 
 // Data-only tables (draft values from plan_balance-baseline.md — tunable in
 // playtest, not a scope change). No logic here. Shop-side data (charm/coin
@@ -36,6 +36,19 @@ export const HEAVY_TARGET_MULT = 1.5
  * cost — open decision resolved 2026-09-15: keep 24).
  */
 export const BASE_DECK_SIZE = 24
+
+// M22 — pattern (tier) upgrades (draft — tunable in playtest):
+// every upgrade of a tier costs the same and adds the same amount; the
+// stack itself is the snowball (no per-level scaling).
+/** +10 chips per chips upgrade. */
+export const TIER_UPGRADE_CHIPS = 10
+/** +1 mult per mult upgrade. */
+export const TIER_UPGRADE_MULT = 1
+/** Cost per upgrade (chips or mult), in $. */
+export const TIER_UPGRADE_PRICE = 8
+/** A fresh run / a pre-M22 (v3) save: every tier at zero upgrades. */
+export const zeroTierUpgrades = (): TierUpgrades =>
+  Object.fromEntries(TIERS.map((t) => [t.id, { chips: 0, mult: 0 }])) as TierUpgrades
 
 export const BOSS_RULES: BossRule[] = [
   { id: 'noAlternating', name: 'No Alternating', description: 'Alternating hands score 0' },

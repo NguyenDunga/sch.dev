@@ -72,7 +72,7 @@ export function echoReflipDraft(st: Draft, slotIndex: number, rng: Rng): void {
 function scoreDraft(st: Draft, rng: Rng): void {
   const blind = BLINDS[st.blindIndex]
   const boss: Option<BossRuleId> = blind.kind === 'boss' ? some(blind.rule) : none
-  const result = scoreHand(st.play, boss, st.charms, rng)
+  const result = scoreHand(st.play, boss, st.charms, rng, st.tierUpgrades)
   // 13a.2 keep-unplayed: only the PLAYED coins go to the discard pile (gone
   // for the rest of the blind); unplayed hand coins stay in the hand and the
   // next hand refills to handSize around them (drawHand fills empty slots).

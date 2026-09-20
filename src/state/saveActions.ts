@@ -1,11 +1,13 @@
 // C9 — Save / resume actions (M11).
 //
-// Save is explicit only (no autosave): { version: 3, state } to localStorage
+// Save is explicit only (no autosave): { version: 4, state } to localStorage
 // in the run/shop phases. Resume is a no-op when the save is absent,
-// unparseable, not version 3, or not resumable. Action bodies are module-level
-// functions (≤60 lines, NASA practice); the store wires them up.
+// unparseable, not version 3/4, or not resumable. A pre-M22 (v3) save loads
+// with every tier upgrade at zero (the only v3 → v4 migration). Action bodies
+// are module-level functions (≤60 lines, NASA practice); the store wires them
+// up.
 
-import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
+import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS, zeroTierUpgrades } from '@/core/balance'
 import { shuffleCollection } from '@/core/collection'
 import { emptyHand, none, some } from '@/core/helpers'
 import type { Rng } from '@/core/rng'
@@ -16,7 +18,11 @@ import { generateOffers } from './shop'
 const SAVE_KEY = 'fifty-fifty-run'
 // v3 (m13a): the state gained `earlyClearBonus` (13a.4) — v2 saves are
 // discarded (not migratable), same policy as v1 → v2.
-const SAVE_VERSION = 3
+// v4 (M22): the state gained `tierUpgrades` — v3 saves are migrated on load
+// (missing `tierUpgrades` → all six tiers at zero).
+const SAVE_VERSION = 4
+/** The loadable versions: v4 (current) + v3 (migrated — no tierUpgrades). */
+const LOADABLE_VERSIONS = [3, 4]
 
 export function save(get: GetFn): void {
   const st = get()
@@ -25,13 +31,14 @@ export function save(get: GetFn): void {
 }
 
 /** Query (C5): a resumable save exists — the Resume button is visible only
- *  then. False for absent / unparseable / not version 3 / non-resumable. */
+ *  then. False for absent / unparseable / not version 3/4 / non-resumable. */
 export function hasSave(): boolean {
   return parseSave(localStorage.getItem(SAVE_KEY)).some
 }
 
-/** Parse + validate a save string; `none` when absent / unparseable / not
- *  version 3 / not resumable (v1/v2 saves predate the collection/earlyClearBonus). */
+/** Parse + validate a save string; `none` when absent / unparseable / not a
+ *  loadable version (3/4) / not resumable (v1/v2 saves predate the
+ *  collection/earlyClearBonus). */
 function parseSave(raw: string | null): Option<RunState> {
   if (raw === null) return none
   let saved: { version?: unknown; state?: RunState }
@@ -40,7 +47,7 @@ function parseSave(raw: string | null): Option<RunState> {
   } catch {
     return none
   }
-  if (saved.version !== SAVE_VERSION || saved.state === undefined) return none
+  if (!LOADABLE_VERSIONS.includes(saved.version as number) || saved.state === undefined) return none
   const s = saved.state
   if (s.phase !== 'run' && s.phase !== 'shop') return none
   return some(s)
@@ -94,6 +101,8 @@ export function resume(set: SetFn, rng: Rng): void {
     st.earlyClearBonus = s.earlyClearBonus
     // 13a.15: per-round reroll counter (absent in pre-13a.15 saves → 0).
     st.rerollCount = s.rerollCount ?? 0
+    // M22: pattern upgrades (absent in v3 saves → all six tiers at zero).
+    st.tierUpgrades = s.tierUpgrades ?? zeroTierUpgrades()
     st.rngState = s.rngState
     // Reset: hand, play, handPhase, lastScore, current-blind progress.
     st.hand = emptyHand(st.handSize)

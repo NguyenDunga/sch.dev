@@ -108,7 +108,18 @@ Cash effects (Tax, Jackpot) pay **cash** at score time, outside the chips × mul
 
 The 3 coin-modifier charms (Weighted Coin / Double-Sided / Always Heads) were removed 2026-09-13 — their role is now filled by per-coin effects. The Re-Toss charm was removed 2026-09-13 (Q&A round 2) — unlimited discard supersedes it.
 
-Shop: 5 offers drawn from a combined pool — the 5 charms (no duplicates of owned charms) + the coin effects (coins may be bought multiple times; each purchase adds one new coin to the collection, with Weight's favored face rolled on purchase) + the hand-size upgrade (draft price $10 / cap 10), 1 free reroll per shop (rerolls all 5 offers). With the 24-coin base deck, a bought coin is ~4% of the collection (vs ~1.2% at 80) — it appears ~3× as often, so upgrades matter (the m13a goal).
+## Pattern (Tier) Upgrades (M22, 2026-09-19)
+
+The scoring patterns (tiers) are upgradable in the shop, like Balatro's Jokers. Each upgrade targets ONE tier and boosts its chips or mult; it persists for the whole run (like a charm) and stacks (no cap). Fixed cost + fixed value (no per-level scaling).
+
+| Upgrade | Effect | Cost |
+| --- | --- | --- |
+| +Chips (per tier) | +10 chips to that tier | $8 |
+| +Mult (per tier) | +1 mult to that tier | $8 |
+
+Impact: a +10-chips upgrade is worth +10 × (the tier's effective mult); a +1-mult upgrade is worth +1 × (the tier's effective chips). On a base tier both land in the +10…+50 total range (e.g. +10 chips on Jackpot = +40; +1 mult on Jackpot = +50), so the two are comparable. Upgrades apply **before** the charm boosters, so a `+Mult` charm multiplies the upgraded chips too (Balatro-style compounding). The shop pool gains 12 entries (6 tiers × chips/mult); the shop still draws 5 without replacement.
+
+Shop: 5 offers drawn from a combined pool — the 5 charms (no duplicates of owned charms) + the coin effects (coins may be bought multiple times; each purchase adds one new coin to the collection, with Weight's favored face rolled on purchase) + the 12 pattern upgrades (M22) + the hand-size upgrade (draft price $10 / cap 10), 1 free reroll per shop (rerolls all 5 offers). With the 24-coin base deck, a bought coin is ~4% of the collection (vs ~1.2% at 80) — it appears ~3× as often, so upgrades matter (the m13a goal).
 
 Shop actions (2026-09-13 Q&A round 2):
 - **Merge (sacrifice)** — merge one owned coin into another: the target gains the source coin's effects (stack freely, no cap per coin); the source coin is consumed; free

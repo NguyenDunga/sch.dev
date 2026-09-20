@@ -1,6 +1,6 @@
-// C3 — Scoring pipeline: matchTier (M5) → scoreHand (M6: tier → base →
-// boosters → total + coin cash) → projectScore (13a.7). resolveFace (M7)
-// lives in resolve-face.ts (150-LOC file rule).
+// C3 — Scoring pipeline: matchTier (M5, match-tier.ts) → scoreHand (M6:
+// tier → base → upgrades → boosters → total + coin cash) → projectScore
+// (13a.7). resolveFace (M7) lives in resolve-face.ts (150-LOC file rule).
 //
 // Coin effects (v1 core set of 11):
 //   Face (resolveFace): weight, heads, tails, chaos, magnetic, reverse
@@ -12,14 +12,16 @@
 
 import type { Rng } from '../rng'
 import { chance } from '../rng'
-import { isFilled, none, some } from '../helpers'
-import { TIERS } from '../balance'
+import { isFilled } from '../helpers'
+import { TIERS, zeroTierUpgrades } from '../balance'
 import { COIN_EFFECTS } from '@/config/coins'
 import { CHARMS } from '@/config/charms'
-import type { BossRuleId, CharmId, Face, Option, Play, Score, TierId } from '../types'
+import type { BossRuleId, CharmId, Option, Play, Score, TierId, TierUpgrades } from '../types'
+import { matchTier } from './match-tier'
 
-// resolveFace (M7) lives in resolve-face.ts (150-LOC file rule).
+// resolveFace (M7) + matchTier (M5) live in their own files (150-LOC rule).
 export { resolveFace } from './resolve-face'
+export { matchTier } from './match-tier'
 
 // Coin cash + booster params — from the config registries (src/config).
 const TAX_PAYOUT = COIN_EFFECTS.tax.params.payout ?? 0
@@ -27,56 +29,12 @@ const JACKPOT_CHANCE = COIN_EFFECTS.jackpot.params.chance ?? 0
 const JACKPOT_PAYOUT = COIN_EFFECTS.jackpot.params.payout ?? 0
 
 /**
- * M5: highest-value tier matched by the tossed coins, or `none`.
- *
- * Empty slots count as nothing — the pattern is read on the filled slots' faces
- * only, so a k-coin play can only match tiers that fit in k. Tiers in priority
- * order (high → low): jackpot, fourRow, alternating, fourSame, tripleRun, threeSame.
- *
- * Boss rules apply here:
- *   - noAlternating → an alternating play returns `none` (explicit override, no fall-through)
- *   - noJackpots    → a jackpot play returns `fourSame` (fixed demotion, not a fall-through to fourRow)
- */
-export function matchTier(play: Play, boss: Option<BossRuleId>): Option<TierId> {
-  const faces = play.filter(isFilled).map((s) => s.face)
-  const n = faces.length
-  if (n <= 2) return none
-
-  // Count + run stats over the two faces.
-  const counts: Record<Face, number> = { H: 0, T: 0 }
-  let maxRun = 1
-  let run = 1
-  for (let i = 0; i < n; i++) {
-    counts[faces[i]]++
-    run = i > 0 && faces[i] === faces[i - 1] ? run + 1 : 1
-    maxRun = Math.max(maxRun, run)
-  }
-  const maxCount = Math.max(counts.H, counts.T)
-  const isAlternating = n === 5 && faces.every((f, i) => i === 0 || f !== faces[i - 1])
-
-  // 1. jackpot — exactly 5 faces, all identical.
-  if (n === 5 && maxCount === 5) {
-    return boss.some && boss.value === 'noJackpots' ? some('fourSame') : some('jackpot')
-  }
-  // 2. fourRow — a run of ≥4 adjacent equal faces.
-  if (maxRun >= 4) return some('fourRow')
-  // 3. alternating — exactly 5 strictly alternating faces.
-  if (isAlternating) {
-    return boss.some && boss.value === 'noAlternating' ? none : some('alternating')
-  }
-  // 4. fourSame — some face appears ≥4 times, not necessarily adjacent.
-  if (maxCount >= 4) return some('fourSame')
-  // 5. tripleRun — a run of ≥3 adjacent equal faces.
-  if (maxRun >= 3) return some('tripleRun')
-  // 6. threeSame — a face appears exactly 3 times.
-  if (maxCount === 3) return some('threeSame')
-  return none
-}
-
-/**
  * M6: the exact scoring pipeline, in order, no steps merged.
  *   1. Tier     — matchTier(play, boss) (boss tier rules applied inside M5)
  *   2. Base     — {chips, mult} from TIERS; no tier → {0, 0}
+ *   2.5 Upgrades — M22: the matched tier's purchased chips/mult (tierUpgrades);
+ *                  applied after the base, before the boosters (boosters
+ *                  compound on the upgraded values)
  *   3. Boosters — charms left→right: plusChips +10 chips, plusMult +1 mult,
  *                 jackpotFever ×2 chips (jackpot tier only); only these three
  *   4. Score    — total = chips × mult (0 for a no-tier hand)
@@ -84,10 +42,16 @@ export function matchTier(play: Play, boss: Option<BossRuleId>): Option<TierId> 
  *                 passing its 25% roll (rng, never Math.random); paid to cash,
  *                 outside chips × mult
  */
-/** M6 steps 1–4 (tier → base → boosters → total) — the deterministic part of
- *  the pipeline (no rng). `scoreHand` adds step 5 (coin cash) on top; the
- *  13a.7 projection reuses this so auto and manual scores agree exactly. */
-function tierScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[]): { tier: TierId | null; chips: number; mult: number; total: number } {
+/** M6 steps 1–4 (tier → base → upgrades → boosters → total) — the
+ *  deterministic part of the pipeline (no rng). `scoreHand` adds step 5 (coin
+ *  cash) on top; the 13a.7 projection reuses this so auto and manual scores
+ *  agree exactly. */
+function tierScore(
+  play: Play,
+  boss: Option<BossRuleId>,
+  charms: CharmId[],
+  tierUpgrades: TierUpgrades,
+): { tier: TierId | null; chips: number; mult: number; total: number } {
   // 1. Tier (boss rules already applied inside matchTier)
   const tierOpt = matchTier(play, boss)
   const tier = tierOpt.some ? tierOpt.value : null
@@ -96,6 +60,13 @@ function tierScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[]): { t
   const base = tier ? TIERS.find((t) => t.id === tier) : undefined
   let chips = base?.chips ?? 0
   let mult = base?.mult ?? 0
+
+  // 2.5 Tier upgrades (M22): the matched tier's purchased chips/mult — after
+  // the base, before the boosters (so the boosters compound on top).
+  if (tier) {
+    chips += tierUpgrades[tier].chips
+    mult += tierUpgrades[tier].mult
+  }
 
   // 3. Boosters, left→right, only the three scoring boosters (params from
   //    the charm registry, src/config/charms)
@@ -111,8 +82,14 @@ function tierScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[]): { t
   return { tier, chips, mult, total }
 }
 
-export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[], rng: Rng): Score {
-  const { tier, chips, mult, total } = tierScore(play, boss, charms)
+export function scoreHand(
+  play: Play,
+  boss: Option<BossRuleId>,
+  charms: CharmId[],
+  rng: Rng,
+  tierUpgrades: TierUpgrades = zeroTierUpgrades(),
+): Score {
+  const { tier, chips, mult, total } = tierScore(play, boss, charms, tierUpgrades)
 
   // 5. Coin cash (per coin in the play; a merged coin carries both effects)
   let cash = 0
@@ -136,9 +113,15 @@ export function scoreHand(play: Play, boss: Option<BossRuleId>, charms: CharmId[
  *  Jackpot 25% roll) is left to the real score, so the projection's cash is 0.
  *  `landed` clamps to the number of filled slots (0..n).
  */
-export function projectScore(play: Play, boss: Option<BossRuleId>, charms: CharmId[], landed: number): Score {
+export function projectScore(
+  play: Play,
+  boss: Option<BossRuleId>,
+  charms: CharmId[],
+  landed: number,
+  tierUpgrades: TierUpgrades = zeroTierUpgrades(),
+): Score {
   const filled = play.filter(isFilled)
   const n = Math.max(0, Math.min(landed, filled.length))
-  const { tier, chips, mult, total } = tierScore(filled.slice(0, n), boss, charms)
+  const { tier, chips, mult, total } = tierScore(filled.slice(0, n), boss, charms, tierUpgrades)
   return tier ? { kind: 'scored', tier, chips, mult, total, cash: 0 } : { kind: 'none', cash: 0 }
 }

@@ -6,7 +6,7 @@
 // save/resume (M11). Action bodies are module-level functions (≤60 lines);
 // the store wires them up.
 
-import { HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE, START_CASH } from '@/core/balance'
+import { HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE, START_CASH, zeroTierUpgrades } from '@/core/balance'
 import { buildCollection, discardToPile, drawFromDeck, shuffleCollection } from '@/core/collection'
 import { emptyHand, filledSlot, isFilled, none } from '@/core/helpers'
 import { createRng, generateSeed, type Rng } from '@/core/rng'
@@ -33,6 +33,7 @@ function startRunDraft(st: Draft, rng: Rng, seed: string): void {
   st.earlyClearBonus = 0
   st.rerollCount = 0
   st.charms = []
+  st.tierUpgrades = zeroTierUpgrades()
   st.deck = shuffleCollection(rng, buildCollection(rng))
   st.shop = { offers: [] }
   st.lastScore = none
@@ -139,10 +140,8 @@ export function discardDraft(st: Draft, handIndex: number, rng: Rng): void {
     }
   }
   // Dead hand (player report): the discard left NO coin in the hand AND the
-  // play row — nothing can ever be picked or confirmed this hand (0 hand /
-  // 0 play, 0 deck once the pile is drained). End the blind now (win if the
-  // target is met, lose otherwise) instead of stranding the player in the
-  // play phase.
+  // play row — nothing can ever be picked or confirmed. End the blind now
+  // (win if the target is met, lose otherwise) instead of stranding the play phase.
   if (!st.hand.some(isFilled) && !st.play.some(isFilled)) {
     st.handsLeft -= 1
     endBlind(st, rng)

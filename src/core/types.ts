@@ -42,9 +42,21 @@ export type HandPhase = 'draw' | 'play' | 'toss' | 'buff' | 'score'         // p
 export type BossRuleId = 'noAlternating' | 'shortFuse' | 'noJackpots' | 'heavyTarget'
 export type CharmId = 'plusChips' | 'plusMult' | 'extraHand' | 'payday' | 'jackpotFever'
 export type CharmCategory = 'flip' | 'scoring' | 'pattern' | 'economy'
-export type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: CoinEffectId } | { kind: 'handSize' }
+export type ShopOffer =
+  | { kind: 'charm'; charm: CharmId }
+  | { kind: 'coin'; effect: CoinEffectId }
+  | { kind: 'handSize' }
+  | { kind: 'tierUpgrade'; upgrade: TierUpgrade }
 
 export interface Tier { id: TierId; name: string; chips: number; mult: number }
+
+// M22 — pattern (tier) upgrades: a shop purchase that boosts ONE tier's chips
+// or mult for the whole run (like a Balatro joker). Buying the same tier
+// again stacks (no cap).
+export type TierUpgradeStat = 'chips' | 'mult'
+export interface TierUpgrade { tier: TierId; stat: TierUpgradeStat }
+/** The purchased upgrades per tier (all six start at { chips: 0, mult: 0 }). */
+export type TierUpgrades = Record<TierId, { chips: number; mult: number }>
 
 // The boss rule lives inside the 'boss' variant — only a boss blind has a rule, and it always has one.
 // No optional `boss?` field dangling on small/big blinds.
@@ -80,6 +92,7 @@ export interface RunState {
   deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
   shop: { offers: ShopOffer[] }
   rerollCount: number        // 13a.15: rerolls used since the last boss blind (next reroll cost = rerollCount + 1)
+  tierUpgrades: TierUpgrades // M22: purchased pattern upgrades (whole run; like charms)
   lastScore: Option<Score>   // for the UI ticker; none before the first hand is scored
   runScore: number           // total score across the run (summary)
   won: boolean               // set when blind 12 is cleared

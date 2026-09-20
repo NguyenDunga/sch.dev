@@ -42,7 +42,12 @@ type HandPhase = 'draw' | 'play' | 'toss' | 'buff' | 'score'         // per-hand
 type BossRuleId = 'noAlternating' | 'shortFuse' | 'noJackpots' | 'heavyTarget'
 type CharmId = 'plusChips' | 'plusMult' | 'extraHand' | 'payday' | 'jackpotFever'
 type CharmCategory = 'flip' | 'scoring' | 'pattern' | 'economy'
-type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: CoinEffectId } | { kind: 'handSize' }
+// M22: a pattern (tier) upgrade — boost ONE tier's chips or mult (whole run; like a charm).
+// The amount is fixed (balance: TIER_UPGRADE_CHIPS / TIER_UPGRADE_MULT); the offer carries only
+// which tier + which stat.
+type TierUpgradeStat = 'chips' | 'mult'
+type TierUpgrade = { tier: TierId; stat: TierUpgradeStat }
+type ShopOffer = { kind: 'charm'; charm: CharmId } | { kind: 'coin'; effect: CoinEffectId } | { kind: 'handSize' } | { kind: 'tierUpgrade'; upgrade: TierUpgrade }
 
 interface Tier { id: TierId; name: string; chips: number; mult: number }
 
@@ -79,6 +84,7 @@ interface RunState {
   blindScore: number         // score accumulated in the current blind
   cash: number               // starts at $4
   charms: CharmId[]          // owned charms, in charm-bar (scoring) order
+  tierUpgrades: Record<TierId, { chips: number; mult: number }>  // M22: purchased pattern upgrades (whole run; all 0 at run start)
   deck: Deck                 // coin collection: drawPile (finite per blind) + discardPile (per blind)
   shop: { offers: ShopOffer[]; rerollUsed: boolean }
   lastScore: Option<Score>   // for the UI ticker; none before the first hand is scored

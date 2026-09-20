@@ -6,9 +6,13 @@
 
 import { describe, expect, it } from 'vitest'
 import { HAND_SIZE_CAP, HAND_SIZE_PRICE, SHOP_SLOTS } from '@/core/shop'
+import { TIERS, TIER_UPGRADE_CHIPS, TIER_UPGRADE_MULT, TIER_UPGRADE_PRICE } from '@/core/balance'
 import { COIN_CATALOG } from '@/config/coins'
 import { CHARM_CATALOG } from '@/config/charms'
 import { createRunStore, type RunStore } from './runStore'
+import { generateOffers, sameOffer } from './shop'
+import { createRng } from '@/core/rng'
+import type { ShopOffer } from '@/core/types'
 
 describe('M9.1 — shop offer generation', () => {
   /** A store that genuinely cleared blind 1 → shop (offers drawn from the rng). */
@@ -41,12 +45,13 @@ describe('M9.1 — shop offer generation', () => {
     }
   })
 
-  it('every offer comes from the pool (unowned charms + coin effects + hand-size)', () => {
+  it('every offer comes from the pool (unowned charms + coin effects + hand-size + tier upgrades)', () => {
     const store = shopStore('m9-1c', ['extraHand'])
     const pool = new Set([
       ...CHARM_CATALOG.filter((c) => c.id !== 'extraHand').map((c) => `charm:${c.id}`),
       ...COIN_CATALOG.map((c) => `coin:${c.effect}`),
       'handSize',
+      ...TIERS.flatMap((t) => [`tierUpgrade:${t.id}:chips`, `tierUpgrade:${t.id}:mult`]),
     ])
     for (const offer of store.getState().shop.offers) {
       const key =
@@ -54,7 +59,9 @@ describe('M9.1 — shop offer generation', () => {
           ? `charm:${offer.charm}`
           : offer.kind === 'coin'
             ? `coin:${offer.effect}`
-            : 'handSize'
+            : offer.kind === 'tierUpgrade'
+              ? `tierUpgrade:${offer.upgrade.tier}:${offer.upgrade.stat}`
+              : 'handSize'
       expect(pool.has(key)).toBe(true)
     }
   })
@@ -454,6 +461,95 @@ describe('M9.7 — hand-size upgrade', () => {
     const before = store.getState()
     store.getState().buy({ kind: 'handSize' })
     expect(store.getState()).toEqual(before)
+  })
+})
+
+describe('M22 — pattern (tier) upgrades', () => {
+  it('generateOffers: all 12 tier upgrades (6 tiers × chips/mult) are in the pool', () => {
+    // Every seed draws 5 of the 30-entry pool; across seeds each of the 12
+    // tier upgrades must be offerable (and none may duplicate in one shop).
+    const seen = new Set<string>()
+    for (let i = 0; i < 40; i++) {
+      const offers = generateOffers(createRng(`m22-${i}`), [], 8)
+      expect(offers).toHaveLength(SHOP_SLOTS)
+      const keys = offers.map((o) =>
+        o.kind === 'tierUpgrade' ? `tierUpgrade:${o.upgrade.tier}:${o.upgrade.stat}` : JSON.stringify(o),
+      )
+      expect(new Set(keys).size).toBe(keys.length) // no duplicates in one shop
+      for (const o of offers) if (o.kind === 'tierUpgrade') seen.add(`${o.upgrade.tier}:${o.upgrade.stat}`)
+    }
+    expect(seen.size).toBe(12)
+    for (const t of TIERS) {
+      expect(seen.has(`${t.id}:chips`)).toBe(true)
+      expect(seen.has(`${t.id}:mult`)).toBe(true)
+    }
+  })
+
+  it('sameOffer: the tierUpgrade variant matches on tier AND stat', () => {
+    const a: ShopOffer = { kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } }
+    expect(sameOffer(a, { kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })).toBe(true)
+    expect(sameOffer(a, { kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'mult' } })).toBe(false)
+    expect(sameOffer(a, { kind: 'tierUpgrade', upgrade: { tier: 'alternating', stat: 'chips' } })).toBe(false)
+    expect(sameOffer(a, { kind: 'charm', charm: 'plusChips' })).toBe(false)
+  })
+
+  function shopStore(seed: string) {
+    const store = createRunStore()
+    store.getState().startRun(seed)
+    store.setState({
+      phase: 'shop',
+      cash: 20,
+      shop: {
+        offers: [
+          { kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } },
+          { kind: 'tierUpgrade', upgrade: { tier: 'alternating', stat: 'mult' } },
+        ],
+      },
+    })
+    return store
+  }
+
+  it('buy a +chips upgrade: cash -= TIER_UPGRADE_PRICE, the tier stacks', () => {
+    const store = shopStore('m22-buy')
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })
+    const st = store.getState()
+    expect(st.cash).toBe(20 - TIER_UPGRADE_PRICE)
+    expect(st.tierUpgrades.jackpot).toEqual({ chips: TIER_UPGRADE_CHIPS, mult: 0 })
+    // the other tiers are untouched; the bought offer is removed
+    expect(st.tierUpgrades.alternating).toEqual({ chips: 0, mult: 0 })
+    expect(st.shop.offers).toHaveLength(1)
+  })
+
+  it('buy a +mult upgrade: the tier mult stacks', () => {
+    const store = shopStore('m22-buy-mult')
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'alternating', stat: 'mult' } })
+    expect(store.getState().tierUpgrades.alternating).toEqual({ chips: 0, mult: TIER_UPGRADE_MULT })
+  })
+
+  it('buying the same tier again stacks (no owned/cap reject)', () => {
+    const store = shopStore('m22-stack')
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })
+    // re-offer the same upgrade and buy it again
+    store.setState({ shop: { offers: [{ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } }] } })
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })
+    expect(store.getState().tierUpgrades.jackpot.chips).toBe(TIER_UPGRADE_CHIPS * 2)
+  })
+
+  it('reject when broke: state unchanged', () => {
+    const store = shopStore('m22-broke')
+    store.setState({ cash: TIER_UPGRADE_PRICE - 1 })
+    const before = store.getState()
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })
+    expect(store.getState()).toEqual(before)
+  })
+
+  it('upgrades persist across blinds and shops (whole run, like charms)', () => {
+    const store = shopStore('m22-persist')
+    store.getState().buy({ kind: 'tierUpgrade', upgrade: { tier: 'jackpot', stat: 'chips' } })
+    store.getState().leaveShop()
+    // the next blind's shop keeps the purchase
+    expect(store.getState().phase).toBe('run')
+    expect(store.getState().tierUpgrades.jackpot.chips).toBe(TIER_UPGRADE_CHIPS)
   })
 })
 

@@ -7,9 +7,9 @@ import { matchTier, projectScore, resolveFace, scoreHand } from './scoring'
 import { filledSlot, none, some } from './helpers'
 import { createRng } from './rng'
 import type { Rng } from './rng'
-import { TIERS } from './balance'
+import { TIERS, zeroTierUpgrades } from './balance'
 import { COIN_EFFECTS } from '@/config/coins'
-import type { BossRuleId, Coin, CoinEffect, Face, Option, Play, TierId } from './types'
+import type { BossRuleId, Coin, CoinEffect, Face, Option, Play, TierId, TierUpgrades } from './types'
 
 // Coin cash params — from the config registry (src/config/coins).
 const TAX_PAYOUT = COIN_EFFECTS.tax.params.payout ?? 0
@@ -547,5 +547,65 @@ describe('13a.7 projectScore', () => {
     // scoreHand rolls the jackpot (0.1 < 0.25 → pays); the projection never rolls.
     expect(scoreHand(p, noBoss, [], fakeRng([0.1])).cash).toBe(JACKPOT_PAYOUT + TAX_PAYOUT)
     expect(projectScore(p, noBoss, [], 3).cash).toBe(0)
+  })
+})
+
+// M22 — pattern (tier) upgrades: the matched tier's purchased chips/mult are
+// applied AFTER the base, BEFORE the boosters (so the boosters compound on
+// the upgraded values).
+describe('M22 — tier upgrades in the scoring pipeline', () => {
+  /** zeroTierUpgrades with one tier's stat bumped. */
+  function upgrades(tier: TierId, stat: 'chips' | 'mult', amount: number): TierUpgrades {
+    const up = zeroTierUpgrades()
+    up[tier][stat] = amount
+    return up
+  }
+
+  it('a +10-chips upgrade: Jackpot scores 60×4 (240) instead of 50×4 (200)', () => {
+    const s = scoreHand(play('HHHHH'), noBoss, [], freshRng(), upgrades('jackpot', 'chips', 10))
+    expect(s).toEqual({ kind: 'scored', tier: 'jackpot', chips: 60, mult: 4, total: 240, cash: 0 })
+  })
+
+  it('a +1-mult upgrade: Alternating scores 45×5 (225) instead of 45×4 (180)', () => {
+    const s = scoreHand(play('HTHTH'), noBoss, [], freshRng(), upgrades('alternating', 'mult', 1))
+    expect(s).toEqual({ kind: 'scored', tier: 'alternating', chips: 45, mult: 5, total: 225, cash: 0 })
+  })
+
+  it('only the MATCHED tier is boosted (an upgrade on another tier is inert)', () => {
+    const s = scoreHand(play('HHHHH'), noBoss, [], freshRng(), upgrades('alternating', 'chips', 10))
+    expect(s).toEqual({ kind: 'scored', tier: 'jackpot', chips: 50, mult: 4, total: 200, cash: 0 })
+  })
+
+  it('stacks: two +10-chips upgrades add +20', () => {
+    const s = scoreHand(play('HHHHH'), noBoss, [], freshRng(), upgrades('jackpot', 'chips', 20))
+    expect(s.kind === 'scored' && s.chips).toBe(70)
+    expect(s.kind === 'scored' && s.total).toBe(280)
+  })
+
+  it('boosters compound on the upgraded values (step 2.5 before step 3)', () => {
+    // plusChips (+10) on top of a +10-chips upgrade: 50+10+10 = 70 × 4 = 280.
+    const a = scoreHand(play('HHHHH'), noBoss, ['plusChips'], freshRng(), upgrades('jackpot', 'chips', 10))
+    expect(a).toMatchObject({ chips: 70, mult: 4, total: 280 })
+    // jackpotFever (×2 chips) multiplies the UPGRADED chips: (50+10)×2 = 120 × 4 = 480.
+    const b = scoreHand(play('HHHHH'), noBoss, ['jackpotFever'], freshRng(), upgrades('jackpot', 'chips', 10))
+    expect(b).toMatchObject({ chips: 120, mult: 4, total: 480 })
+    // plusMult (+1) stacks with a +1-mult upgrade: 45 × (4+1+1) = 270.
+    const c = scoreHand(play('HTHTH'), noBoss, ['plusMult'], freshRng(), upgrades('alternating', 'mult', 1))
+    expect(c).toMatchObject({ chips: 45, mult: 6, total: 270 })
+  })
+
+  it('a no-tier hand is unaffected by upgrades (0 chips × 0 mult)', () => {
+    const s = scoreHand(play('HT'), noBoss, [], freshRng(), upgrades('jackpot', 'chips', 10))
+    expect(s).toEqual({ kind: 'none', cash: 0 })
+  })
+
+  it('the projection includes the upgrades (auto and manual agree)', () => {
+    const up = upgrades('jackpot', 'chips', 10)
+    const real = scoreHand(play('HHHHH'), noBoss, ['plusMult'], freshRng(), up)
+    const proj = projectScore(play('HHHHH'), noBoss, ['plusMult'], 5, up)
+    expect(real.kind).toBe('scored')
+    if (real.kind === 'scored') {
+      expect(proj).toEqual({ kind: 'scored', tier: real.tier, chips: real.chips, mult: real.mult, total: real.total, cash: 0 })
+    }
   })
 })

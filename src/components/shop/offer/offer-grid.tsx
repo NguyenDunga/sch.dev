@@ -9,14 +9,17 @@ import { CHARMS } from '@/config/charms'
 import { catalogRow, charmRows, type InfoRow } from '@/lib/effect-info'
 import { useInfoHover } from '@/components/hand/coin/coin-info/coin-info-context'
 import { ACTION_ICONS } from '@/components/run/action-icons'
+import { TIER_ICONS } from '@/components/juice/choreo/beats/tier-icons'
 import { Button } from '@/components/ui/button'
 import { HAND_SIZE_CAP, HAND_SIZE_PRICE } from '@/core/shop'
-import type { CharmId, ShopOffer } from '@/core/types'
+import { TIERS, TIER_UPGRADE_CHIPS, TIER_UPGRADE_MULT, TIER_UPGRADE_PRICE } from '@/core/balance'
+import type { CharmId, ShopOffer, TierUpgrade } from '@/core/types'
 
 /** The detail rows for an offer (what the hover panel shows). */
 function offerRows(offer: ShopOffer, handSize: number): InfoRow[] {
   if (offer.kind === 'coin') return [catalogRow(offer.effect)]
   if (offer.kind === 'charm') return charmRows(offer.charm)
+  if (offer.kind === 'tierUpgrade') return [tierUpgradeRow(offer.upgrade)]
   return [
     {
       icon: ACTION_ICONS.handSize.icon,
@@ -26,16 +29,29 @@ function offerRows(offer: ShopOffer, handSize: number): InfoRow[] {
   ]
 }
 
+/** One row for a pattern (tier) upgrade (M22). */
+function tierUpgradeRow(upgrade: TierUpgrade): InfoRow {
+  const tier = TIERS.find((t) => t.id === upgrade.tier)!
+  const amount = upgrade.stat === 'chips' ? `+${TIER_UPGRADE_CHIPS} chips` : `+${TIER_UPGRADE_MULT} mult`
+  return {
+    icon: TIER_ICONS[upgrade.tier].icon,
+    name: `${amount} to ${tier.name}`,
+    blurb: `Boosts ${tier.name}'s ${upgrade.stat} for the whole run. Stacks — buy again to add more.`,
+  }
+}
+
 /** The hover panel's title for an offer. */
 function offerTitle(offer: ShopOffer): string {
   if (offer.kind === 'coin') return 'Coin effects'
   if (offer.kind === 'charm') return 'Charm'
+  if (offer.kind === 'tierUpgrade') return 'Pattern upgrade'
   return 'Hand size'
 }
 
 function offerPrice(offer: ShopOffer): number {
   if (offer.kind === 'coin') return coinPrice(offer.effect)
   if (offer.kind === 'charm') return CHARMS[offer.charm].price
+  if (offer.kind === 'tierUpgrade') return TIER_UPGRADE_PRICE
   return HAND_SIZE_PRICE
 }
 
@@ -58,7 +74,8 @@ function OfferTile({ offer, cash, charms, handSize, onBuy }: OfferTileProps) {
   const disabled = cash < price || owned || atCap
   const Icon = rows[0].icon
   const name = rows[0].name
-  const category = offer.kind === 'coin' ? 'Coin' : offer.kind === 'charm' ? 'Charm' : 'Hand Size'
+  const category =
+    offer.kind === 'coin' ? 'Coin' : offer.kind === 'charm' ? 'Charm' : offer.kind === 'tierUpgrade' ? 'Pattern' : 'Hand Size'
   return (
     <div
       className={`offer-tile offer-tile--${offer.kind}${poor ? ' offer-tile--poor' : ''}`}
@@ -92,6 +109,7 @@ interface OffersGridProps {
 function offerKey(offer: ShopOffer): string {
   if (offer.kind === 'charm') return `charm-${offer.charm}`
   if (offer.kind === 'coin') return `coin-${offer.effect}`
+  if (offer.kind === 'tierUpgrade') return `tierUpgrade-${offer.upgrade.tier}-${offer.upgrade.stat}`
   return 'hand-size'
 }
 

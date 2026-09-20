@@ -622,6 +622,12 @@
   color: var(--secondary);
 }
 
+/* M22 — pattern (tier) upgrades. */
+.offer-tile--tierUpgrade .offer-tile-category {
+  background: rgba(90, 164, 105, 0.18);
+  color: var(--tier-triple-run);
+}
+
 /* The offer icon in a coin-sized disc (the recycler-disc / forge-coin
    silhouette). */
 .offer-tile-visual {

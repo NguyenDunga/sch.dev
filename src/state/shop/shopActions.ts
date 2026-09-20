@@ -6,7 +6,7 @@
 // live in shop-offers.ts. Action bodies are module-level functions (≤60
 // lines, NASA practice); the store wires them up.
 
-import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS } from '@/core/balance'
+import { BLINDS, HANDS_PER_BLIND, PLAY_SIZE, SHORT_FUSE_HANDS, TIER_UPGRADE_CHIPS, TIER_UPGRADE_MULT, TIER_UPGRADE_PRICE } from '@/core/balance'
 import { FORGE_COST, HAND_SIZE_CAP, HAND_SIZE_PRICE, recyclePrice, rerollCost } from '@/core/shop'
 import { coinPrice } from '@/config/coins'
 import { CHARMS } from '@/config/charms'
@@ -78,7 +78,9 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
       ? CHARMS[offer.charm].price
       : offer.kind === 'coin'
         ? coinPrice(offer.effect)
-        : HAND_SIZE_PRICE
+        : offer.kind === 'tierUpgrade'
+          ? TIER_UPGRADE_PRICE
+          : HAND_SIZE_PRICE
   if (price === undefined || st.cash < price) return // broke — reject
   if (offer.kind === 'charm' && st.charms.includes(offer.charm)) return // owned — reject (9.8)
   if (offer.kind === 'handSize' && st.handSize >= HAND_SIZE_CAP) return // cap — reject (9.7)
@@ -91,6 +93,11 @@ export function buyDraft(st: Draft, offer: ShopOffer, rng: Rng): void {
     const coin: Coin = { id: nextCoinId(st), effects: [purchasedEffect(offer.effect, rng)] }
     st.deck.drawPile = [...st.deck.drawPile, coin]
     st.rngState = rng.state()
+  } else if (offer.kind === 'tierUpgrade') {
+    // M22: pattern upgrade — boost the one tier's chips or mult for the whole
+    // run. No owned/cap reject: buying the same tier again stacks.
+    st.tierUpgrades[offer.upgrade.tier][offer.upgrade.stat] +=
+      offer.upgrade.stat === 'chips' ? TIER_UPGRADE_CHIPS : TIER_UPGRADE_MULT
   } else {
     // M9.7: hand-size upgrade — +1 slot, up to HAND_SIZE_CAP.
     st.handSize += 1
@@ -128,9 +135,8 @@ export function leaveShopDraft(st: Draft, rng: Rng): void {
   st.blindScore = 0
   st.earlyClearBonus = 0
   // 13a.2 keep-unplayed: the hand is normally empty here — the keep-unplayed
-  // coins were merged into the deck when the shop opened (enterShopDraft). This
-  // is a safety net: if any hand coins remain, they are part of the collection
-  // and go back into it.
+  // coins were merged into the deck when the shop opened (enterShopDraft).
+  // Safety net: any remaining hand coins are collection — they go back in.
   const inHand = st.hand.filter((s) => s.kind === 'filled').map((s) => s.coin)
   st.hand = emptyHand(st.handSize)
   st.play = emptyHand(PLAY_SIZE)

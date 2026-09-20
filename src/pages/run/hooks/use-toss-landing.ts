@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isFilled } from '@/core/helpers'
 import { projectScore } from '@/core/scoring'
-import type { BossRuleId, CharmId, HandPhase, Option, Play } from '@/core/types'
+import type { BossRuleId, CharmId, HandPhase, Option, Play, TierUpgrades } from '@/core/types'
 import type { TossProjection } from '@/components/hand/score-ticker/score-ticker'
 import { playSfx } from '@/components/juice/sfx'
 import { canReflipAt } from './use-run-hooks'
@@ -25,6 +25,7 @@ export function useTossLanding(
   play: Play,
   boss: Option<BossRuleId>,
   charms: CharmId[],
+  tierUpgrades: TierUpgrades,
   onScore: () => void,
 ): (TossProjection & { handleLand: (i: number) => void }) | null {
   const [landed, setLanded] = useState(0)
@@ -90,5 +91,5 @@ export function useTossLanding(
   if (handPhase !== 'buff') return null
   const total = play.filter(isFilled).length
   if (total === 0) return null
-  return { score: projectScore(play, boss, charms, landed), landed, total, handleLand }
+  return { score: projectScore(play, boss, charms, landed, tierUpgrades), landed, total, handleLand }
 }

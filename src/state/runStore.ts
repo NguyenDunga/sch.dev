@@ -14,7 +14,7 @@
 
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import { HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE } from '@/core/balance'
+import { HANDS_PER_BLIND, HAND_SIZE, PLAY_SIZE, zeroTierUpgrades } from '@/core/balance'
 import { emptyHand, none } from '@/core/helpers'
 import { createRng } from '@/core/rng'
 import type { Rng } from '@/core/rng'
@@ -62,6 +62,7 @@ function initialState(): RunState {
     deck: { drawPile: [], discardPile: [] },
     shop: { offers: [] },
     rerollCount: 0,
+    tierUpgrades: zeroTierUpgrades(),
     lastScore: none,
     runScore: 0,
     won: false,
