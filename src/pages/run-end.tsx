@@ -62,7 +62,7 @@ export function RunEndScreen() {
   const blindsCleared = won ? BLINDS.length : blindIndex
 
   return (
-    <main className={`run-end${won ? ' run-end--win' : ''}`}>
+    <main className={`run-end md:max-w-[36rem]${won ? ' run-end--win' : ''}`}>
       <div className="run-end-head">
         {won && <TrophyIcon className="run-end-trophy" size={64} aria-hidden />}
         <h1 className="run-end-title">{won ? 'Run complete!' : 'Game over'}</h1>

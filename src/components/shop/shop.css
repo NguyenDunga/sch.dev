@@ -6,6 +6,8 @@
  * Ceramic Tactile (SDD UX §2–§3): flat panels, 1px --line borders, chunky
  * radii, no blurred shadows.
  */
+@layer components {
+
 
 .shop-screen {
   display: grid;
@@ -726,4 +728,5 @@
   .offer-tile {
     transition: none;
   }
+}
 }

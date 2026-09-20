@@ -98,7 +98,7 @@ export function ShopScreen() {
   const collection = [...drawPile, ...discardPile]
 
   return (
-    <main className="shop-screen">
+    <main className="shop-screen md:max-w-[52rem] lg:max-w-[64rem]">
       <ShopHeader cash={cash} />
       <RewardLine />
       {/* 13a.14: the three shop areas, one visible at a time. */}

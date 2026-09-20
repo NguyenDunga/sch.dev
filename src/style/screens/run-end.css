@@ -3,6 +3,8 @@
  * 3-row grid: title / stats / buttons.
  * Ceramic Tactile (SDD UX §2–§3).
  */
+@layer components {
+
 
 .run-end {
   display: grid;
@@ -129,4 +131,6 @@
   display: flex;
   gap: var(--sp-3);
   justify-content: center;
+}
+
 }

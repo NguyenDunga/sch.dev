@@ -68,7 +68,7 @@ export function MenuScreen() {
   }
 
   return (
-    <main className="menu-screen">
+    <main className="menu-screen md:max-w-[52rem]">
       <div className="menu-title">
         <h1>50/50</h1>
         <p>Toss 5 coins. Score the pattern. Clear the blind.</p>
