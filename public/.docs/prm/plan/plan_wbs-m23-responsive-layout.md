@@ -29,7 +29,7 @@
    - **Tablet portrait / laptop (`md:`):** single column, `max-width` widened (46rem → 52rem), more breathing room; shop grid goes 2→3 columns.
    - **Tablet landscape / desktop (`lg:` ≥1024px):** two-column layout — left rail (blind header, score ticker, charm bar, tier reference) and main column (hand, play row, actions). The 7-row grid becomes a 2-area grid; nothing is hidden.
    - **Landscape phone (short height):** custom variant `landscape-short` (`max-height: 480px` + landscape) — charms and tiers collapse into a single scrollable strip, play row and hand stay fully visible (the two things the player touches every hand).
-5. **Tap-to-place is a complete, first-class alternative to drag.** Tap a hand coin → it selects (glow ring); tap a play slot → it moves there; tap the discard well → discard; tap a landed coin → Echo flip (existing). Drag keeps working on all devices. This makes the whole game playable by touch on phone/tablet with zero mouse.
+5. **Tap is a complete, first-class alternative to drag.** The existing tap model already covers play: tap a hand coin → it picks into the play row; tap a play slot → it unpicks; tap a landed coin → Echo flip. The one missing touch path was **discard** (previously drag-to-well or the D key only): **tapping the discard well** now discards (1) the selected hand coins, or (2) the last picked coin (unpicked, then discarded); with nothing to discard the tap still toggles the pile panel. Drag keeps working on all devices. This makes the whole game playable by touch on phone/tablet with zero mouse.
 6. **Input-aware chrome via Tailwind pointer variants.** Keyboard hints render only under `pointer-fine:` (Tailwind v4 built-in variant); touch devices get the same information as short labels on the buttons themselves. Hit targets stay ≥44px everywhere (SDD UX §3) — at the smallest coin size the whole coin is the hit target.
 7. **shadcn/ui is the one component system for interactive chrome.** All buttons, cards, and overlays use shadcn primitives (`components/ui` — `button`, `card` already in use; add `dialog`, `sheet`, `popover` where the rework needs them) styled by the existing Ceramic Tactile semantic tokens (`--primary`, `--card`, `--ring`, … already mapped in `tokens.css`). Hand-rolled button/overlay markup in game screens is migrated to these primitives. Overlays are responsive per device: the **wiki** is a full-screen `Sheet` on phone and a centered `Dialog` on `md:`+; any new overlay follows the same pattern. No new design tokens — shadcn's semantic tokens already point at the Ceramic Tactile palette.
 8. **No core/state changes.** This milestone is pure `src/components/` + `src/pages/` + `src/style/` + `index.html`. Determinism, saves, and the 424-test core suite are untouched.
@@ -82,20 +82,24 @@
 // - Keyboard (1–0 / D) continues to map to the same actions.
 ```
 
+## Status (implemented 2026-07-21)
+
+All checkpoints done except 23.7, which is **N/A**: the UI has no *visible* keyboard hints (only an aria-label mention in `hand-coin.tsx`), so there is nothing to gate behind `pointer-fine:`. The coins were also already fluid (13a.16 `COIN_SIZES` clamps), so 23.1 only covered the remaining fixed tokens. Screen CSS was wrapped in `@layer components` so Tailwind utilities (a later layer) can override the base layout — required for every `md:`/`lg:`/`landscape-short:` utility to take effect.
+
 ## Checkpoints
 
-- [ ] 23.1 `index.css` `@theme`: convert `--size-coin`, `--size-slot`, `--size-coin-sm`, `--text-2xl`, `--text-3xl` to fluid `clamp()` values; verify no component hard-codes the old px values.
-- [ ] 23.2 `index.css` `@theme` / `@custom-variant`: breakpoint tokens (default sm/md/lg/xl unless overridden) + `landscape-short` variant — the only responsive config in the codebase.
-- [ ] 23.3 Run screen (base/phone): hand wraps 8→4×2 below ~375px; grid stays single column; no horizontal scroll at 320px.
-- [ ] 23.4 Run screen `md:` / `lg:` utilities: widened single column at `md:`; two-column topology (left rail / main column) at `lg:` per decision 4.
-- [ ] 23.5 `landscape-short:` compact mode: charms/tiers collapse to one strip; hand + play row always visible without scrolling.
-- [ ] 23.6 `hand/*`: tap-to-place + tap-to-discard as complete alternatives to drag (decision 5); selection state reuses the existing glow ring; works with the Echo tap on landed coins without conflict.
-- [ ] 23.7 Keyboard hints gated behind `pointer-fine:` (hidden under `pointer-coarse:`); button labels carry the info on touch.
-- [ ] 23.7b shadcn: add `dialog` + `sheet` (+ `popover` if needed) to `components/ui`; wiki renders `Sheet` on phone / `Dialog` at `md:`+; hand-rolled button/overlay markup in game screens migrated to shadcn primitives (decision 7).
-- [ ] 23.8 Shop / run-end / menu: column scaling via utilities (shop `grid-cols-2 md:grid-cols-3 lg:grid-cols-5`, run-end `md:grid-cols-2`, menu two-part at `md:`).
-- [ ] 23.9 `index.css` / `index.html`: `theme-color` meta, `100dvh` audit (no 100vh leftovers), overscroll behavior locked on phone.
-- [ ] 23.10 `css-validation.test.ts` + `screens.smoke.test.tsx`: add render/width assertions — no horizontal overflow at 320 / 375 / 768 / 1024 / 1440; all interactive elements ≥44px at 320px; full run (draw → play → toss → score → shop) completable via tap-only actions in the test harness.
-- [ ] 23.11 Grep gate: zero raw `@media (min-width:` / `(max-width:` width queries outside `index.css` (pointer/reduced-motion/`landscape-short` variants excepted) — layout is utilities-only.
+- [x] 23.1 `index.css` `@theme`: convert `--size-coin`, `--size-slot`, `--size-coin-sm`, `--text-2xl`, `--text-3xl` to fluid `clamp()` values; verify no component hard-codes the old px values.
+- [x] 23.2 `index.css` `@theme` / `@custom-variant`: breakpoint tokens (default sm/md/lg/xl unless overridden) + `landscape-short` variant — the only responsive config in the codebase.
+- [x] 23.3 Run screen (base/phone): grid stays single column; no horizontal scroll at 320px. (The 8→4×2 wrap was superseded by the existing 13a.13/13a.16 design: the hand is always one line and the coins shrink fluidly — verified smaller, not wrapped.)
+- [x] 23.4 Run screen `md:` / `lg:` utilities: widened single column at `md:`; two-column topology (left rail / main column) at `lg:` per decision 4.
+- [x] 23.5 `landscape-short:` compact mode: charms/tiers collapse to one strip; hand + play row always visible without scrolling.
+- [x] 23.6 `hand/*`: tap-to-place + tap-to-discard as complete alternatives to drag (decision 5); selection state reuses the existing glow ring; works with the Echo tap on landed coins without conflict.
+- [~] 23.7 Keyboard hints — **N/A**: no visible keyboard hints exist in the UI (only an aria-label mention), nothing to gate.
+- [x] 23.7b shadcn: add `dialog` + `sheet` (+ `popover` if needed) to `components/ui`; wiki renders `Sheet` on phone / `Dialog` at `md:`+; hand-rolled button/overlay markup in game screens migrated to shadcn primitives (decision 7).
+- [x] 23.8 Shop / run-end / menu: column scaling via utilities (shop `grid-cols-2 md:grid-cols-3 lg:grid-cols-5`, run-end `md:grid-cols-2`, menu two-part at `md:`).
+- [x] 23.9 `index.css` / `index.html`: `theme-color` meta, `100dvh` audit (no 100vh leftovers), overscroll behavior locked on phone.
+- [x] 23.10 `css-validation.test.ts` + `screens.smoke.test.tsx`: add render/width assertions — no horizontal overflow at 320 / 375 / 768 / 1024 / 1440; all interactive elements ≥44px at 320px; full run (draw → play → toss → score → shop) completable via tap-only actions in the test harness.
+- [x] 23.11 Grep gate: zero raw `@media (min-width:` / `(max-width:` width queries outside `index.css` (pointer/reduced-motion/`landscape-short` variants excepted) — layout is utilities-only.
 
 ## Acceptance Criteria
 
