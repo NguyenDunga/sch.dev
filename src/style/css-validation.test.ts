@@ -166,4 +166,41 @@ describe('M17c — CSS token validation', () => {
     }
     expect(violations, `Raw color names found:\n${violations.join('\n')}`).toEqual([])
   })
+
+  // ── 5. M23.11 — responsive layout is utilities-only ─────────────────────
+  // No raw width breakpoints outside index.css: layout responsiveness is
+  // Tailwind utilities (md:/lg:/xl:) + the landscape-short custom variant
+  // declared in index.css. Pointer / reduced-motion queries stay allowed.
+  it('M23.11 — no raw width media queries outside index.css', () => {
+    const violations: string[] = []
+    for (const file of cssFiles) {
+      const rel = relative(ROOT, file)
+      if (rel.endsWith('index.css')) continue
+      const css = stripComments(readFileSync(file, 'utf8'))
+      const re = /@media[^{]*(min-width|max-width)[^{]*/g
+      let m: RegExpExecArray | null
+      while ((m = re.exec(css)) !== null) {
+        const line = css.slice(0, m.index).split('\n').length
+        violations.push(`${rel}:${line} → ${m[0].trim()}`)
+      }
+    }
+    expect(violations, `Raw width media queries found:\n${violations.join('\n')}`).toEqual([])
+  })
+
+  // ── 6. M23.2 — the responsive config lives in index.css ─────────────────
+  it('M23.2 — index.css declares the landscape-short custom variant', () => {
+    const css = readFileSync(join(ROOT, 'src', 'index.css'), 'utf8')
+    expect(css).toMatch(/@custom-variant\s+landscape-short/)
+    expect(css).toMatch(/max-height:\s*480px/)
+  })
+
+  // ── 7. M23.1 — the size tokens are fluid (clamp) ────────────────────────
+  it('M23.1 — size tokens are fluid clamps in tokens.css', () => {
+    const css = readFileSync(join(ROOT, 'src', 'style', 'tokens.css'), 'utf8')
+    for (const token of ['--size-coin', '--size-coin-sm', '--size-slot']) {
+      const m = css.match(new RegExp(`${token}\\s*:\\s*([^;]+);`))
+      expect(m, `${token} missing`).toBeTruthy()
+      expect(m![1], `${token} should be a clamp()`).toContain('clamp(')
+    }
+  })
 })
