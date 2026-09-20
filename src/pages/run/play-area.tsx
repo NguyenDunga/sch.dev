@@ -28,6 +28,8 @@ export interface PlayAreaProps {
   onRangeSelect: (i: number) => void
   onQuickPlay: () => void
   registerRef: (i: number, el: HTMLButtonElement | null) => void
+  /** M23: the well tap-discard (returns true when it caused a discard). */
+  onWellTap: () => boolean
   getReflip: (i: number) => (() => void) | undefined
   /** 13b.8: a tossed coin has landed (index) — drives the projection / sfx /
    *  auto-score from the toss animation (no setTimeout). */
@@ -37,7 +39,7 @@ export interface PlayAreaProps {
 export function PlayArea({
   play, hand, revealed, canPick, shake, deals, wellRef, selection,
   onPick, onDiscard, onUnpick, onToggleSelect, onRangeSelect, onQuickPlay,
-  registerRef, getReflip, onLand,
+  registerRef, onWellTap, getReflip, onLand,
 }: PlayAreaProps) {
   return (
     <div className="play-area">
@@ -68,7 +70,7 @@ export function PlayArea({
         </div>
       </PlayDropZone>
       <div className="piles-row">
-        <DiscardWellDrop wellRef={wellRef} />
+        <DiscardWellDrop wellRef={wellRef} onTap={onWellTap} />
         <DeckInspector />
       </div>
       <HandRow

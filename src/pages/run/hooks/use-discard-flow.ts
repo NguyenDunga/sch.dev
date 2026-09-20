@@ -65,5 +65,14 @@ export function useDiscardFlow(
     else coinRefs.current.delete(i)
   }
 
-  return { discardOne, handleDropToDiscard, registerCoin, ghosts, removeGhost }
+  /** M23: a well TAP (no drag) — discard the current selection (ghosts
+   *  included). Returns true when something was discarded. */
+  const tapDiscardSelected = (): boolean => {
+    if (selection.selected.size === 0) return false
+    for (const i of [...selection.selected].sort((a, b) => a - b)) discardOne(i, coinRefs.current.get(i))
+    selection.clear()
+    return true
+  }
+
+  return { discardOne, handleDropToDiscard, registerCoin, tapDiscardSelected, ghosts, removeGhost }
 }

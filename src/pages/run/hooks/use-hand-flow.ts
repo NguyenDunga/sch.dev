@@ -96,6 +96,7 @@ export function useHandFlow(
 ) {
   const pickCoin = useRunStore((s) => s.pickCoin)
   const confirmPlay = useRunStore((s) => s.confirmPlay)
+  const unpickCoin = useRunStore((s) => s.unpickCoin)
   const { shake, bump: onPlayFull } = useShakeFeedback()
   const lastPick = useRef<{ id: number; t: number } | null>(null) // 13a.5 quick-play guard
   const discardFlow = useDiscardFlow(hand, wellRef, selection)
@@ -130,11 +131,33 @@ export function useHandFlow(
 
   const dnd = usePlayRowDnd(hand, play, selection, pickOne, lastPick, onPlayFull, onUnpick, handleConfirm)
 
+  /** M23: a well TAP (no drag, no keyboard) — the complete touch alternative
+   *  to drag-to-well: 1) the selected hand coins, 2) the last picked coin
+   *  (still in the play row — unpick it, then discard it). Returns true when
+   *  a discard happened (the well only toggles the pile panel otherwise). */
+  const handleWellTap = (): boolean => {
+    if (discardFlow.tapDiscardSelected()) return true
+    const lp = lastPick.current
+    if (!lp) return false
+    const playIdx = play.findIndex((s) => s.kind === 'filled' && s.coin.id === lp.id)
+    if (playIdx === -1) return false
+    unpickCoin(playIdx)
+    const st = useRunStore.getState()
+    const handIdx = st.hand.findIndex((s) => s.kind === 'filled' && s.coin.id === lp.id)
+    if (handIdx === -1) return false // unpick was a no-op (hand full) — fall through to the panel
+    st.discard(handIdx)
+    lastPick.current = null
+    // 13.7 — the discard "shhk" (UX §10).
+    playSfx('discard')
+    return true
+  }
+
   return {
     shake,
     pickOne,
     handleHandTap,
     handleConfirm,
+    handleWellTap,
     ...dnd,
     ...discardFlow,
   }

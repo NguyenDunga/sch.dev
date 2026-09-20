@@ -7,11 +7,18 @@ import { useDroppable } from '@dnd-kit/core'
 import type { RefObject } from 'react'
 import { DiscardWell } from '@/components/run/piles'
 
-export function DiscardWellDrop({ wellRef }: { wellRef: RefObject<HTMLDivElement | null> }) {
+export function DiscardWellDrop({
+  wellRef,
+  onTap,
+}: {
+  wellRef: RefObject<HTMLDivElement | null>
+  /** M23: the tap-discard (claims the click when it caused a discard). */
+  onTap?: () => boolean
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: 'discard-well' })
   return (
     <div ref={setNodeRef} className={`discard-well-drop${isOver ? ' discard-well-drop--over' : ''}`}>
-      <DiscardWell wellRef={wellRef} />
+      <DiscardWell wellRef={wellRef} onTap={onTap} />
     </div>
   )
 }

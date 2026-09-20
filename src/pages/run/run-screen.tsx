@@ -138,7 +138,7 @@ export function RunScreen() {
         shake={flow.shake} deals={deals} wellRef={wellRef} selection={selection}
         onPick={flow.handleHandTap} onDiscard={flow.discardOne} onUnpick={flow.handleUnpick}
         onDropToPlay={flow.handleDropToPlay} onDropToDiscard={flow.handleDropToDiscard} onMovePlay={flow.handleMovePlay}
-        onQuickPlay={flow.handleQuickPlay}
+        onQuickPlay={flow.handleQuickPlay} onWellTap={flow.handleWellTap}
         registerRef={flow.registerCoin} getReflip={flags.getReflip}
         onLand={projection ? projection.handleLand : () => {}}
       />

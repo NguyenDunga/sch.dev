@@ -15,8 +15,17 @@ import { PilePanel } from '@/components/deck/pile-panel'
 import { useRunStore } from '@/state/runStore'
 
 /** The discard well: a sunk dashed circle + its count. `wellRef` marks the
- *  element the discard ghost flies to (13.1). Clicking toggles the panel. */
-export function DiscardWell({ wellRef }: { wellRef: RefObject<HTMLDivElement | null> }) {
+ *  element the discard ghost flies to (13.1). Clicking toggles the panel —
+ *  unless `onTap` claims the click (M23: the tap-discard, the touch
+ *  alternative to drag-to-well). */
+export function DiscardWell({
+  wellRef,
+  onTap,
+}: {
+  wellRef: RefObject<HTMLDivElement | null>
+  /** Returns true when the tap caused a discard (the panel must not toggle). */
+  onTap?: () => boolean
+}) {
   const discardPile = useRunStore((s) => s.deck.discardPile)
   const [open, setOpen] = useState(false)
   return (
@@ -26,7 +35,10 @@ export function DiscardWell({ wellRef }: { wellRef: RefObject<HTMLDivElement | n
         className="discard-well"
         aria-label={open ? 'Hide discard pile' : 'Show discard pile'}
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (onTap?.()) return
+          setOpen((v) => !v)
+        }}
       >
         <div className="discard-well-hole" ref={wellRef} aria-hidden>
           <ACTION_ICONS.discard.icon size={18} strokeWidth={2} aria-hidden />
