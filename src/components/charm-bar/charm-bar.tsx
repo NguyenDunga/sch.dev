@@ -15,7 +15,9 @@ export function CharmBar() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   if (charms.length === 0) {
-    return <div className="charm-bar charm-bar--empty">No charms yet</div>
+    return (
+      <div className="charm-bar charm-bar--empty landscape-short:flex-nowrap landscape-short:overflow-x-auto">No charms yet</div>
+    )
   }
 
   const onDragEnd = (e: DragEndEvent) => {
@@ -28,7 +30,11 @@ export function CharmBar() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="charm-bar" role="list" aria-label="Charms, in scoring order">
+      <div
+        className="charm-bar lg:justify-start lg:justify-self-start landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
+        role="list"
+        aria-label="Charms, in scoring order"
+      >
         <SortableContext items={charms} strategy={verticalListSortingStrategy}>
           {charms.map((id) => (
             <CharmChip key={id} id={id} />

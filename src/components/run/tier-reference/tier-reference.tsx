@@ -10,7 +10,11 @@ import { TIER_ICONS } from '@/components/juice/choreo/beats/tier-icons'
 export function TierReference() {
   const tierUpgrades = useRunStore((s) => s.tierUpgrades)
   return (
-    <div className="tier-reference" role="group" aria-label="Tier values">
+    <div
+      className="tier-reference lg:justify-start lg:justify-self-start landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
+      role="group"
+      aria-label="Tier values"
+    >
       {TIERS.map((tier) => {
         const up = tierUpgrades[tier.id]
         const upgraded = up.chips > 0 || up.mult > 0
