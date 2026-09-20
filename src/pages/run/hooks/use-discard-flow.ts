@@ -5,7 +5,7 @@
 
 import { useRef, useState } from 'react'
 import type { RefObject } from 'react'
-import type { Coin, Hand } from '@/core/types'
+import type { Coin, Hand, Play } from '@/core/types'
 import { useRunStore } from '@/state/runStore'
 import { discardTargets, type CoinSelection } from '@/components/hand/coin-dnd'
 import { playSfx } from '@/components/juice/sfx'
@@ -33,12 +33,45 @@ function useDiscardGhost(wellRef: RefObject<HTMLDivElement | null>) {
   return { ghosts, spawn, remove }
 }
 
+/** M23: the well tap-discard — the complete touch alternative to
+ *  drag-to-well: 1) the selected hand coins, 2) the last picked coin
+ *  (still in the play row — unpick it, then discard it). Returns true when
+ *  a discard happened (the well only toggles the pile panel otherwise).
+ *  Module-level so useDiscardFlow stays under the 60-line limit. */
+function useWellTap(opts: {
+  play: Play
+  lastPickRef: { current: { id: number; t: number } | null }
+  tapDiscardSelected: () => boolean
+  unpickCoin: (slotIndex: number) => void
+}): () => boolean {
+  const { play, lastPickRef, tapDiscardSelected, unpickCoin } = opts
+  return () => {
+    if (tapDiscardSelected()) return true
+    const lp = lastPickRef.current
+    if (!lp) return false
+    const playIdx = play.findIndex((s) => s.kind === 'filled' && s.coin.id === lp.id)
+    if (playIdx === -1) return false
+    unpickCoin(playIdx)
+    const st = useRunStore.getState()
+    const handIdx = st.hand.findIndex((s) => s.kind === 'filled' && s.coin.id === lp.id)
+    if (handIdx === -1) return false // unpick was a no-op (hand full) — fall through to the panel
+    st.discard(handIdx)
+    lastPickRef.current = null
+    // 13.7 — the discard "shhk" (UX §10).
+    playSfx('discard')
+    return true
+  }
+}
+
 export function useDiscardFlow(
   hand: Hand,
   wellRef: RefObject<HTMLDivElement | null>,
   selection: CoinSelection,
+  play: Play,
+  lastPickRef: { current: { id: number; t: number } | null },
 ) {
   const discard = useRunStore((s) => s.discard)
+  const unpickCoin = useRunStore((s) => s.unpickCoin)
   const { ghosts, spawn: spawnDiscardGhost, remove: removeGhost } = useDiscardGhost(wellRef)
   const coinRefs = useRef(new Map<number, HTMLElement>()) // coin elements (ghost origin)
 
@@ -74,5 +107,7 @@ export function useDiscardFlow(
     return true
   }
 
-  return { discardOne, handleDropToDiscard, registerCoin, tapDiscardSelected, ghosts, removeGhost }
+  const handleWellTap = useWellTap({ play, lastPickRef, tapDiscardSelected, unpickCoin })
+
+  return { discardOne, handleDropToDiscard, registerCoin, tapDiscardSelected, handleWellTap, ghosts, removeGhost }
 }

@@ -32,6 +32,16 @@ import { useHandFlow } from './hooks/use-hand-flow'
 import { PlayAreaHost } from './play-area'
 import { RunPortals } from './run-portals'
 
+// M23 — responsive topology (mobile-first; base = phone, single column).
+const RUN_SCREEN_CLASSES = [
+  'run-screen',
+  'md:max-w-[52rem]', // md (tablet/laptop): widened single column
+  'lg:max-w-[72rem] lg:grid-cols-[minmax(14rem,20rem)_1fr]', // lg: left rail + play column
+  'lg:grid-rows-[auto_minmax(0,1fr)_auto_auto_auto]',
+  "lg:[grid-template-areas:'header_header_score_play_charms_play_tiers_play_actions_actions']",
+  'landscape-short:gap-2', // landscape phone: compact vertical rhythm
+].join(' ')
+
 /** The action bar with its derived flags (keeps RunScreen compact). */
 function RunActions({
   handPhase,
@@ -104,24 +114,7 @@ export function RunScreen() {
   // driven by the toss animation's landing events (onLand), not setTimeout.
   const projection = useTossLanding(handPhase, play, boss, charms, tierUpgrades, choro.handleScore)
   return (
-    <main
-      className={[
-        'run-screen',
-        // M23 — responsive topology (mobile-first; base = phone, single column):
-        // md (tablet/laptop): widened single column.
-        'md:max-w-[52rem]',
-        // lg (tablet landscape/desktop): two-column — left rail (score/charms/
-        // tiers) beside the play area; actions span the bottom.
-        'lg:max-w-[72rem]',
-        'lg:grid-cols-[minmax(14rem,20rem)_1fr]',
-        'lg:grid-rows-[auto_minmax(0,1fr)_auto_auto_auto]',
-        "lg:[grid-template-areas:'header_header_score_play_charms_play_tiers_play_actions_actions']",
-        // landscape-short (landscape phone): tighten the vertical rhythm so the
-        // hand + play row always fit (charm/tier strips scroll — see their CSS).
-        'landscape-short:gap-2',
-      ].join(' ')}
-      onClick={onBackgroundClick}
-    >
+    <main className={RUN_SCREEN_CLASSES} onClick={onBackgroundClick}>
       <RunTop onSave={save} />
       <ScoreTicker
         score={lastScore}
