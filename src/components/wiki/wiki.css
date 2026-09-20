@@ -23,25 +23,25 @@
   color: var(--ink);
 }
 
+/* M23.7b: the backdrop + panel chrome (background, border, shadow, centering)
+   now come from the shadcn Dialog/Sheet shell — this class only keeps the
+   wiki above the run portals (z-50) and carries the overlay-click hook. */
 .wiki-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: var(--sp-4);
-  background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+/* On phone the wiki is a full-height bottom sheet: fill the shell. */
+[data-side='bottom'] .wiki-dialog {
+  width: 100%;
+  height: 100%;
+  max-height: none;
 }
 
 .wiki-dialog {
   display: flex;
   flex-direction: column;
   width: min(560px, 100%);
-  max-height: min(720px, calc(100vh - var(--sp-8)));
-  background: var(--surface);
-  border: 2px solid var(--ink);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-hard-lg);
+  max-height: min(720px, calc(100dvh - var(--sp-8)));
   overflow: hidden;
 }
 
@@ -115,6 +115,8 @@
 }
 
 .wiki-body {
+  flex: 1;
+  min-height: 0; /* scroll inside the flex column (Dialog/Sheet shell) */
   overflow-y: auto;
   padding: var(--sp-4);
 }
