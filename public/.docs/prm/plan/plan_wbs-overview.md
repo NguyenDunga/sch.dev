@@ -43,5 +43,12 @@ These apply to every milestone. **The [SDD](../../sdd/software_design_architecht
 | M14 | Test Suite Completion | M2–M11 | [plan_wbs-m14-tests.md](plan_wbs-m14-tests.md) |
 | M15 | README & Final Packaging | M12, M14 | [plan_wbs-m15-readme.md](plan_wbs-m15-readme.md) |
 | M16 | Deploy to GitHub Pages | M15 | [plan_wbs-m16-deploy.md](plan_wbs-m16-deploy.md) |
+| M17 | Style Reorganization (Smoothing) | M13 | [plan_wbs-m17-style.md](plan_wbs-m17-style.md) |
+| M18 | Coin Face Effects & Composite Icons | M7 | [plan_wbs-m18-coin-face-effects.md](plan_wbs-m18-coin-face-effects.md) |
+| M19 | Coin Wedge / Radial Reveal | M18 | [plan_wbs-m19-coin-wedge.md](plan_wbs-m19-coin-wedge.md) |
+| M20 | Tutorial / First-Run Coach | M12 | [plan_wbs-m20-tutorial.md](plan_wbs-m20-tutorial.md) |
+| M21 | Item Config Registry & Discoverability | M18 | [plan_wbs-m21-item-config-info.md](plan_wbs-m21-item-config-info.md) |
+| M22 | Pattern (Tier) Upgrades in the Shop | M6, M9, M13, M21 | [plan_wbs-m22-pattern-upgrades.md](plan_wbs-m22-pattern-upgrades.md) |
+| M23 | Responsive Rework (PC · Laptop · Tablet · Phone) | M12, M13 | [plan_wbs-m23-responsive-layout.md](plan_wbs-m23-responsive-layout.md) |
 
 ## Tree
