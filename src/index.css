@@ -22,6 +22,15 @@
  * Type (UX §2): display/score numerals in a bold rounded face (Fredoka),
  * tabular-nums; UI text in system sans (Geist).
  */
+/*
+ * M23 — responsive config (the single source of truth):
+ * - Breakpoints: the built-in min-width steps (sm 640 / md 768 / lg 1024 /
+ *   xl 1280) — override here (--breakpoint-*) only if playtest demands.
+ * - `landscape-short`: landscape phones (short height) — compact run layout.
+ * - Pointer variants (`pointer-fine` / `pointer-coarse`) are built in.
+ */
+@custom-variant landscape-short (@media (max-height: 480px) and (orientation: landscape));
+
 @theme {
   --font-heading: 'Fredoka Variable', system-ui, sans-serif;
   --font-sans: 'Geist Variable', system-ui, sans-serif;
@@ -86,6 +95,8 @@
   }
   body {
     @apply overflow-x-clip bg-background text-foreground;
+    /* M23: no rubber-banding on phone — the game screens own their scroll. */
+    overscroll-behavior: none;
   }
 }
 
