@@ -115,8 +115,12 @@ describe('13a.1 — auto-advance the buff phase', () => {
   })
 
   it('auto vs. manual score changes no number (M13 §0)', async () => {
+    // Seed note: the first hand must NOT clear blind 1's target (150) — a
+    // cleared blind ends in the shop and never settles to `play`. `13a-x-0`
+    // scores 15 with no echo in the first five (re-probe after balance
+    // changes: DIFFICULTY rescales the starter deck, which reshuffles hands).
     // Run A: let the buff auto-advance.
-    useRunStore.getState().startRun('13a1-same-seed')
+    useRunStore.getState().startRun('13a-x-0')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
     confirmFive()
@@ -126,7 +130,7 @@ describe('13a.1 — auto-advance the buff phase', () => {
 
     // Run B: the same seed, but the player taps Score the instant the buff
     // opens (before the auto-advance timer could fire).
-    useRunStore.getState().startRun('13a1-same-seed')
+    useRunStore.getState().startRun('13a-x-0')
     useRunStore.getState().drawHand()
     render(<RunScreen />)
     confirmFive()
