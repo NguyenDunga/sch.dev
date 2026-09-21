@@ -14,7 +14,7 @@ export interface BossRule {
 
 /** Global difficulty multiplier (beta v0.1.1): scales cash rewards, bonuses,
  *  and payouts (blind targets and tier chips/mults are unscaled). */
-export const DIFFICULTY = 3;
+export const DIFFICULTY = 5;
 
 export const HANDS_PER_BLIND = 4
 /** Base hand size — coins drawn face-down per hand (8 base; +1 per shop hand-size upgrade). */
