@@ -431,21 +431,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* -- deck panel (behind the header icon) ------------------------------------ */
+/* -- deck panel (shadcn Dialog content — M23.9) ----------------------------- */
+/* The fixed full-screen chrome (backdrop, centering, phone sheet / md+ panel
+   split, z-index) now comes from the unified shadcn Dialog shell
+   (ui/dialog.tsx); responsive sizing lives in utilities on the .deck-panel
+   element (M23.11: no width media queries outside index.css). */
 
 .deck-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  width: 100%;
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: var(--sp-4);
-  background: var(--bg);
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  box-sizing: border-box;
+  padding: var(--sp-4);
   overflow-y: auto;
 }
 
