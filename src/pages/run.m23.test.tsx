@@ -123,12 +123,14 @@ describe('M23 — tap-only play (no drag, no keyboard)', () => {
 })
 
 describe('M23 — responsive topology (Tailwind utilities on the screens)', () => {
-  it('run screen: md widening, lg two-column, landscape-short compact', () => {
+  it('run screen: md/lg widen the single column (no two-column), landscape-short compact', () => {
     freshRun('m23-run-classes')
     const main = document.querySelector('main.run-screen')!
     expect(main.className).toContain('md:max-w-[52rem]')
-    expect(main.className).toContain('lg:grid-cols-')
-    expect(main.className).toContain('lg:[grid-template-areas:')
+    expect(main.className).toContain('lg:max-w-[72rem]')
+    // Single-column topology at lg — no two-column left rail.
+    expect(main.className).not.toContain('lg:grid-cols-')
+    expect(main.className).not.toContain('lg:[grid-template-areas:')
     expect(main.className).toContain('landscape-short:gap-2')
   })
 

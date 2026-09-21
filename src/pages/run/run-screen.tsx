@@ -33,12 +33,12 @@ import { PlayAreaHost } from './play-area'
 import { RunPortals } from './run-portals'
 
 // M23 — responsive topology (mobile-first; base = phone, single column).
+// md/lg only widen the single column — same topology as mobile (score top,
+// charms/tiers centered, play centered), no two-column left rail.
 const RUN_SCREEN_CLASSES = [
   'run-screen',
   'md:max-w-[52rem]', // md (tablet/laptop): widened single column
-  'lg:max-w-[72rem] lg:grid-cols-[minmax(14rem,20rem)_1fr]', // lg: left rail + play column
-  'lg:grid-rows-[auto_minmax(0,1fr)_auto_auto_auto]',
-  "lg:[grid-template-areas:'header_header_score_play_charms_play_tiers_play_actions_actions']",
+  'lg:max-w-[72rem]', // lg (desktop): widened single column
   'landscape-short:gap-2', // landscape phone: compact vertical rhythm
 ].join(' ')
 

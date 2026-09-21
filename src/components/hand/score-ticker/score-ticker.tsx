@@ -46,7 +46,7 @@ function ProjectedTicker({ projection, reduced }: { projection: TossProjection; 
   const scored = score.kind === 'scored'
   const tierName = scored ? TIERS.find((t) => t.id === score.tier)!.name : '—'
   return (
-    <div className="score-ticker lg:justify-self-start" aria-live="polite">
+    <div className="score-ticker" aria-live="polite">
       <span className="score-ticker-tier">{tierName}</span>
       <TickerMath
         chips={scored ? score.chips : 0}
@@ -82,7 +82,7 @@ export function ScoreTicker({
   if (projection) return <ProjectedTicker projection={projection} reduced={reduced} />
   if (reset || !isSome(score)) {
     return (
-      <div className="score-ticker lg:justify-self-start" aria-live="polite">
+      <div className="score-ticker" aria-live="polite">
         <span className="score-ticker-tier">—</span>
         <span className="score-ticker-math score-ticker--idle">— × — = —</span>
       </div>
@@ -97,7 +97,7 @@ export function ScoreTicker({
   const showTier = !choro || beat >= 2
   const rowKey = choro ? choro.runId : 'static'
   return (
-    <div className="score-ticker lg:justify-self-start" aria-live="polite">
+    <div className="score-ticker" aria-live="polite">
       <span className="score-ticker-tier">{showTier ? tierName : '—'}</span>
       <TickerMath
         key={rowKey}

@@ -11,7 +11,7 @@ export function TierReference() {
   const tierUpgrades = useRunStore((s) => s.tierUpgrades)
   return (
     <div
-      className="tier-reference lg:justify-start lg:justify-self-start landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
+      className="tier-reference landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
       role="group"
       aria-label="Tier values"
     >

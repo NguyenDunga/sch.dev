@@ -31,7 +31,7 @@ export function CharmBar() {
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div
-        className="charm-bar lg:justify-start lg:justify-self-start landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
+        className="charm-bar landscape-short:flex-nowrap landscape-short:overflow-x-auto landscape-short:justify-start"
         role="list"
         aria-label="Charms, in scoring order"
       >
