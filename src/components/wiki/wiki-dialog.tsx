@@ -2,17 +2,18 @@
 // charms / bosses; the tab set is the WIKI_TABS registry). Esc, the ×, or
 // the overlay closes it. Focus moves to the close button on open.
 //
-// M23.7b — responsive chrome via shadcn primitives: a centered Dialog on
-// md+ (768px) and a full-height bottom Sheet on phone. The content (head /
-// tabs / body) is unchanged.
+// M23.7b — responsive chrome via the shadcn Dialog primitive: a centered
+// panel on md+ and a full-height bottom sheet on phone. The responsive
+// split lives in ui/dialog.tsx (one DialogContent), so there is no second
+// dialog component to keep in sync. The content (head / tabs / body) is
+// unchanged.
 
 import { useEffect, useRef, useState } from 'react'
 import { WIKI_TABS } from './wiki-tabs'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { useMediaQuery } from '@/lib/use-media-query'
 
-/** The tabbed reference content (chrome-agnostic — shared by Dialog/Sheet). */
+/** The tabbed reference content (chrome-agnostic — the shell is the
+ *  unified DialogContent: bottom sheet on phone, centered panel on md+). */
 function WikiContent({ onClose }: { onClose: () => void }) {
   const [tabId, setTabId] = useState(WIKI_TABS[0].id)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -29,7 +30,9 @@ function WikiContent({ onClose }: { onClose: () => void }) {
   }, [onClose])
 
   return (
-    <div className="wiki-dialog">
+    <div
+      className="wiki-dialog h-full w-full md:h-auto md:w-[560px] md:max-h-[min(720px,calc(100dvh-var(--sp-8)))] md:max-w-full"
+    >
       <header className="wiki-head">
         <h2 className="wiki-title">50/50 reference</h2>
         <button ref={closeRef} type="button" className="wiki-close" onClick={onClose} aria-label="Close reference">
@@ -62,40 +65,21 @@ function WikiContent({ onClose }: { onClose: () => void }) {
 }
 
 export function WikiDialog({ onClose }: { onClose: () => void }) {
-  // md+ → centered Dialog; phone → full-height bottom Sheet.
-  const isDesktop = useMediaQuery('(min-width: 768px)')
   const onOpenChange = (open: boolean) => {
     if (!open) onClose()
   }
 
-  if (isDesktop) {
-    return (
-      <Dialog open onOpenChange={onOpenChange}>
-        <DialogContent
-          className="wiki-dialog-shell gap-0 p-0"
-          overlayClassName="wiki-overlay"
-          onOverlayClick={onClose}
-          showCloseButton={false}
-          aria-label="50/50 reference"
-        >
-          <WikiContent onClose={onClose} />
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
   return (
-    <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="wiki-dialog-shell h-full gap-0 p-0"
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent
+        className="wiki-dialog-shell gap-0 p-0"
         overlayClassName="wiki-overlay"
         onOverlayClick={onClose}
         showCloseButton={false}
         aria-label="50/50 reference"
       >
         <WikiContent onClose={onClose} />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

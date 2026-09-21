@@ -1,6 +1,8 @@
-// shadcn/ui dialog (M23.7b) — @radix-ui/react-dialog, styled with the
-// Ceramic Tactile semantic tokens (bg-card, ring-border, …). The game's
-// overlays (wiki, pile panels) use this on md+ and the Sheet on phone.
+// shadcn/ui dialog (M23.7b, unified M23.8) — @radix-ui/react-dialog, styled
+// with the Ceramic Tactile semantic tokens (bg-card, ring-border, …).
+// One component for both breakpoints: a full-height bottom sheet on
+// phones, a centered fixed-size panel on md+ (the responsive shell lives in
+// DialogContent below, so consumers never need a second dialog component).
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
@@ -48,7 +50,17 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-(--r-lg) border-2 border-ink bg-card p-(--sp-6) shadow-(--shadow-hard-lg) duration-(--dur-quick) outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          // Phone: bottom sheet — full width (inset-x-0), full height, slides
+          // up from the bottom edge. z-[80] sits above the overlay (z-50) and
+          // the wiki's raised overlay (z-70); it ties coin-info (z-80) but the
+          // portal is later in the DOM, so the dialog wins.
+          "fixed inset-x-0 bottom-0 z-[80] flex h-full flex-col gap-4 rounded-t-(--r-lg) border-2 border-ink bg-card p-(--sp-6) shadow-(--shadow-hard-lg) outline-none",
+          "ease-(--ease-out) data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-(--dur-base) data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=closed]:duration-(--dur-quick)",
+          // md+: centered panel — shrink-to-fit (no w-full), capped at the
+          // viewport minus 2rem, fade + zoom (the slide vars are zeroed so
+          // the phone slide doesn't leak through).
+          "md:inset-auto md:top-1/2 md:left-1/2 md:h-auto md:max-w-[calc(100%-2rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-b-(--r-lg)",
+          "md:data-[state=open]:fade-in-0 md:data-[state=open]:slide-in-from-bottom-0 md:data-[state=open]:zoom-in-95 md:data-[state=open]:duration-(--dur-quick) md:data-[state=closed]:fade-out-0 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
